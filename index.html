@@ -1893,7 +1893,7 @@ function updatePlayer(dt,t){
   P.hy=lerp(3.0,1.6,P.mode);
   const sp=Math.hypot(P.vel.x,P.vel.z),fwdDot=P.vel.x*Math.sin(yaw)+P.vel.z*Math.cos(yaw);P.phase+=(fwdDot<-.5?-1:1)*sp*dt*.85;
   {const side=P.vel.x*Math.cos(yaw)-P.vel.z*Math.sin(yaw),tgt=sp>1.2?clamp(side/sp,-1,1):0;P.rig.strafe=lerp(P.rig.strafe||0,tgt,clamp(dt*8,0,1));}
-  P.rig.root.position.copy(P.pos);P.swing=lerp(P.swing||0,(P.rig.strafe||0)*clamp((P.mode-.3)/.7,0,1),clamp(dt*5,0,1));P.rig.root.rotation.y=yaw+faceOff+P.swing*.1745;   /* hover strafe: back swings out up to 10 deg (user 2026-11-22, was 15) */
+  P.rig.root.position.copy(P.pos);P.rig.root.rotation.y=yaw+faceOff;   /* hover strafe swing removed (user 2026-11-23): body stays square to the aim */
   P.rig.torso.rotation.x=lerp(0,.12,P.mode)+clamp(Math.hypot(P.vel.x,P.vel.z)*.004,0,.1)*P.mode;
   poseMech(P.rig,P.mode,P.phase,clamp(sp/8,0,1),t);
   P.lean=lerp(P.lean||0,P.running&&sp>8?.14:0,clamp(dt*6,0,1));P.rig.body.rotation.x=P.lean;
@@ -2278,7 +2278,7 @@ function updatePilot(R,dt,t){
   R.hy=lerp(3.0,1.6,R.mode);
   const sp=Math.hypot(R.vel.x,R.vel.z),fwdDot=R.vel.x*Math.sin(yw)+R.vel.z*Math.cos(yw);R.phase+=(fwdDot<-.5?-1:1)*sp*dt*.85;
   {const side=R.vel.x*Math.cos(yw)-R.vel.z*Math.sin(yw),tg=sp>1.2?clamp(side/sp,-1,1):0;R.rig.strafe=lerp(R.rig.strafe||0,tg,clamp(dt*8,0,1));}
-  R.rig.root.position.copy(R.pos);R.swing=lerp(R.swing||0,(R.rig.strafe||0)*clamp((R.mode-.3)/.7,0,1),clamp(dt*5,0,1));R.rig.root.rotation.y=yw+R.swing*.1745;
+  R.rig.root.position.copy(R.pos);R.rig.root.rotation.y=yw;
   R.rig.torso.rotation.x=lerp(0,.12,R.mode)+clamp(sp*.004,0,.1)*R.mode;
   poseMech(R.rig,R.mode,R.phase,clamp(sp/8,0,1),t);
   R.lean=lerp(R.lean||0,R.running&&sp>8?.14:0,clamp(dt*6,0,1));R.rig.body.rotation.x=R.lean;
