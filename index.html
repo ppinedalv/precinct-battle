@@ -158,7 +158,7 @@ canvas#game{display:block;width:100vw;height:100vh}
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
       <b>Mouse</b><span>Optional: aim, left click gun, right click cannon</span>
       <b>F</b><span>Transform: Walker (armored) / Hover (fast)</span>
-      <b>H</b><span>EMP shockwave (3 charges): freezes nearby enemy tanks, roller drones and laser hover robots for 7 s, and gives you an invisible shield (no damage) for the same 7 s. Only 3 blasts per game, no reloads</span>
+      <b>H</b><span>EMP shockwave (5 charges): freezes nearby enemy tanks, roller drones and laser hover robots for 7 s, and gives you an invisible shield (no damage) for the same 7 s. Only 5 blasts per game, no reloads</span>
       <b>Shift</b><span>Walker: run · Hover: turbo boost (uses System Energy)</span>
       <b>M</b><span>Mute everything</span><b>N</b><span>Music on / off</span><b>- / =</b><span>Music volume down / up</span><b>P</b><span>Pause / resume</span>
     </div>
@@ -1748,7 +1748,7 @@ function moveGround(u,dest,stopDist,speed,dt){const mr=u.moveR||u.r;
 
 // ---------------- updates
 // ---------------- EMP shockwave (H)
-const EMP_RADIUS=50,EMP_FREEZE=7,EMP_GAP=3,EMP_MAX=3;let empCD=0,empCharges=EMP_MAX;const empFx=[];
+const EMP_RADIUS=50,EMP_FREEZE=7,EMP_GAP=3,EMP_MAX=5;   /* 5 EMP blasts per game (user 2026-11-24, was 3) */let empCD=0,empCharges=EMP_MAX;const empFx=[];
 function empVisual(o,c1=0x7fe8ff,c2=0x4fd2ff,c3=0xbff4ff,c4=0xdff8ff){
   const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.12,8,64),new THREE.MeshBasicMaterial({color:c1,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
   ring.rotation.x=Math.PI/2;ring.position.set(o.x,o.y-1,o.z);scene.add(ring);
@@ -1760,7 +1760,7 @@ function empVisual(o,c1=0x7fe8ff,c2=0x4fd2ff,c3=0xbff4ff,c4=0xdff8ff){
   puff(o,c4,2,9,.35);for(let i=0;i<24;i++){const a=i/24*6.283;puff(o,c1,.6,1.6,.5,Math.cos(a)*30,rand(-2,4),Math.sin(a)*30);}
 }
 function triggerEMP(){
-  if(empCharges<=0){feed('EMP empty: all 3 blasts used this game','r');return;}
+  if(empCharges<=0){feed('EMP empty: all '+EMP_MAX+' blasts used this game','r');return;}
   if(empCD>0){feed('EMP charging: '+Math.ceil(empCD)+'s','r');return;}
   empCharges--;empCD=EMP_GAP;const P=player,o=_c.set(P.pos.x,P.pos.y+1.4,P.pos.z).clone();
   P.shieldT=EMP_FREEZE;   // invisible shield: no damage for as long as the freeze lasts (user 2026-11-22)
@@ -1769,7 +1769,7 @@ function triggerEMP(){
   let n=0;for(const e of ents){if(!e.alive||e.team!==RED||(e.kind!=='tank'&&e.kind!=='roller'&&e.kind!=='hoverbot'))continue;   // H also freezes enemy laser hover robots (user 2026-11-22)
     if(Math.hypot(e.pos.x-P.pos.x,e.pos.z-P.pos.z)<=EMP_RADIUS){e.frozen=EMP_FREEZE;e.vel.set(0,0,0);n++;}}
   feed(n?`EMP! ${n} enemy unit${n>1?'s':''} frozen for ${EMP_FREEZE}s`:'EMP fired: no enemy tanks, rollers or hover robots in range','b');}
-// enemy mech EMP: 3 charges per match, only on HARD / VETERAN / BRUTAL (levels 5-10); freezes BLUE tanks and rollers
+// enemy mech EMP: EMP_MAX (5) charges per match, only on HARD / VETERAN / BRUTAL (levels 5-10); freezes BLUE tanks and rollers
 function rivalEMP(R){
   R.empCharges--;R.empCD=12;const o=V().set(R.pos.x,R.pos.y+1.4,R.pos.z);
   R.shieldT=EMP_FREEZE;   // same invisible 7 s no-damage shield as the player's H (fair match, user 2026-11-22)
@@ -2125,7 +2125,7 @@ function initialSpawn(){
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',RED,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[RED]+30+Math.floor(i/5)*6));
   for(const e of ents)if(e.kind==='hqturret')e.hitsMax=DIFF.level>=10?18:HQT_HITS;   // level 10: HQ defense cannons take 18 hits
   rival.maxHp=rival.hp=DIFF.mechHp;if(DIFF.level>=9)player.maxHp=player.hp=DIFF.mechHp;   // levels 9-10: SS-07 hull = RX-13 hull (900 / 1000) (user 2026-11-22); levels 1-8 SS-07 stays 400
- rival.empCharges=3;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // 3 EMP blasts per game (player), no reloads
+ rival.empCharges=EMP_MAX;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // EMP_MAX (5) blasts per game for both mechs, no reloads
 
 // ---------------- rooftop portals (re-added 2026-11-22 at user request): 4 glowing rings on low rooftops (one per map quarter). A mech that steps in
 // re-appears on a random OTHER portal rooftop, with a teleport sound on entry and on arrival.
@@ -2238,7 +2238,7 @@ function guestLeft(c){if(c&&NET.conn!==c)return;if(!NET.conn)return;NET.conn=nul
 function rivalToAI(){const R=rival;R.face=R.rig.root.rotation.y;R.target=null;R.think=0;R.cd=R.cd||0;R.burst=0;R.cdMS=Math.max(R.cdMS||0,2);R.boosting=false;R.running=false;}
 function startPvp(){const R=rival;PVP=true;
   R.mode=R.mode||0;R.modeTarget=R.modeTarget||0;R.spin=0;R.energy=100;R.heat=0;R.overheat=false;R.cdMG=0;R.cdSH=0;R.cdMS=0;R.ms=R.ms??40;R.mg=R.mg??MG_MAX;R.sh=R.sh??SH_MAX;
-  R.vy=R.vy||0;R.onGround=R.onGround!==false;R.assault=false;R.usePortal=null;R.reloading=false;if(R.empCharges===undefined)R.empCharges=3;R.empCD=0;
+  R.vy=R.vy||0;R.onGround=R.onGround!==false;R.assault=false;R.usePortal=null;R.reloading=false;if(R.empCharges===undefined)R.empCharges=EMP_MAX;R.empCD=0;
   RIN.yaw=R.rig.root.rotation.y;RIN.pitch=.12;RIN.keys={};RIN.ml=RIN.mr=false;
   ensureGuestView();
   if(NET.call){try{NET.call.close();}catch(e){}}
@@ -2257,7 +2257,7 @@ function onHostData(d){if(!d||typeof d!=='object')return;netHeard=performance.no
 function pilotEvent(k){const R=rival;if(!PVP||!started||paused||over||!R.alive)return;
   if(k==='Space'){if(R.onGround&&R.mode<.5&&!R.modeTarget){R.vy=mechJumpVel(R.pos);R.onGround=false;R.crouch=.55;if(stepBufs[1])playSample(stepBufs[1],R.pos,.9,.8);}}
   else if(k==='KeyF'){R.modeTarget=R.modeTarget?0:1;playSample(R.modeTarget?toHoverBuf:toWalkerBuf,R.pos,.9);}
-  else if(k==='KeyH'){if(!(R.empCharges>0))gfeed('EMP empty: all 3 blasts used this game','b');else if(R.empCD>0)gfeed('EMP charging: '+Math.ceil(R.empCD)+'s','b');else{rivalEMP(R);R.empCD=EMP_GAP;}}}
+  else if(k==='KeyH'){if(!(R.empCharges>0))gfeed('EMP empty: all '+EMP_MAX+' blasts used this game','b');else if(R.empCD>0)gfeed('EMP charging: '+Math.ceil(R.empCD)+'s','b');else{rivalEMP(R);R.empCD=EMP_GAP;}}}
 function updatePilot(R,dt,t){
   const K={};for(const c of PILOT_KEYS)K[c]=RIN.keys[c]||RIN_LATCH[c];for(const c in RIN_LATCH)delete RIN_LATCH[c];
   if(NET.conn&&performance.now()-netHeard>6000){const c=NET.conn;guestLeft(c);try{c.close();}catch(e){}return;}   /* guest silent 6 s (closed tab, lost Wi-Fi): computer takes the red mech */
