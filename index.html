@@ -1069,13 +1069,13 @@ function updateHoverBots(dt,t){
     if(u.frozen>0){u.frozen=Math.max(0,u.frozen-dt);u.vel.set(0,0,0);   // EMP: hangs in the air, no moving, turning or firing
       if(Math.random()<.35)puff(_hb.set(u.pos.x+rand(-2,2),u.pos.y+rand(-2,2),u.pos.z+rand(-2,2)),Math.random()<.5?0x7fe8ff:0xdff8ff,.3,1,.15);
       u.cd=Math.max(u.cd,.5);continue;}
-    if(u.phase==='rise'){u.pos.y+=7*dt;if(u.pos.y>=6)u.phase='fly';}
+    if(u.phase==='rise'){u.pos.y+=11*dt;   /* faster hover bots (user 2026-11-24): rise 7->11, travel 16->26, orbit .32->.5 */if(u.pos.y>=6)u.phase='fly';}
     else{
-      if(foe.alive){u.ang+=u.spin*.32*dt*(Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+8?1:0);
+      if(foe.alive){u.ang+=u.spin*.5*dt*(Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+8?1:0);
         _hb.set(foe.pos.x+Math.cos(u.ang)*HBOT_ORBIT,HBOT_ALT,foe.pos.z+Math.sin(u.ang)*HBOT_ORBIT);}
       else _hb.set(u.pos.x,HBOT_ALT+6,u.pos.z);
-      _hb2.copy(_hb).sub(u.pos);const d=_hb2.length();if(d>.01)_hb2.multiplyScalar(Math.min(16,d*1.5)/d);
-      u.vel.lerp(_hb2,clamp(dt*1.6,0,1));u.pos.addScaledVector(u.vel,dt);}
+      _hb2.copy(_hb).sub(u.pos);const d=_hb2.length();if(d>.01)_hb2.multiplyScalar(Math.min(26,d*1.8)/d);
+      u.vel.lerp(_hb2,clamp(dt*2.2,0,1));u.pos.addScaledVector(u.vel,dt);}
     u.mesh.position.set(u.pos.x,u.pos.y+Math.sin(t*2.2+u.bob)*.35,u.pos.z);
     u.ring.rotation.z+=dt*.8;
     const near=foe.alive&&Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+12;
