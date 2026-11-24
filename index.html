@@ -43,6 +43,8 @@ canvas#game{display:block;width:100vw;height:100vh}
 #respawn{position:absolute;left:50%;top:40%;transform:translateX(-50%);font:700 28px ui-monospace,Menlo,monospace;display:none;text-shadow:0 2px 6px #000}
 .overlay{position:fixed;inset:0;display:flex;align-items:safe center;justify-content:center;background:rgba(4,6,10,.82);z-index:5;padding:16px 16px 96px;overflow-y:auto}
 .panel{max-width:600px;text-align:center}
+#pause{background:rgba(4,6,10,.28)} /* lighter pause tint so the frozen battle stays visible (user 2026-11-24) */
+#pause h1,#pause h2{text-shadow:0 2px 6px rgba(0,0,0,.95),0 0 18px rgba(0,0,0,.8)}
 .panel h1{font-size:clamp(36px,8vw,60px);letter-spacing:.14em;color:var(--amber)}
 .panel h1.logo{margin:0;line-height:0}.panel h1.logo img{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
 .panel h2{font-size:15px;letter-spacing:.2em;color:var(--dim);margin:6px 0 22px;font-weight:600}
