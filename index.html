@@ -1244,7 +1244,7 @@ function spawnUnit(kind,team,pos,escort=false){
   else if(kind==='tank'){const t=buildTank(team);u.mesh=t.g;u.mesh.scale.setScalar(1.575);   // 10% smaller (was 1.75)
   u.tur=t.tur;u.wheels=t.wheels;u.roll=0;u.hp=u.maxHp=team===RED?(DIFF.level>=9?140:DIFF.level>=8?105:70):70;u.r=3.42;u.moveR=2.61;u.hy=1.89;u.speed=7.5;u.range=40;u.wheelR=.62*1.575;}
   else{u.mesh=buildDrone(team);u.hp=u.maxHp=40;u.r=2.2;u.hy=0;u.speed=17;u.range=40;u.air=true;u.cruise=rand(30,36);if(u.pos.y>=0)u.pos.y=u.cruise;}
-  if(escort)u.escort=true;
+  if(escort){u.escort=true;u.speed=24;u.range=55;u.dmg=DIFF.level>=9?12:10;}   /* aggressive defense sky ships, levels 7-10 (user 2026-11-24): faster, longer range, 10/12 dmg (normal drones 6) */
   // RED tanks: level 8 = 105 hp, levels 9-10 = 140 hp (Blue stays 70); deliberate exception to Red/Blue parity (user request 2026-11-21)
   u.mesh.position.copy(u.pos);scene.add(u.mesh);ents.push(u);}
 
@@ -1812,11 +1812,11 @@ function updateUnit(u,dt){
     if(u.frozen<=0)u.frozen=0;return;}
   u.think-=dt;
   const foe=u.team===RED?BLUE:RED,push=(u.kind==='tank'||u.kind==='drone')&&bases[foe].alive;   // both teams' tanks + drones march on the enemy HQ (even match)
-  if(u.think<=0){u.think=rand(.4,.7);u.target=findTarget(u.pos,u.team,u.air?65:45,u.air);u.goal=u.kind==='roller'?roamGoal(u):push?bases[foe].pos:chooseGoal(u);
+  if(u.think<=0){u.think=rand(.4,.7);u.target=findTarget(u.pos,u.team,u.escort?95:u.air?65:45,u.air);u.goal=u.kind==='roller'?roamGoal(u):push?bases[foe].pos:chooseGoal(u);
     if(push&&!u.air){const hq=bases[foe];if(Math.hypot(hq.pos.x-u.pos.x,hq.pos.z-u.pos.z)<u.range+12)u.target=hq;}}   // tanks shell the HQ; drone bullets can't hurt it, so drones fight defenders there
   if(u.target&&!u.target.alive)u.target=null;
   const tgt=u.target;let dist;
-  const chase=tgt&&(!push||tgt.kind==='base'||Math.hypot(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)<DIFF.detour);   // pushing units don't detour for far fights
+  const chase=tgt&&(u.escort||!push||tgt.kind==='base'||Math.hypot(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)<DIFF.detour);   // pushing units don't detour for far fights
   const spd=u.speed*(push?DIFF.rush:1);
   if(u.air){
     const dest=chase?tgt.pos:u.goal;_dir.set(dest.x-u.pos.x,0,dest.z-u.pos.z);dist=_dir.length();_dir.normalize();
@@ -1837,9 +1837,9 @@ function updateUnit(u,dt){
     if(tgt)u.tur.rotation.y=Math.atan2(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)-u.heading;}
   u.cd-=dt;
   if(tgt&&u.cd<=0){center(tgt,_t);center(u,_t2);const d=_t.distanceTo(_t2);
-    if(d<u.range){u.cd=(u.air?rand(.8,1.1):rand(1.3,1.7))*DIFF.redFire;
+    if(d<u.range){u.cd=(u.escort?rand(.42,.58):u.air?rand(.8,1.1):rand(1.3,1.7))*DIFF.redFire;
       _t.sub(_t2).normalize();_t.x+=rand(-.04,.04);_t.y+=rand(-.03,.03);
-      if(u.air){_t2.y-=.4;fire('bullet',u.team,_t2,_t,6);}
+      if(u.air){_t2.y-=.4;fire('bullet',u.team,_t2,_t,u.dmg||6);}
       else if(u.kind==='roller'){u.cd=rand(1,1.4)*DIFF.redFire;_t2.y+=.5;_t2.addScaledVector(_t,1.2);fire('bullet',u.team,_t2,_t,6,{tracer:true});puff(_t2,0xffa040,.3,.8,.06);}
       else{const k=u.mesh.scale.x;_t2.y+=.6*k;_t2.addScaledVector(_t,2.5*k);fire('shell',u.team,_t2,_t,14,{splash:2.5});}
       sfx(u.air?'mg':'cannon',u.pos,.6);}}}
