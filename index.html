@@ -2094,8 +2094,8 @@ function updateBases(dt,t){
     if(s.roller<=0){s.roller=12;let n=0;for(const e of ents)if(e.alive&&e.kind==='roller'&&e.team===b.team)n++;if(n<DIFF.rollers)spawnUnit('roller',b.team,tunnelPos());}
     if(s.tank<=0){s.tank=DIFF.tankT;spawnUnit('tank',b.team,tunnelPos());}
     if(s.drone<=0){s.drone=DIFF.droneT;spawnUnit('drone',b.team,tunnelPos());}
-    // levels 7-10: each team keeps 2 extra escort ships in the sky (respawn ~20 s after one is shot down)
-    if(DIFF.level>=7){s.sky=(s.sky??20)-dt;if(s.sky<=0){s.sky=20;let n=0;for(const e of ents)if(e.alive&&e.escort&&e.team===b.team)n++;if(n<2)spawnUnit('drone',b.team,tunnelPos(),true);}}}}
+    // levels 7-10: each team keeps extra escort ships in the sky: 4 on levels 7-8, 6 on levels 9-10 (user 2026-11-24, was 2); respawn ~15 s after one is shot down (was 20)
+    if(DIFF.level>=7){s.sky=(s.sky??15)-dt;if(s.sky<=0){s.sky=15;let n=0;for(const e of ents)if(e.alive&&e.escort&&e.team===b.team)n++;if(n<escortCount())spawnUnit('drone',b.team,tunnelPos(),true);}}}}
 
 let camDistBase=12,faceOff=0,camHold=false;   // camHold: test hook, freezes the camera for screenshots
 function updateCamera(dt){if(camHold)return;
@@ -2112,11 +2112,12 @@ function updateCamera(dt){if(camHold)return;
   moon.position.set(P.pos.x+50,110,P.pos.z+35);moon.target.position.copy(P.pos);fill.position.set(camera.position.x,P.pos.y+6,camera.position.z);}
 
 // ---------------- init & loop
+function escortCount(){return DIFF.level>=9?6:DIFF.level>=7?4:0;}   /* defense sky ships per team (user 2026-11-24) */
 function initialSpawn(){
   for(let i=0;i<DIFF.startTanks;i++)spawnUnit('tank',BLUE,new THREE.Vector3(-14+(i%4)*9,0,BASE_Z[BLUE]-26-Math.floor(i/4)*9));   // even match: same start forces as Red
   for(let i=0;i<DIFF.startTanks;i++)spawnUnit('tank',RED,new THREE.Vector3(-14+(i%4)*9,0,BASE_Z[RED]+26+Math.floor(i/4)*9));
   for(let i=0;i<DIFF.startDrones;i++)spawnUnit('drone',BLUE,new THREE.Vector3((i-(DIFF.startDrones-1)/2)*12,32,BASE_Z[BLUE]-20));for(let i=0;i<DIFF.startDrones;i++)spawnUnit('drone',RED,new THREE.Vector3((i-(DIFF.startDrones-1)/2)*12,32,BASE_Z[RED]+20));
-  if(DIFF.level>=7)for(const x of[-18,18]){spawnUnit('drone',RED,new THREE.Vector3(x,34,BASE_Z[RED]+14),true);spawnUnit('drone',BLUE,new THREE.Vector3(x,34,BASE_Z[BLUE]-14),true);}   // 2 extra sky ships per team on levels 7-10
+  if(DIFF.level>=7){const N=escortCount();for(let i=0;i<N;i++){const x=(i-(N-1)/2)*12,y=34+(i%2)*6;spawnUnit('drone',RED,new THREE.Vector3(x,y,BASE_Z[RED]+14),true);spawnUnit('drone',BLUE,new THREE.Vector3(x,y,BASE_Z[BLUE]-14),true);}}   // extra sky ships per team on levels 7-10 (4 on 7-8, 6 on 9-10)
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',BLUE,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[BLUE]-30-Math.floor(i/5)*6));
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',RED,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[RED]+30+Math.floor(i/5)*6));
   for(const e of ents)if(e.kind==='hqturret')e.hitsMax=DIFF.level>=10?18:HQT_HITS;   // level 10: HQ defense cannons take 18 hits
