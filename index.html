@@ -1517,7 +1517,7 @@ function fire(type,team,from,dir,dmg,opts={}){
     const outer=new THREE.Sprite(FIRE_HALO);outer.position.z=-.9;outer.scale.set(2.3,2.3,1);mesh.add(outer);}
   if(type==='shell'&&opts.arcTo){const h=new THREE.Sprite(FIRE_HALO);h.scale.set(2.2,2.2,1);mesh.add(h);}
   mesh.position.copy(from);scene.add(mesh);
-  const p={type,team,pos:from.clone(),prev:from.clone(),vel:dir.clone().normalize().multiplyScalar(SPEED[type]),dmg,life:opts.life||(type==='missile'?4:1.6),mesh,target:opts.target||null,splash:opts.splash||0,boom:opts.boom||0,smokeT:0,byPlayer:opts.byPlayer===2?2:!!opts.byPlayer,tracer:!!opts.tracer,gatling:!!opts.gatling,heavyGun:!!opts.heavyGun,cluster:!!opts.cluster,trav:0};
+  const p={type,team,pos:from.clone(),prev:from.clone(),vel:dir.clone().normalize().multiplyScalar(SPEED[type]),dmg,life:opts.life||(type==='missile'?4:1.6),mesh,target:opts.target||null,aimPt:opts.aimPt||null,splash:opts.splash||0,boom:opts.boom||0,smokeT:0,byPlayer:opts.byPlayer===2?2:!!opts.byPlayer,tracer:!!opts.tracer,gatling:!!opts.gatling,heavyGun:!!opts.heavyGun,cluster:!!opts.cluster,trav:0};
   if(type==='missile')p.vel.y+=6;
   if(opts.arcTo){const G=32,d=_t2.copy(opts.arcTo).sub(from),horiz=Math.hypot(d.x,d.z),T=clamp(.55+horiz/34,.6,2.8);
     p.vel.set(d.x/T,d.y/T+.5*G*T,d.z/T);p.grav=G;p.life=T+1.5;}
@@ -1528,6 +1528,8 @@ function updateProjs(dt){
     const p=projs[i];p.prev.copy(p.pos);
     if(p.type==='missile'){
       if(p.target&&p.target.alive){center(p.target,_t).sub(p.pos).normalize().multiplyScalar(SPEED.missile);p.vel.lerp(_t,clamp(dt*3.2,0,1)).setLength(SPEED.missile);}
+      else if(p.aimPt){_t.copy(p.aimPt).sub(p.pos);   /* unlocked pilot missile (user 2026-11-24): curve off the launch kick back onto the crosshair point, then fly straight */
+        if(_t.length()<3||_t.dot(p.vel)<=0)p.aimPt=null;else{_t.normalize().multiplyScalar(SPEED.missile);p.vel.lerp(_t,clamp(dt*4,0,1)).setLength(SPEED.missile);}}
       p.smokeT-=dt;if(p.smokeT<=0){p.smokeT=.03;puff(p.pos,0xff7a22,.55,1.3,.2);puff(p.pos,0x4a3a32,.5,1.9,.75);}}
     if(p.grav){p.vel.y-=p.grav*dt;p.smokeT-=dt;if(p.smokeT<=0){p.smokeT=.04;puff(p.pos,0xff8a2a,.4,1.1,.18);puff(p.pos,0x4a3a32,.35,1.5,.6);}}
     p.pos.addScaledVector(p.vel,dt);p.life-=dt;
@@ -1924,7 +1926,7 @@ function updatePlayer(dt,t){
   if(fireCan&&P.sh>0&&P.cdSH<=0){P.cdSH=.65;P.sh--;P.rig.muzzleR.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();
     fire('shell',BLUE,_c,_t,32*(PVP?DIFF.rivalMul:1),{splash:12,boom:PVP?DIFF.rivalBoomSh:7,byPlayer:true,arcTo:aimAt.clone(),cluster:PVP&&DIFF.level>=9});puff(_c,0xffa040,1,2.6,.14);puff(_c,0xff5a14,.6,1.8,.22);if(!playSample(kBuf,null,.85))sfx('cannon',null);}
   if(fireMis&&P.ms>0&&P.cdMS<=0){P.cdMS=.55;P.ms--;P.rig.muzzleR.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();
-    fire('missile',BLUE,_c,_t,96*(PVP?DIFF.rivalMul:1),{splash:PVP?DIFF.rivalSplashMis:4.5,boom:PVP?DIFF.rivalBoomMis:12,life:5.5,target:lockTarget,byPlayer:true,cluster:PVP&&DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);if(!playSample(missileBuf,null,.9))sfx('missile',null);}
+    fire('missile',BLUE,_c,_t,96*(PVP?DIFF.rivalMul:1),{splash:PVP?DIFF.rivalSplashMis:4.5,boom:PVP?DIFF.rivalBoomMis:12,life:5.5,target:lockTarget,aimPt:lockTarget?null:aimAt.clone(),byPlayer:true,cluster:PVP&&DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);if(!playSample(missileBuf,null,.9))sfx('missile',null);}
   // HQ repair pad
   {const pad=bases[0].pad,onPad=bases[0].alive&&P.pos.y<1&&Math.hypot(P.pos.x,P.pos.z-(BASE_Z[BLUE]-16))<6.2;
    const needs=P.hp<P.maxHp||P.mg<MG_MAX||P.sh<SH_MAX||P.ms<40,rm=$('repairMsg');
@@ -2307,7 +2309,7 @@ function updatePilot(R,dt,t){
     fire('shell',RED,_c,_t,32*DIFF.rivalMul,{splash:12,boom:DIFF.rivalBoomSh,byPlayer:2,arcTo:aimAt.clone(),cluster:DIFF.level>=9});puff(_c,0xffa040,1,2.6,.14);puff(_c,0xff5a14,.6,1.8,.22);
     if(!playSample(kBuf,R.pos,.85))sfx('cannon',R.pos);}
   if(fireMis&&R.ms>0&&R.cdMS<=0){R.cdMS=.55;R.ms--;R.rig.muzzleR.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();
-    fire('missile',RED,_c,_t,96*DIFF.rivalMul,{splash:DIFF.rivalSplashMis,boom:DIFF.rivalBoomMis,life:5.5,target:lockR,byPlayer:2,cluster:DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);
+    fire('missile',RED,_c,_t,96*DIFF.rivalMul,{splash:DIFF.rivalSplashMis,boom:DIFF.rivalBoomMis,life:5.5,target:lockR,aimPt:lockR?null:aimAt.clone(),byPlayer:2,cluster:DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);
     if(!playSample(missileBuf,R.pos,.9))sfx('missile',R.pos);}
   /* red HQ repair pad: same 15 s full repair + rearm as the blue pad */
   {const pad=bases[1].pad,onPad=bases[1].alive&&R.pos.y<1&&Math.hypot(R.pos.x-RED_PAD.x,R.pos.z-RED_PAD.z)<6.2;
