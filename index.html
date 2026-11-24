@@ -1696,7 +1696,7 @@ addEventListener('keyup',e=>{keys[e.code]=false;if(GUEST)guestKey(e,false);});
 canvas.addEventListener('mousedown',e=>{if(!locked&&started&&!over&&!DEMO){lockPointer();return;}if(e.button===0)mouseL=true;if(e.button===2)mouseR=true;});
 addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;if(e.button===2)mouseR=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=clamp(pitch+e.movementY*.0022,-.45,.65);});
+addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=clamp(pitch+e.movementY*.0022,-.7118,.65);});
 document.addEventListener('pointerlockchange',()=>{if(GUEST)return;locked=document.pointerLockElement===canvas;
   if(!locked&&started&&!over){paused=true;mouseL=mouseR=false;$('pause').style.display='flex';$('musicCtl').style.display='flex';}
   if(locked){paused=false;$('pause').style.display='none';$('musicCtl').style.display='none';}});
@@ -1872,7 +1872,7 @@ function updatePlayer(dt,t){
   if(!P.alive){P.spin=0;P.respawn-=dt;if(P.respawn<=0){P.alive=true;P.hp=P.maxHp;P.pos.set(0,0,BASE_Z[BLUE]-18);P.vel.set(0,0,0);P.vy=0;P.onGround=true;empCD=0;P.rig.root.visible=true;P.mg=Math.max(P.mg,MG_MAX/2);P.sh=Math.max(P.sh,SH_MAX/2);P.ms=Math.max(P.ms,20);yaw=Math.PI;}return;}
   P.mode=lerp(P.mode,P.modeTarget,clamp(dt*4,0,1));
   yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt;
-  pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt,-.45,.65);
+  pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt,-.7118,.65);
   const fireGun=mouseL||keys.KeyJ,fireCan=mouseR||keys.KeyK,fireMis=keys.KeyE||keys.KeyL;
   const aimAt=lockTarget&&lockTarget.alive?center(lockTarget,V()):aimPoint;
   const hover=P.mode>.5;
@@ -1905,7 +1905,8 @@ function updatePlayer(dt,t){
   const sp=Math.hypot(P.vel.x,P.vel.z),fwdDot=P.vel.x*Math.sin(yaw)+P.vel.z*Math.cos(yaw);P.phase+=(fwdDot<-.5?-1:1)*sp*dt*.85;
   {const side=P.vel.x*Math.cos(yaw)-P.vel.z*Math.sin(yaw),tgt=sp>1.2?clamp(side/sp,-1,1):0;P.rig.strafe=lerp(P.rig.strafe||0,tgt,clamp(dt*8,0,1));}
   P.rig.root.position.copy(P.pos);P.rig.root.rotation.y=yaw+faceOff;   /* hover strafe swing removed (user 2026-11-23): body stays square to the aim */
-  P.rig.torso.rotation.x=lerp(0,.12,P.mode)+clamp(Math.hypot(P.vel.x,P.vel.z)*.004,0,.1)*P.mode;
+  P.aimTilt=lerp(P.aimTilt||0,Math.min(0,pitch)*.55,clamp(dt*8,0,1));   /* upper body tilts up with the aim (user 2026-11-24); aim limit now ~41 deg up (was ~26) */
+  P.rig.torso.rotation.x=lerp(0,.12,P.mode)+clamp(Math.hypot(P.vel.x,P.vel.z)*.004,0,.1)*P.mode+P.aimTilt;
   poseMech(P.rig,P.mode,P.phase,clamp(sp/8,0,1),t);
   P.lean=lerp(P.lean||0,P.running&&sp>8?.14:0,clamp(dt*6,0,1));P.rig.body.rotation.x=P.lean;
   P.rig.exhaust.material.color.setHex(P.boosting?0x89cff0:0xbfe8ff);P.rig.flame.material.color.setHex(P.boosting?0x9fd6f4:0xffa040);
@@ -2246,7 +2247,7 @@ function startPvp(){const R=rival;PVP=true;
 function onHostData(d){if(!d||typeof d!=='object')return;netHeard=performance.now();
   if(d.t==='in'){const k={};if(d.k&&typeof d.k==='object')for(const c of PILOT_KEYS){k[c]=!!d.k[c];if(k[c]&&!RIN.keys[c])RIN_LATCH[c]=true;}RIN.keys=k;   /* latch: a quick tap still counts for at least one frame */
    RIN.ml=!!d.ml;RIN.mr=!!d.mr;
-    const mx=+d.mx,my=+d.my;if(Number.isFinite(mx)&&Number.isFinite(my)){RIN.yaw-=clamp(mx,-3000,3000)*.0022;RIN.pitch=clamp(RIN.pitch+clamp(my,-3000,3000)*.0022,-.45,.65);}}
+    const mx=+d.mx,my=+d.my;if(Number.isFinite(mx)&&Number.isFinite(my)){RIN.yaw-=clamp(mx,-3000,3000)*.0022;RIN.pitch=clamp(RIN.pitch+clamp(my,-3000,3000)*.0022,-.7118,.65);}}
   else if(d.t==='ev'&&typeof d.k==='string')pilotEvent(d.k);
   else if(d.t==='size'){const w=+d.w,h=+d.h;if(Number.isFinite(w)&&Number.isFinite(h)){gSize={w:clamp(w,320,3840),h:clamp(h,240,2160)};sizeGuestView();}}
   else if(d.t==='pause'&&PVP&&started&&!over){paused=!paused;$('pause').style.display=paused?'flex':'none';$('musicCtl').style.display=paused?'flex':'none';if(paused)document.exitPointerLock();
@@ -2266,7 +2267,7 @@ function updatePilot(R,dt,t){
       R.mg=Math.max(R.mg,MG_MAX/2);R.sh=Math.max(R.sh,SH_MAX/2);R.ms=Math.max(R.ms,20);RIN.yaw=0;RIN.pitch=.12;feed('Enemy mech has redeployed','r');}return;}
   R.mode=lerp(R.mode,R.modeTarget,clamp(dt*4,0,1));
   RIN.yaw+=((K.ArrowLeft?1:0)-(K.ArrowRight?1:0))*2.3*dt;
-  RIN.pitch=clamp(RIN.pitch+((K.ArrowDown?1:0)-(K.ArrowUp?1:0))*1.1*dt,-.45,.65);
+  RIN.pitch=clamp(RIN.pitch+((K.ArrowDown?1:0)-(K.ArrowUp?1:0))*1.1*dt,-.7118,.65);
   const yw=RIN.yaw,fireGun=RIN.ml||K.KeyJ,fireCan=RIN.mr||K.KeyK,fireMis=K.KeyE||K.KeyL;
   const aimAt=lockR&&lockR.alive?center(lockR,V()):aimPointR.clone();
   const hover=R.mode>.5;
@@ -2291,7 +2292,8 @@ function updatePilot(R,dt,t){
   const sp=Math.hypot(R.vel.x,R.vel.z),fwdDot=R.vel.x*Math.sin(yw)+R.vel.z*Math.cos(yw);R.phase+=(fwdDot<-.5?-1:1)*sp*dt*.85;
   {const side=R.vel.x*Math.cos(yw)-R.vel.z*Math.sin(yw),tg=sp>1.2?clamp(side/sp,-1,1):0;R.rig.strafe=lerp(R.rig.strafe||0,tg,clamp(dt*8,0,1));}
   R.rig.root.position.copy(R.pos);R.rig.root.rotation.y=yw;
-  R.rig.torso.rotation.x=lerp(0,.12,R.mode)+clamp(sp*.004,0,.1)*R.mode;
+  R.aimTilt=lerp(R.aimTilt||0,Math.min(0,RIN.pitch)*.55,clamp(dt*8,0,1));
+  R.rig.torso.rotation.x=lerp(0,.12,R.mode)+clamp(sp*.004,0,.1)*R.mode+R.aimTilt;
   poseMech(R.rig,R.mode,R.phase,clamp(sp/8,0,1),t);
   R.lean=lerp(R.lean||0,R.running&&sp>8?.14:0,clamp(dt*6,0,1));R.rig.body.rotation.x=R.lean;
   if(R.rig.exhaust){R.rig.exhaust.material.color.setHex(R.boosting?0xffb0a0:0xffb0a0);if(R.boosting){R.rig.exhaust.scale.setScalar(2.6+Math.random()*.5);R.rig.exhaust.material.opacity=.95;R.rig.flame.scale.setScalar(2+Math.random()*.2);}}
