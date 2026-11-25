@@ -970,7 +970,7 @@ const HBOT_HIT_EVERY=2;   // every 2nd laser in a burst = 1 HQ hit, so 2 HQ hits
 // hover bot HP per difficulty tier (user 2026-11-24). Rotating gun = 5 dmg x level damage multiplier (1x levels 1-8, 1.5x level 9, 2x level 10); cannon flak = 11 x same.
 // gun hits / cannon hits: Easy 15 / 7, Normal 18 / 9, Hard 21 / 10, Veteran 25 / 12, Brutal 30 / 14
 const hbotHP=()=>{const l=DIFF.level;return l>=10?300:l>=9?225:l>=7?125:l>=5?105:l>=3?90:75;};
-const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=1.2,HBOT_ORBIT=60,HBOT_ALT=22;   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
+const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=1.2,HBOT_FIRE_R=110,HBOT_ORBIT=60,HBOT_ALT=22;   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
 const hqButtons=[],hoverBots=[],laserBeams=[];
 const BTN_GLOW=0x3dff7a;   // square green button (user 2026-11-22; was round gold)
 for(const b of bases)for(const s of[-1,1]){
@@ -1089,7 +1089,7 @@ function updateHoverBots(dt,t){
       u.vel.lerp(_hb2,clamp(dt*2.2,0,1));u.pos.addScaledVector(u.vel,dt);}
     u.mesh.position.set(u.pos.x,u.pos.y+Math.sin(t*2.2+u.bob)*.35,u.pos.z);
     u.ring.rotation.z+=dt*.8;
-    const near=foe.alive&&Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+12;
+    const near=foe.alive&&Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_FIRE_R;   // starts firing on the way in (user 2026-11-24: 72 -> 110)
     const face=near?Math.atan2(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z):u.vel.lengthSq()>1?Math.atan2(u.vel.x,u.vel.z):u.mesh.rotation.y;
     let df=face-u.mesh.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));u.mesh.rotation.y+=df*clamp(dt*4,0,1);
     u.cd-=dt;
