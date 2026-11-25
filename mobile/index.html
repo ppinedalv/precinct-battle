@@ -104,9 +104,9 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-we
 #lowleft{left:calc(94px + env(safe-area-inset-left)*.4);top:8px;bottom:auto;transform:scale(.62);transform-origin:top left}
 #hq{top:6px;transform:translateX(-50%) scale(.72);transform-origin:top center;gap:24px}
 #counters{top:6px;right:114px;transform:scale(.6);transform-origin:top right}
-.vbar{bottom:auto;top:160px;height:70px;width:7px}
+.vbar{top:auto;bottom:40px;height:88px;width:7px}
 #hull{left:calc(12px + env(safe-area-inset-left)*.4)}#heat{left:calc(40px + env(safe-area-inset-left)*.4);right:auto}   /* heat sits right next to hull (user 2026-11-25) */
-.vlbl{bottom:auto;top:146px;font-size:8px}
+.vlbl{top:auto;bottom:132px;font-size:8px}
 .vlbl[style*="left"]{left:calc(4px + env(safe-area-inset-left)*.4)!important}.vlbl[style*="right"]{right:auto!important;left:calc(32px + env(safe-area-inset-left)*.4)!important}
 #feed{top:54px;font-size:12px}
 #respawn{font-size:20px}#repairMsg{font-size:16px}
@@ -144,7 +144,7 @@ body:not(.pz) #musicCtl{display:none!important}   /* music settings only on the 
 #tMute{width:38px;height:38px;right:68px;top:8px;border-radius:8px;font-size:17px}
 #tPause{width:38px;height:38px;right:24px;top:8px;border-radius:8px;font:800 13px ui-monospace,Menlo,monospace}
 /* joystick: always visible at its home spot; it jumps under your thumb anywhere on the left side and returns home on release */
-#tStick,#tKnob{position:absolute;border-radius:50%;pointer-events:none;left:calc(118px + env(safe-area-inset-left)*.4);top:calc(100% - 104px)}
+#tStick,#tKnob{position:absolute;border-radius:50%;pointer-events:none;left:calc(148px + env(safe-area-inset-left)*.4);top:calc(100% - 104px)}
 #tStick{width:132px;height:132px;margin:-66px 0 0 -66px;border:2px solid rgba(220,232,250,.45);background:radial-gradient(circle,rgba(20,28,44,.15),rgba(60,90,140,.35))}
 #tStick::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g fill='rgba(220,232,250,.55)'><path d='M50 5l6 8H44z'/><path d='M50 95l6-8H44z'/><path d='M5 50l8-6v12z'/><path d='M95 50l-8-6v12z'/></g></svg>") center/100% 100% no-repeat}
 #tStick.boost{border-color:#ffb02e;box-shadow:0 0 14px rgba(255,170,40,.7)}
@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1125-1058</div>
+<div id="buildTag">BUILD 1125-1242</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -2721,7 +2721,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1058'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1242'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
