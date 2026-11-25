@@ -292,11 +292,12 @@ const CITY_N=buildings.length;   // city blocks only (portals pick from these)
 // perimeter walls
 addBlock(-HALF_X-5,0,10,HALF_Z*2+20,26);addBlock(HALF_X+5,0,10,HALF_Z*2+20,26);
 addBlock(0,-HALF_Z-5,HALF_X*2+20,10,26);addBlock(0,HALF_Z+5,HALF_X*2+20,10,26);
+let CITY_TOPS=null;
 { // instanced city
   const n=buildings.length;
   const bg=new THREE.BoxGeometry(1,1,1);bg.translate(0,.5,0);
   const bm=new THREE.InstancedMesh(bg,M(0x2a2e36,{roughness:.8,metalness:.35}),n);
-  const tm=new THREE.InstancedMesh(bg,M(0xd9a21b,{roughness:.5,emissive:0x3a2800}),n);
+  const tm=new THREE.InstancedMesh(bg,M(0xd9a21b,{roughness:.5,emissive:0x3a2800}),n);CITY_TOPS=tm;   // gold roof slabs (portal roofs swap theirs for violet)
   const winC=new THREE.InstancedMesh(bg,E(0x46d8ff),n*4),winA=new THREE.InstancedMesh(bg,E(0xffb02e),n*4);
   const mx=new THREE.Matrix4(),q=new THREE.Quaternion(),pos=V(),sc=V();let ic=0,ia=0;
   buildings.forEach((b,i)=>{
@@ -2169,20 +2170,23 @@ function initialSpawn(){
 
 // ---------------- rooftop portals (re-added 2026-11-22 at user request): 4 glowing rings on low rooftops (one per map quarter). A mech that steps in
 // re-appears on a random OTHER portal rooftop, with a teleport sound on entry and on arrival.
-const portals=[];
+const portals=[];let PORTAL_ROOF=null;
 { const city=buildings.slice(0,CITY_N),used=new Set();
   for(const [sx,sz] of [[-1,1],[1,1],[-1,-1],[1,-1]]){
     let best=null,score=-1e9;
     for(const b of city){if(used.has(b)||Math.sign(b.x)!==sx||Math.sign(b.z)!==sz||Math.min(b.w,b.d)<8)continue;
       const sc=(b.h<=10?100:0)-b.h-Math.abs(Math.abs(b.z)-75)*.2;if(sc>score){score=sc;best=b;}}   // low roof (jump-reachable), mid-field
     if(!best)continue;used.add(best);
+    { /* portal roof slab: dark violet instead of the gold city roof (user 2026-11-24) */
+      const bi=buildings.indexOf(best);CITY_TOPS.setMatrixAt(bi,new THREE.Matrix4().makeScale(0,0,0));CITY_TOPS.instanceMatrix.needsUpdate=true;
+      const top=new THREE.Mesh(new THREE.BoxGeometry(best.w+.25,.35,best.d+.25),PORTAL_ROOF||(PORTAL_ROOF=M(0x3a1260,{roughness:.5,emissive:0x16052a})));top.position.set(best.x,best.h+.175,best.z);scene.add(top);}
     const g=new THREE.Group();g.position.set(best.x,best.h+.2,best.z);scene.add(g);
     const ring=new THREE.Mesh(new THREE.TorusGeometry(1.9,.16,12,64),new THREE.MeshBasicMaterial({color:0x9a6bff}));ring.rotation.x=Math.PI/2;g.add(ring);
     const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.45,.06,8,48),new THREE.MeshBasicMaterial({color:0xd9c4ff,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));ring2.rotation.x=Math.PI/2;g.add(ring2);
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.85,48),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,toneMapped:false}));disc.rotation.x=-Math.PI/2;disc.position.y=.02;g.add(disc);   // solid white light base
     const core=new THREE.Sprite(new THREE.SpriteMaterial({map:FIRE_HALO.map,color:0xffffff,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));core.scale.set(4.2,4.2,1);core.position.y=.35;g.add(core);
     /* sky beam (user 2026-11-24): shoots up into the sky like the HQ beams (420 tall, no fog), soft blurred edges via a view-angle fade, a bit brighter at the base */
-    const col=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.9,420,40,1,true),new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0x8a5cff)},op:{value:.5}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.9,420,40,1,true),new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0x8a5cff)},op:{value:.2}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
       vertexShader:'varying vec3 vN;varying vec3 vV;varying float vH;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vH=uv.y;gl_Position=projectionMatrix*mv;}',
       fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;varying float vH;void main(){float f=abs(dot(normalize(vN),normalize(vV)));f=pow(f,2.2);float h=mix(1.,.45,smoothstep(0.,.04,vH));gl_FragColor=vec4(col,f*h*op);}'}));col.position.y=210;g.add(col);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:FIRE_HALO.map,color:0xa07aff,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));halo.scale.set(7,7,1);halo.position.y=.6;g.add(halo);
@@ -2196,7 +2200,7 @@ function teleportBuf(){ // synthesized "whoosh-shimmer" teleport sound (made in 
   return tpBuf=buf;}
 function teleportFx(pos){puff(_c.set(pos.x,pos.y+1.5,pos.z),0xc9b0ff,1.5,6,.4);for(let i=0;i<14;i++){const a=i/14*6.283;puff(_c.set(pos.x,pos.y+1,pos.z),0x9a6bff,.5,1.4,.5,Math.cos(a)*7,rand(2,7),Math.sin(a)*7);}}
 function updatePortals(dt,t){
-  for(const [i,pt] of portals.entries()){pt.ring2.rotation.z=t*2.2+i;pt.core.material.opacity=.7+.2*Math.sin(t*4+i);pt.col.material.uniforms.op.value=.42+.12*Math.sin(t*3+i);pt.halo.material.opacity=.75+.2*Math.sin(t*2.7+i);}
+  for(const [i,pt] of portals.entries()){pt.ring2.rotation.z=t*2.2+i;pt.core.material.opacity=.7+.2*Math.sin(t*4+i);pt.col.material.uniforms.op.value=.2+.05*Math.sin(t*3+i);   /* dimmer + more see-through (user 2026-11-24; was .42 +- .12) */pt.halo.material.opacity=.75+.2*Math.sin(t*2.7+i);}
   if(portals.length<2)return;
   for(const M of [player,rival]){
     if(!M.alive||(M===rival&&DIFF.level<9&&!PVP))continue;M.portalCD=Math.max(0,(M.portalCD||0)-dt);if(M.portalCD>0)continue;
