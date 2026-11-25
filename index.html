@@ -2177,7 +2177,10 @@ const portals=[];
     const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.45,.06,8,48),new THREE.MeshBasicMaterial({color:0xd9c4ff,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));ring2.rotation.x=Math.PI/2;g.add(ring2);
     const disc=new THREE.Mesh(new THREE.CircleGeometry(1.85,48),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,toneMapped:false}));disc.rotation.x=-Math.PI/2;disc.position.y=.02;g.add(disc);   // solid white light base
     const core=new THREE.Sprite(new THREE.SpriteMaterial({map:FIRE_HALO.map,color:0xffffff,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));core.scale.set(4.2,4.2,1);core.position.y=.35;g.add(core);
-    const col=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.9,4.5,40,1,true),new THREE.MeshBasicMaterial({color:0x8a5cff,transparent:true,opacity:.16,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));col.position.y=2.25;g.add(col);
+    /* sky beam (user 2026-11-24): shoots up into the sky like the HQ beams (420 tall, no fog), soft blurred edges via a view-angle fade, a bit brighter at the base */
+    const col=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.9,420,40,1,true),new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0x8a5cff)},op:{value:.5}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
+      vertexShader:'varying vec3 vN;varying vec3 vV;varying float vH;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vH=uv.y;gl_Position=projectionMatrix*mv;}',
+      fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;varying float vH;void main(){float f=abs(dot(normalize(vN),normalize(vV)));f=pow(f,2.2);float h=mix(1.,.45,smoothstep(0.,.04,vH));gl_FragColor=vec4(col,f*h*op);}'}));col.position.y=210;g.add(col);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:FIRE_HALO.map,color:0xa07aff,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));halo.scale.set(7,7,1);halo.position.y=.6;g.add(halo);
     portals.push({b:best,g,ring,ring2,disc,core,col,halo,pos:V().set(best.x,best.h,best.z)});}}
 let tpBuf=null;
@@ -2189,7 +2192,7 @@ function teleportBuf(){ // synthesized "whoosh-shimmer" teleport sound (made in 
   return tpBuf=buf;}
 function teleportFx(pos){puff(_c.set(pos.x,pos.y+1.5,pos.z),0xc9b0ff,1.5,6,.4);for(let i=0;i<14;i++){const a=i/14*6.283;puff(_c.set(pos.x,pos.y+1,pos.z),0x9a6bff,.5,1.4,.5,Math.cos(a)*7,rand(2,7),Math.sin(a)*7);}}
 function updatePortals(dt,t){
-  for(const [i,pt] of portals.entries()){pt.ring2.rotation.z=t*2.2+i;pt.core.material.opacity=.7+.2*Math.sin(t*4+i);pt.col.material.opacity=.12+.06*Math.sin(t*3+i);pt.halo.material.opacity=.75+.2*Math.sin(t*2.7+i);}
+  for(const [i,pt] of portals.entries()){pt.ring2.rotation.z=t*2.2+i;pt.core.material.opacity=.7+.2*Math.sin(t*4+i);pt.col.material.uniforms.op.value=.42+.12*Math.sin(t*3+i);pt.halo.material.opacity=.75+.2*Math.sin(t*2.7+i);}
   if(portals.length<2)return;
   for(const M of [player,rival]){
     if(!M.alive||(M===rival&&DIFF.level<9&&!PVP))continue;M.portalCD=Math.max(0,(M.portalCD||0)-dt);if(M.portalCD>0)continue;
