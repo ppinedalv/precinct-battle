@@ -1073,8 +1073,13 @@ function updateHoverBots(dt,t){
       u.cd=Math.max(u.cd,.5);continue;}
     if(u.phase==='rise'){u.pos.y+=9.9*dt;   /* faster hover bots (user 2026-11-24): rise 7->11, travel 16->26, orbit .32->.5; then 10% slower: 9.9 / 23.4 / .45 */if(u.pos.y>=6)u.phase='fly';}
     else{
-      if(foe.alive){u.ang+=u.spin*.45*dt*(Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+8?1:0);
-        _hb.set(foe.pos.x+Math.cos(u.ang)*HBOT_ORBIT,HBOT_ALT,foe.pos.z+Math.sin(u.ang)*HBOT_ORBIT);}
+      if(foe.alive){   /* sweep sideways along the FRONT half of the circle only and park at the side end, never behind the HQ (the full circle went through the back wall), user 2026-11-24 */
+        const a0=foe.pos.z>0?-Math.PI/2:Math.PI/2,lim=Math.PI/2-.17;   // a0 = straight out from the HQ toward the battlefield; end = ~59 to the side, 10 in front of the HQ
+        if(u.rel===undefined){let r=u.ang-a0;u.rel=Math.atan2(Math.sin(r),Math.cos(r));}
+        if(Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_ORBIT+8)u.rel=clamp(u.rel+u.spin*.45*dt,-lim,lim);
+        u.ang=a0+u.rel;u.parked=Math.abs(u.rel)>=lim-.001&&u.pos.distanceTo(_hb2.set(foe.pos.x+Math.cos(u.ang)*HBOT_ORBIT,HBOT_ALT,foe.pos.z+Math.sin(u.ang)*HBOT_ORBIT))<3;
+        _hb.set(foe.pos.x+Math.cos(u.ang)*HBOT_ORBIT,HBOT_ALT,foe.pos.z+Math.sin(u.ang)*HBOT_ORBIT);
+        _hb.x=clamp(_hb.x,-HALF_X+8,HALF_X-8);_hb.z=clamp(_hb.z,-HALF_Z+8,HALF_Z-8);}
       else _hb.set(u.pos.x,HBOT_ALT+6,u.pos.z);
       _hb2.copy(_hb).sub(u.pos);const d=_hb2.length();if(d>.01)_hb2.multiplyScalar(Math.min(23.4,d*1.62)/d);
       u.vel.lerp(_hb2,clamp(dt*2.2,0,1));u.pos.addScaledVector(u.vel,dt);}
@@ -1084,7 +1089,13 @@ function updateHoverBots(dt,t){
     const face=near?Math.atan2(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z):u.vel.lengthSq()>1?Math.atan2(u.vel.x,u.vel.z):u.mesh.rotation.y;
     let df=face-u.mesh.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));u.mesh.rotation.y+=df*clamp(dt*4,0,1);
     u.cd-=dt;
-    if(near&&u.phase==='fly'&&u.cd<=0&&Math.abs(df)<.4){u.cd=HBOT_VOLLEY;   // burst of 4 green lasers every 2 s (user 2026-11-22) at the enemy HQ orb only
+    if(near&&u.parked&&Math.abs(df)<.4){   // parked at the side end: continuous laser stream at the HQ orb until shot down; same damage rate as the bursts (1 HQ hit per second)
+      u.lz=(u.lz||0)-dt;u.dmgT=(u.dmgT||0)+dt;
+      if(u.lz<=0){u.lz=.09;u.tk=((u.tk||0)+1)%u.tips.length;u.mesh.updateMatrixWorld(true);
+        laserBeam(u.tips[u.tk].getWorldPosition(V()),V().set(foe.pos.x+rand(-1.5,1.5),13.5+rand(-1.5,1.5),foe.pos.z+rand(-1.5,1.5)));
+        if(u.tk===0)laserZap(u.pos);}
+      if(u.dmgT>=1){u.dmgT-=1;damage(foe,1,u.team,false,true);}}
+    else if(near&&u.phase==='fly'&&u.cd<=0&&Math.abs(df)<.4){u.cd=HBOT_VOLLEY;   // burst of 4 green lasers every 2 s (user 2026-11-22) at the enemy HQ orb only
       const orb=V().set(foe.pos.x,13.5,foe.pos.z);u.mesh.updateMatrixWorld(true);
       u.tips.forEach((tip,k)=>setTimeout(()=>{if(over||!u.alive||!foe.alive)return;const from=tip.getWorldPosition(V()),to=V().set(orb.x+rand(-2,2),orb.y+rand(-2,2),orb.z+rand(-2,2));
         laserBeam(from,to);laserZap(from);if(k%HBOT_HIT_EVERY===0)damage(foe,1,u.team,false,true);},k*90));}}}
