@@ -1252,7 +1252,7 @@ for(const T of TUNNELS){buildTunnel(T);
     function rand2(){return -88+rnd()*176;}function rand2z(){return -150+rnd()*300;}
     const a=Math.floor(rnd()*4)*Math.PI/2,dx=Math.cos(a)*L,dz=Math.sin(a)*L;
     if(!clear(x,z,2)||!clear(x+dx,z+dz,2)||!clear(x+dx/2,z+dz/2,2))continue;
-    const skip=Math.min(Math.abs(x),Math.abs(x+dx))<12||x*(x+dx)<0;   /* no stray tape markers touching or crossing the centre lane anywhere, both team sides (user 2026-11-24); rnd() still consumed so the rest of the layout is unchanged */
+    const skip=true;   /* all scattered side tape markers removed, both halves (user 2026-11-24); was: near/crossing the centre lane only */   /* no stray tape markers touching or crossing the centre lane anywhere, both team sides (user 2026-11-24); rnd() still consumed so the rest of the layout is unchanged */
     if(!skip)tapeStrip(x,z,x+dx,z+dz);
     if(rnd()<.55){const b=a+Math.PI/2*(rnd()<.5?1:-1),L2=4+rnd()*5,ex=x+Math.cos(b)*L2,ez=z+Math.sin(b)*L2;if(clear(ex,ez,2))if(!skip)tapeStrip(x,z,ex,ez);}   // L-shaped corner
     placed++;}}
