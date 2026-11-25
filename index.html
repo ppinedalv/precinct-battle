@@ -310,6 +310,10 @@ addBlock(0,-HALF_Z-5,HALF_X*2+20,10,26);addBlock(0,HALF_Z+5,HALF_X*2+20,10,26);
   winC.count=ic;winA.count=ia;bm.castShadow=bm.receiveShadow=true;
   scene.add(bm,tm,winC,winA);
 }
+// soft-edged additive light beam: fades where the surface turns edge-on to the camera, so the sides look blurred (user 2026-11-24). base = extra brightness near the bottom.
+function softBeamMat(color,op,base=0){return new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(color)},op:{value:op}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
+  vertexShader:'varying vec3 vN;varying vec3 vV;varying float vH;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vH=uv.y;gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;varying float vH;void main(){float f=abs(dot(normalize(vN),normalize(vV)));f=pow(f,2.2);float h=1.+'+base.toFixed(3)+'*(1.-smoothstep(0.,.04,vH));gl_FragColor=vec4(col,f*h*op);}'});}
 // avenue lamps
 // 25% taller (7 -> 8.75) with a downward floodlight head: dark housing, bright lens, soft light cone and a pool of light on the street (user 2026-11-24; was a round glow sprite)
 {const LH=8.75,FL_LENS=E(0xfff2d0),FL_CONE=new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0xffd28a)},op:{value:.13}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
@@ -948,9 +952,9 @@ for(const team of[BLUE,RED]){
   const innerGlow=new THREE.Sprite(SH.teamGlow[team]);innerGlow.scale.set(7,7,1);orb.add(innerGlow);
   const halo=new THREE.Sprite(SH.teamGlow[team]);halo.scale.set(18,18,1);halo.material=halo.material.clone();halo.material.opacity=.45;orb.add(halo);
   // beam of light into the sky + thin vertical light lines around it
-  const beamMat=new THREE.MeshBasicMaterial({color:TC,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
-  const beam=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,420,16,1,true),beamMat);beam.position.y=6.2+210;g.add(beam);
-  const beamCore=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,420,8,1,true),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));beamCore.position.y=6.2+210;g.add(beamCore);
+  const beamMat=softBeamMat(TC,.55);   /* soft blurred edges like the portal beams (user 2026-11-24); was a hard-edged .32 cylinder r 1.3 */
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,420,32,1,true),beamMat);beam.position.y=6.2+210;g.add(beam);
+  const beamCore=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,420,16,1,true),softBeamMat(0xffffff,.9));beamCore.position.y=6.2+210;g.add(beamCore);
   const lines=[];for(let i=0;i<10;i++){const a=i/10*Math.PI*2+rand(-.2,.2),rr=rand(7,9),h=rand(25,70);
     const l=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,h,4,1,true),new THREE.MeshBasicMaterial({color:TC,transparent:true,opacity:rand(.35,.7),blending:THREE.AdditiveBlending,depthWrite:false}));
     l.position.set(Math.cos(a)*rr,6.2+h/2,Math.sin(a)*rr);g.add(l);lines.push(l);}
@@ -2125,7 +2129,7 @@ function updateBases(dt,t){
      if(dmg>.8&&Math.random()<.5)puff(_c.set(rand(-4,4),rand(5.5,7),b.pos.z+rand(-4,4)),Math.random()<.5?0xff7a22:0xffb040,.8,2.6,.45,0,3,0);
      b.core.orb.visible=!(dmg>.75&&Math.random()<dmg*.18);}
     {const C=b.core,health=1-b.hits/b.hitsMax;C.orb.position.y=13.5+Math.sin(t*1.1+b.team)*.6;C.wire.rotation.y=t*.18;C.wire.rotation.x=Math.sin(t*.3)*.15;
-     C.inner.rotation.x=t*.9;C.inner.rotation.y=t*.6;C.beamMat.opacity=(.18+.14*health)*(1+Math.sin(t*3)*.12);C.beamCore.material.opacity=.35+.4*health;
+     C.inner.rotation.x=t*.9;C.inner.rotation.y=t*.6;C.beamMat.uniforms.op.value=(.31+.24*health)*(1+Math.sin(t*3)*.12);C.beamCore.material.uniforms.op.value=.45+.5*health;
      C.rimGlow.material.opacity=.25+.12*Math.sin(t*2);}
     const s=baseSpawn[b.team];s.tank-=dt;s.drone-=dt;s.roller-=dt;const front=b.team===BLUE?-17:17;
     const TN=TUNNELS[b.team],tunnelPos=()=>_c.set(TN.x+rand(-1.2,1.2),-TUNNEL_DEPTH,TN.zm+TN.dir*rand(14,15));   // declared before first use (was a TDZ error on roller respawn)
