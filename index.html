@@ -958,7 +958,7 @@ for(const team of[BLUE,RED]){
   const b={kind:'base',team,pos:new THREE.Vector3(0,0,z),hp:2500,maxHp:2500,hits:0,hitsMax:50,r:12,hy:8,alive:true,core,pad:{ring:padRing,disc:padDisc},tag:(()=>{const t=makeHealthTag(.19,.053);t.sp.position.set(0,24,z);scene.add(t.sp);return t;})()};
   bases.push(b);ents.push(b);
   for(const s of[-1,1]){let tu=null;tu=makeTurret(new THREE.Vector3(s*14,6,z),()=>b.alive&&!tu.destroyed?team:null,60,b);   // HQ defense cannons can now be destroyed (user 2026-11-22)
-    tu.ent={kind:'hqturret',team,pos:new THREE.Vector3(s*14,6,z),hp:100,maxHp:100,hits:0,hitsMax:HQT_HITS,r:2.4,hy:1.6,alive:true,turret:tu};ents.push(tu.ent);
+    tu.ent={kind:'hqturret',team,pos:new THREE.Vector3(s*14,6,z),hp:100,maxHp:100,hits:0,hitsMax:HQT_HITS,r:3.0,hy:2.0,alive:true,turret:tu};ents.push(tu.ent);
     tu.tag=makeHealthTag(.1,.028);tu.tag.sp.position.set(s*14,11.5,z);scene.add(tu.tag.sp);}
 }
 // ---------------- HQ wall buttons + laser hover bots (added 2026-11-22)
@@ -1123,7 +1123,7 @@ function buildTunnel(T){
 // HQ side turrets (2026-11-22, user): 30% larger, white + green like the laser hover robots, more detail; damage back to the original (user 2026-11-22)
 function makeTurret(pos,teamFn,range,owner){   // runs during the HQ build (before this line), so materials are made here, not as top-level consts
   const HQT=makeTurret.mats||(makeTurret.mats={W:M(0xf1f3f6,{roughness:.22,metalness:.08}),D:M(0x1a1c21,{roughness:.45,metalness:.7}),G:[new THREE.MeshBasicMaterial({color:0x1e7bff}),new THREE.MeshBasicMaterial({color:0xff2a1e})]}),HQT_WHITE=HQT.W,HQT_DARK=HQT.D,HQT_GREEN=HQT.G[owner&&owner.team===RED?1:0];   // glow: saturated blue on Blue HQ, red on Red HQ (light tints washed out to white, user 2026-11-24)
-  const S=1.3,g=new THREE.Group();g.position.copy(pos);g.scale.setScalar(S);scene.add(g);
+  const S=1.625,g=new THREE.Group();g.position.copy(pos);g.scale.setScalar(S);scene.add(g);   // 1.3 -> 1.625 = 25% bigger (user 2026-11-24)
   // rotating base: dark drum, green light ring, white collar, bolts
   {const d=cyl(1.0,1.15,.5,HQT_DARK,20);d.position.y=.25;g.add(d);
    const r=new THREE.Mesh(torG(1.02,.05,40),HQT_GREEN);r.rotation.x=Math.PI/2;r.position.y=.5;g.add(r);
