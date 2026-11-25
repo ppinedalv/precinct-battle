@@ -967,8 +967,9 @@ for(const team of[BLUE,RED]){
 // deploys one laser hover bot for its team: it rises out of that team's tank tunnel, flies to the enemy HQ and
 // fires green lasers ONLY at the enemy HQ (1 HQ hit per 4-laser volley). Each button then recharges for HQB_CD seconds (5 s, user 2026-11-22).
 const HBOT_HIT_EVERY=2;   // every 2nd laser in a burst = 1 HQ hit, so 2 HQ hits per 4-laser burst (was 1; user 2026-11-22)
-// hover bot HP by level (user 2026-11-24): rotating gun (5 dmg x level damage multiplier) kills in 15 hits on levels 1-8, 22 on level 9, 30 on level 10
-const hbotHP=()=>DIFF.level>=10?300:DIFF.level>=9?165:75;
+// hover bot HP per difficulty tier (user 2026-11-24). Rotating gun = 5 dmg x level damage multiplier (1x levels 1-8, 1.5x level 9, 2x level 10); cannon flak = 11 x same.
+// gun hits / cannon hits: Easy 15 / 7, Normal 18 / 9, Hard 21 / 10, Veteran 25 / 12, Brutal 30 / 14
+const hbotHP=()=>{const l=DIFF.level;return l>=10?300:l>=9?225:l>=7?125:l>=5?105:l>=3?90:75;};
 const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=2,HBOT_ORBIT=60,HBOT_ALT=22;   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
 const hqButtons=[],hoverBots=[],laserBeams=[];
 const BTN_GLOW=0x3dff7a;   // square green button (user 2026-11-22; was round gold)
