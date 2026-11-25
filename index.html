@@ -315,20 +315,7 @@ let CITY_TOPS=null;
 function softBeamMat(color,op,base=0){return new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(color)},op:{value:op}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
   vertexShader:'varying vec3 vN;varying vec3 vV;varying float vH;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vH=uv.y;gl_Position=projectionMatrix*mv;}',
   fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;varying float vH;void main(){float f=abs(dot(normalize(vN),normalize(vV)));f=pow(f,2.2);float h=1.+'+base.toFixed(3)+'*(1.-smoothstep(0.,.04,vH));gl_FragColor=vec4(col,f*h*op);}'});}
-// avenue lamps
-// 25% taller (7 -> 8.75) with a downward floodlight head: dark housing, bright lens, soft light cone and a pool of light on the street (user 2026-11-24; was a round glow sprite)
-{const LH=8.75,FL_LENS=E(0xfff2d0),FL_CONE=new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(0xffd28a)},op:{value:.13}},transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,
-    /* soft beam (user 2026-11-24): fades where the surface turns edge-on to the camera, so the cone sides are blurry, and fades toward the street */
-    vertexShader:'varying vec3 vN;varying vec3 vV;varying float vH;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);vH=uv.y;gl_Position=projectionMatrix*mv;}',
-    fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;varying float vH;void main(){float f=abs(dot(normalize(vN),normalize(vV)));f=pow(f,2.5);gl_FragColor=vec4(col,f*mix(.15,1.,vH)*op);}'}),
-  FL_POOL=new THREE.MeshBasicMaterial({map:GLOW,color:0xffc870,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false}),
-  coneG=new THREE.CylinderGeometry(.62,3.2,LH-.5,24,1,true),   /* top as wide as the lamp's light box */poolG=new THREE.CircleGeometry(4.2,24);
- for(let z=-140;z<=140;z+=28)for(const s of[-1,1]){const g=new THREE.Group();g.position.set(s*9,0,z);
-  const p=cyl(.15,.2,LH,SH.mid,6);p.position.y=LH/2;g.add(p);box(1.6,.2,.4,SH.mid,-s*.7,LH,0,g);
-  const hx=-s*1.5;box(1.3,.35,.9,SH.dark,hx,LH-.05,0,g);box(1.15,.04,.75,FL_LENS,hx,LH-.24,0,g);   // floodlight housing + lens facing down
-  const c=new THREE.Mesh(coneG,FL_CONE);c.position.set(hx,(LH-.26)/2-.12,0);g.add(c);                  // light cone: top = lens width, wide at the street
-  const pl=new THREE.Mesh(poolG,FL_POOL);pl.rotation.x=-Math.PI/2;pl.position.set(hx,.04,0);g.add(pl);scene.add(g);}}
-
+/* avenue street lamps + floodlights removed (user 2026-11-24) */
 // ---------------- detail kit
 function panelTex(lines){const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   g.fillStyle='#d2d5db';g.fillRect(0,0,256,256);
@@ -389,15 +376,15 @@ function stencil(text){const c=document.createElement('canvas');c.width=256;c.he
   g.fillStyle='rgba(235,235,230,.92)';g.font='900 78px Impact, "Arial Black", sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(text,128,58);
   g.fillRect(40,106,176,6);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
   return new THREE.MeshStandardMaterial({map:t,transparent:true,roughness:.6,metalness:.2,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
-function stencilLetters(text,color){
-  const c=document.createElement('canvas');c.width=256;c.height=200;const g=c.getContext('2d');
+function stencilLetters(text,color,W=256){   /* W: canvas width; match the plate's aspect so long words fit unstretched */
+  const c=document.createElement('canvas');c.width=W;c.height=200;const g=c.getContext('2d');
   g.font='900 150px Impact, "Arial Black", sans-serif';g.textAlign='left';g.textBaseline='alphabetic';
   const widths=[...text].map(ch=>g.measureText(ch).width),gap=10,total=widths.reduce((a,b)=>a+b,0)+gap*(text.length-1);
-  let x=(256-total)/2;const base=172,top=40;g.fillStyle=color;
+  let x=(W-total)/2;const base=172,top=40;g.fillStyle=color;
   [...text].forEach((ch,i)=>{g.fillText(ch,x,base);
     if('ABDOPQR04689'.includes(ch)){g.save();g.globalCompositeOperation='destination-out';g.fillRect(x+widths[i]/2-4.5,top+(base-top)*.06,9,(base-top)*.2);g.restore();}   // stencil bridge on closed shapes only
     x+=widths[i]+gap;});
-  g.save();g.globalCompositeOperation='destination-out';for(let i=0;i<220;i++){g.globalAlpha=Math.random()*.6;g.fillRect(Math.random()*256,Math.random()*200,Math.random()*3+1,Math.random()*2+1);}g.restore();  // paint wear
+  g.save();g.globalCompositeOperation='destination-out';for(let i=0;i<220;i++){g.globalAlpha=Math.random()*.6;g.fillRect(Math.random()*W,Math.random()*200,Math.random()*3+1,Math.random()*2+1);}g.restore();  // paint wear
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;
   return new THREE.MeshStandardMaterial({map:t,emissiveMap:t,emissive:0xffffff,emissiveIntensity:.16,transparent:true,roughness:.6,metalness:.1,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});}
 function taperGeo(w,h,d,tx=1,tz=1,sz=0){const k=['t',w,h,d,tx,tz,sz].join('|');let g=geoCache.get(k);if(g)return g;
@@ -902,6 +889,22 @@ function buildDrone(team){
   part(boxGeo(1.22,.08,.6),m.team,0,.36,-.6,g);
   return g;}
 
+/* lag fix (user 2026-11-24, levels 9-10): every unit part was its own draw call (tank ~73, roller ~21, drone ~17), drawn twice with shadows.
+   bakeStatic merges the fixed parts inside each group (body, turret, each wheel) into one mesh per material, so turrets and wheels still move.
+   Merged geometry is cached per unit type + team (builders are deterministic and materials are shared per team), so no per-spawn GPU memory. */
+const BAKE=new Map();
+function mergeParts(list){const geos=list.map(c=>{c.updateMatrix();const g=c.geometry.index?c.geometry.toNonIndexed():c.geometry.clone();g.applyMatrix4(c.matrix);return g;});
+  let n=0;for(const g of geos)n+=g.attributes.position.count;const pos=new Float32Array(n*3),nor=new Float32Array(n*3),uv=new Float32Array(n*2);let o=0;
+  for(const g of geos){const c=g.attributes.position.count;pos.set(g.attributes.position.array,o*3);if(g.attributes.normal)nor.set(g.attributes.normal.array,o*3);if(g.attributes.uv)uv.set(g.attributes.uv.array,o*2);o+=c;g.dispose();}
+  const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.BufferAttribute(pos,3));out.setAttribute('normal',new THREE.BufferAttribute(nor,3));out.setAttribute('uv',new THREE.BufferAttribute(uv,2));out.computeBoundingSphere();return out;}
+function bakeStatic(root,key){const groups=[];root.traverse(o=>{if(o.isGroup)groups.push(o);});
+  groups.forEach((grp,gi)=>{const byMat=new Map();
+    for(const c of grp.children)if(c.isMesh&&!c.children.length&&!Array.isArray(c.material)&&!c.userData.ownMat){if(!byMat.has(c.material))byMat.set(c.material,[]);byMat.get(c.material).push(c);}
+    let mi=0;for(const [mat,list] of byMat){const k=key+'|'+gi+'|'+(mi++);if(list.length<2)continue;
+      let geo=BAKE.get(k);if(!geo){geo=mergeParts(list);BAKE.set(k,geo);}
+      for(const c of list)grp.remove(c);const mm=new THREE.Mesh(geo,mat);mm.castShadow=true;mm.receiveShadow=true;grp.add(mm);}});
+  return root;}
+
 // ---------------- difficulty (1 = easy ... 10 = difficult); unit counts, spawn rates and fire rates apply to BOTH teams (even match); the enemy mech AI (speed, aggression) still scales
 function makeDiff(d){const k=(d-1)/9,L=(a,b)=>a+(b-a)*k;const D={level:d,
   tankT:L(22,5),droneT:L(45,12),rollers:Math.round(L(3,14)),rollerT:L(14,5),rollerSpeed:L(11,20),rollerSight:L(35,75),rollerRange:L(26,40),rollerDmg:L(5,9),   /* side-lane rollers scale with level (user 2026-11-24; was 2-9 rollers, 12 s respawn, speed 13, sight 45, range 30, dmg 6) */
@@ -970,7 +973,7 @@ for(const team of[BLUE,RED]){
   const padZ=team===BLUE?-16:16;
   const padRing=new THREE.Mesh(new THREE.TorusGeometry(6,.2,6,48),new THREE.MeshBasicMaterial({color:TEAMCOL[team]}));padRing.rotation.x=Math.PI/2;padRing.position.set(0,.55,padZ);g.add(padRing);
   const padDisc=new THREE.Mesh(new THREE.CircleGeometry(5.8,48),new THREE.MeshBasicMaterial({color:TEAMCOL[team],transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false}));padDisc.rotation.x=-Math.PI/2;padDisc.position.set(0,.53,padZ);g.add(padDisc);
-  {const t=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.15),stencilLetters('REPAIR',team===BLUE?'#7fd0ff':'#ff8a7a'));t.rotation.x=-Math.PI/2;t.rotation.z=team===BLUE?0:Math.PI;t.position.set(0,.56,padZ+(team===BLUE?3.4:-3.4));g.add(t);}
+  {const t=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.15),stencilLetters('CHARGE','#f2b51d',800)   /* was REPAIR; yellow mech-rear stencil font, canvas matches the 4.6x1.15 plate (user 2026-11-24) */);t.rotation.x=-Math.PI/2;t.rotation.z=team===BLUE?0:Math.PI;t.position.set(0,.56,padZ+(team===BLUE?3.4:-3.4));g.add(t);}
   const b={kind:'base',team,pos:new THREE.Vector3(0,0,z),hp:2500,maxHp:2500,hits:0,hitsMax:50,r:12,hy:8,alive:true,core,pad:{ring:padRing,disc:padDisc},tag:(()=>{const t=makeHealthTag(.19,.053);t.sp.position.set(0,24,z);scene.add(t.sp);return t;})()};
   bases.push(b);ents.push(b);
   for(const s of[-1,1]){let tu=null;tu=makeTurret(new THREE.Vector3(s*14,6,z),()=>b.alive&&!tu.destroyed?team:null,64,b);   /* range 60 -> 64, same as podium cannons */   // HQ defense cannons can now be destroyed (user 2026-11-22)
@@ -997,7 +1000,7 @@ for(const b of bases)for(const s of[-1,1]){
   const cap=new THREE.Mesh(new THREE.BoxGeometry(.4,1.3,1.3),capMat);cap.position.set(s*.42,2.4,0);g.add(cap);
   const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:BTN_GLOW,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));
   glow.position.set(s*.9,2.4,0);glow.scale.set(4,4,1);g.add(glow);
-  const lbl=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.62),stencilLetters('DEPLOY','#7dffa6'));lbl.rotation.y=s*Math.PI/2;lbl.position.set(s*.28,3.95,0);g.add(lbl);
+  const lbl=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.62),stencilLetters('DEPLOY','#f2b51d',774)   /* yellow, same stencil font as the mech's rear letters (user 2026-11-24) */);lbl.rotation.y=s*Math.PI/2;lbl.position.set(s*.28,3.95,0);g.add(lbl);
   hqButtons.push({team:b.team,s,base:b,cap,capMat,glow,cd:0,press:0,capX:s*.42,stand:new THREE.Vector3(s*21.2,0,z)});}
 
 let HBOT_EMBLEM=null;   // our own visor emblem: hexagon reticle (not copied from the reference picture)
@@ -1271,10 +1274,10 @@ function spawnUnit(kind,team,pos,escort=false){
   let n=0;for(const e of ents)if(e.team===team&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller')&&e.alive&&!e.escort)n++;
   if(!escort&&n>=DIFF.cap)return;   // same unit cap for both teams
   const u={kind,team,pos:pos.clone(),vel:V(),alive:true,cd:rand(0,1),think:0,goal:null,target:null,side:Math.random()<.5?1:-1,heading:team===BLUE?Math.PI:0,id:Math.random()};
-  if(kind==='roller'){const t=buildRoller(team);u.mesh=t.g;u.tur=t.tur;u.wheels=t.wheels;u.rbody=t.body;u.roll=0;u.hp=u.maxHp=25;u.r=1.2;u.hy=.8;u.speed=DIFF.rollerSpeed;u.range=DIFF.rollerRange;u.wheelR=.6;rollerPath(u);}
-  else if(kind==='tank'){const t=buildTank(team);u.mesh=t.g;u.mesh.scale.setScalar(1.575);   // 10% smaller (was 1.75)
+  if(kind==='roller'){const t=buildRoller(team);bakeStatic(t.g,'r'+team);u.mesh=t.g;u.tur=t.tur;u.wheels=t.wheels;u.rbody=t.body;u.roll=0;u.hp=u.maxHp=25;u.r=1.2;u.hy=.8;u.speed=DIFF.rollerSpeed;u.range=DIFF.rollerRange;u.wheelR=.6;rollerPath(u);}
+  else if(kind==='tank'){const t=buildTank(team);bakeStatic(t.g,'t'+team);u.mesh=t.g;u.mesh.scale.setScalar(1.575);   // 10% smaller (was 1.75)
   u.tur=t.tur;u.wheels=t.wheels;u.roll=0;u.hp=u.maxHp=team===RED?(DIFF.level>=9?140:DIFF.level>=8?105:70):70;u.r=3.42;u.moveR=2.61;u.hy=1.89;u.speed=7.5;u.range=40;u.wheelR=.62*1.575;}
-  else{u.mesh=buildDrone(team);u.hp=u.maxHp=40;u.r=2.2;u.hy=0;u.speed=17;u.range=40;u.air=true;u.cruise=rand(30,36);if(u.pos.y>=0)u.pos.y=u.cruise;}
+  else{u.mesh=bakeStatic(buildDrone(team),'d'+team);u.hp=u.maxHp=40;u.r=2.2;u.hy=0;u.speed=17;u.range=40;u.air=true;u.cruise=rand(30,36);if(u.pos.y>=0)u.pos.y=u.cruise;}
   if(escort){u.escort=true;u.speed=24;u.range=55;u.dmg=DIFF.level>=9?12:10;}   /* aggressive defense sky ships, levels 7-10 (user 2026-11-24): faster, longer range, 10/12 dmg (normal drones 6) */
   // RED tanks: level 8 = 105 hp, levels 9-10 = 140 hp (Blue stays 70); deliberate exception to Red/Blue parity (user request 2026-11-21)
   u.mesh.position.copy(u.pos);scene.add(u.mesh);ents.push(u);}
@@ -1432,13 +1435,13 @@ function playBoom(pos,size){
   const big=clamp(size/6,0,1),src=playSample(boomBuf,pos,.45+big*.55,1.25-big*.4);
   if(src&&src!==true){boomsPlaying++;lastBoom=now;src.onended=()=>boomsPlaying--;}
   return true;}
-// ---------------- music (original procedural dark synthwave + optional user track)
+// ---------------- music (original procedural dark synthwave, villain mix 2026-11-24 + optional user track)
 const music={on:true,vol:.5,gain:null,delay:null,timer:null,next:0,step:0,mode:'synth',userBuf:null,userSrc:null};
 try{const sv=JSON.parse(localStorage.getItem('ss_music')||'{}');if(typeof sv.on==='boolean')music.on=sv.on;if(typeof sv.vol==='number')music.vol=clamp(sv.vol,0,1);}catch(e){}
 function saveMusic(){try{localStorage.setItem('ss_music',JSON.stringify({on:music.on,vol:music.vol}));}catch(e){}}
 function musicOut(){
   if(!music.gain){music.gain=actx.createGain();music.gain.gain.value=0;music.gain.connect(actx.destination);
-    music.delay=actx.createDelay(1);music.delay.delayTime.value=60/100*.75;const fb=actx.createGain();fb.gain.value=.38;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
+    music.delay=actx.createDelay(1);music.delay.delayTime.value=60/92*.75;const fb=actx.createGain();fb.gain.value=.42;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;   /* darker echo (villain mix, user 2026-11-24) */
     music.delay.connect(lp).connect(fb).connect(music.delay);lp.connect(music.gain);}
   return music.gain;}
 function applyMusic(){
@@ -1449,8 +1452,8 @@ function updateMusicUI(){
   const pct=Math.round(music.vol*100)+'%';$('mPct').textContent=pct;$('mVol').value=Math.round(music.vol*100);
   $('mToggle').textContent=music.on?'ON':'OFF';$('mToggle').className=music.on?'':'off';
   $('musicHud').textContent=music.on?`♪ MUSIC ${pct}  (N, - / =)`:'♪ MUSIC OFF  (N)';}
-const mtof=n=>440*Math.pow(2,(n-69)/12),SPB=60/100/4;
-const ROOTS=[38,34,31,33],CHORDS=[[0,3,7],[0,4,7],[0,3,7],[0,4,7]]; // Dm  Bb  Gm  A
+const mtof=n=>440*Math.pow(2,(n-69)/12),SPB=60/92/4;   /* 92 BPM (was 100): heavier */
+const ROOTS=[38,34,39,33],CHORDS=[[0,3,7],[0,4,7],[0,4,7],[0,4,7]]; /* Dm  Bb  Eb  A: villain progression with the flat-II (was Dm Bb Gm A) */
 function startSynth(){if(music.timer||!actx)return;music.next=actx.currentTime+.1;music.timer=setInterval(scheduleMusic,25);}
 function stopSynth(){if(music.timer){clearInterval(music.timer);music.timer=null;}}
 function scheduleMusic(){while(music.next<actx.currentTime+.12){musicStep(music.step,music.next);music.next+=SPB;music.step++;}}
@@ -1465,9 +1468,11 @@ function musicStep(st,t){
   if(s%4===0){const o=mOsc('sine',150,t,.35,.55,.004,.28);o.frequency.exponentialRampToValueAtTime(42,t+.12);}
   if(full&&(s===4||s===12)){mNoise(t,'bandpass',1900,.22,.16);mOsc('triangle',185,t,.12,.1,.002,.09);}
   if(s%2===0)mNoise(t,'highpass',7500,s%4===2?.07:.035,.035);
-  mOsc('sawtooth',mtof(root+(s%8===6?12:0)),t,SPB*1.5,.16,.004,SPB*1.3,[900,220,6]);
-  if(s===0&&bar%2===0)for(const i of ch)for(const d of[-7,7]){const o=mOsc('sawtooth',mtof(root+24+i),t,SPB*34,.028,.9,SPB*31,[1400,700,1]);o.detune.value=d;}
-  if(full&&(bar%4>=2||Math.floor(bar/8)%4===2)){const seq=[0,1,2,1,0,2,1,2];mOsc('square',mtof(root+36+ch[seq[s%8]]+(s>=8?12:0)),t,SPB,.045,.003,SPB*.8,[3200,1200,2],true);}}
+  mOsc('sawtooth',mtof(root+(s%8===6?12:0)),t,SPB*1.5,.17,.004,SPB*1.3,[620,140,8]);   /* growlier, darker bass */
+  if(s%4===0)mOsc('sine',mtof(root-12),t,SPB*3.5,.22,.01,SPB*3);   /* sub-octave weight */
+  if(s===0&&bar%2===0)for(const i of ch)for(const d of[-11,0,11]){const o=mOsc('sawtooth',mtof(root+12+i),t,SPB*34,.024,1.4,SPB*31,[900,380,1]);o.detune.value=d;}   /* low brooding pad, an octave down */
+  if(s===0&&bar%4===0){for(const [f,pk] of[[mtof(root-12),.2],[mtof(root-12)*2.76,.05],[mtof(root-12)*5.4,.025]])mOsc('sine',f,t,SPB*40,pk,.005,SPB*36,null,true);}   /* ominous low bell toll every 4 bars */
+  if(full&&(bar%4>=2||Math.floor(bar/8)%4===2)){const seq=[0,1,2,1,0,2,1,-1],n=seq[s%8]<0?1:ch[seq[s%8]];mOsc('square',mtof(root+24+n+(s>=8?12:0)),t,SPB,.04,.003,SPB*.8,[2200,700,3],true);}}   /* arp an octave lower; last step hits the menacing flat-2 */
 function playUser(){if(music.userSrc){try{music.userSrc.stop();}catch(e){}}const src=actx.createBufferSource();src.buffer=music.userBuf;src.loop=true;src.connect(musicOut());src.start();music.userSrc=src;}
 function loadUserTrack(file){
   initAudio();if(!actx)return;$('trackName').textContent='Loading…';
