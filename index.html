@@ -1531,7 +1531,7 @@ function fire(type,team,from,dir,dmg,opts={}){
   if(opts.tracer){mesh=new THREE.Mesh(PG.tracer,TRACER_MAT[team][0]);mesh.add(new THREE.Mesh(PG.tracerHalo,TRACER_MAT[team][1]));
     const tip=new THREE.Sprite(TRACER_TIP[team]);tip.scale.set(.45,.45,1);mesh.add(tip);mesh.scale.z=.01;}
   else if(opts.pulse){mesh=new THREE.Mesh(PG.pulse,PULSE_MAT[team][0]);mesh.add(new THREE.Mesh(PG.pulseHalo,PULSE_MAT[team][1]));
-    const tip=new THREE.Sprite(PULSE_TIP[team]);tip.scale.set(2.2,2.2,1);mesh.add(tip);}
+    const tip=new THREE.Sprite(PULSE_TIP[team]);tip.scale.set(2.2,2.2,1);mesh.add(tip);if(opts.big)mesh.scale.setScalar(1.5);}   // big = podium cannon main gun (user 2026-11-24)
   else mesh=new THREE.Mesh(PG[type],PM[type][team]);
   if(type==='missile'){const core=new THREE.Sprite(FIRE_CORE);core.position.z=-.68;core.scale.set(1.1,1.1,1);mesh.add(core);
     const outer=new THREE.Sprite(FIRE_HALO);outer.position.z=-.9;outer.scale.set(2.3,2.3,1);mesh.add(outer);}
@@ -2068,8 +2068,8 @@ function updateTurrets(dt){
       // lead the target a little
       const tt=_t2.length()/(best.air?SPEED.flak:tu.heavy?SPEED.shell:SPEED.bullet);if(best.vel)_t.addScaledVector(best.vel,tt);
       _t2.copy(_t).sub(tu.pos).normalize();_c.copy(tu.pos).addScaledVector(_t2,tu.heavy?6.4:tu.hq?4.8:2);
-      if(best.air){tu.cd=tu.heavy?.45:.5;fire('flak',team,_c,_t2,tu.heavy?11:tu.hq&&DIFF.level>=10?13.5:9,{splash:4,life:_t.distanceTo(tu.pos)/SPEED.flak+.05,pulse:!!tu.hq});}
-      else if(tu.heavy){tu.cd=1.5;fire('shell',team,_c,_t2,24,{splash:4.5});puff(_c,0xffa040,1.3,3.2,.16);puff(_c,0x4a3a32,1,3.4,.6);
+      if(best.air){tu.cd=tu.heavy?.45:.5;fire('flak',team,_c,_t2,tu.heavy?11:tu.hq&&DIFF.level>=10?13.5:9,{splash:4,life:_t.distanceTo(tu.pos)/SPEED.flak+.05,pulse:true});}
+      else if(tu.heavy){tu.cd=1.5;fire('shell',team,_c,_t2,24,{splash:4.5,pulse:true,big:true});puff(_c,team===BLUE?0x3f9bff:0xff4a3d,1.3,3.2,.16);puff(_c,0x4a3a32,1,3.4,.6);
         if(!playSample(kBuf,tu.pos,.55,.85))sfx('cannon',tu.pos);}
       else{tu.cd=.32;_t2.x+=rand(-.02,.02);fire('bullet',team,_c,_t2,tu.hq&&DIFF.level>=10?6:4,{pulse:!!tu.hq});if(tu.hq)puff(_c,team===BLUE?0x3f9bff:0xff4a3d,.5,1.6,.1);sfx('mg',tu.pos,.5);}
       tu.cd*=DIFF.turretMul;}}}   // same turret/cannon fire rate for both teams
