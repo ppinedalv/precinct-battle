@@ -1775,6 +1775,11 @@ function rollerPath(u){const T=u.team,foe=1-T,dir=Math.sign(BASE_Z[foe]-BASE_Z[T
   u.path.push(V().set(LX,0,BASE_Z[T]+dir*22),V().set(LX,0,BASE_Z[foe]-dir*26),V().set(side*40,0,BASE_Z[foe]-dir*30));u.wp=0;}
 // roller targets (user 2026-11-24): hunt enemy tanks and mechs (player / RX-13) first, flanking in from the side lanes; also fight enemy rollers.
 // Never picks HQs, cannons or HQ turrets (roller bullets can't hurt them). Tanks/mechs are spotted from 1.6x sight, and from anywhere once the roller reaches the end of its lane.
+// HQ defense (user 2026-11-24): an enemy mech within HQ_DEF_R of a team's HQ (inside its defense-cannon towers) pulls that team's sky ships onto it:
+// every escort ship, plus regular drones that are within 120 of their own HQ. Returns the closest such mech or null.
+const HQ_DEF_R=45;
+function hqThreat(team){const b=bases[team];if(!b||!b.alive)return null;let best=null,bd=HQ_DEF_R;
+  for(const m of[player,rival]){if(!m.alive||m.team===team)continue;const d=Math.hypot(m.pos.x-b.pos.x,m.pos.z-b.pos.z);if(d<bd){bd=d;best=m;}}return best;}
 function rollerTarget(u){const S=DIFF.rollerSight,done=u.path&&u.wp>=u.path.length-1,hunt=done?400:S*1.6;let best=null,bd=1e18;
   for(const e of ents){if(!e.alive||e.team===u.team||e.team===null||e.air)continue;const big=e.kind==='tank'||e.kind==='mech';if(!big&&e.kind!=='roller')continue;
     const d=Math.hypot(e.pos.x-u.pos.x,e.pos.z-u.pos.z);if(d>(big?hunt:S))continue;const sc=big?d*.6:d;if(sc<bd){bd=sc;best=e;}}
@@ -1869,10 +1874,11 @@ function updateUnit(u,dt){
   u.think-=dt;
   const foe=u.team===RED?BLUE:RED,push=(u.kind==='tank'||u.kind==='drone')&&bases[foe].alive;   // both teams' tanks + drones march on the enemy HQ (even match)
   if(u.think<=0){u.think=rand(.4,.7);u.target=u.kind==='roller'?rollerTarget(u):findTarget(u.pos,u.team,u.escort?95:u.air?65:45,u.air);u.goal=u.kind==='roller'?rollerGoal(u):push?bases[foe].pos:chooseGoal(u);
+    u.defend=false;if(u.air&&(u.escort||Math.hypot(bases[u.team].pos.x-u.pos.x,bases[u.team].pos.z-u.pos.z)<120)){const m=hqThreat(u.team);if(m){u.target=m;u.defend=true;}}
     if(push&&!u.air){const hq=bases[foe];if(Math.hypot(hq.pos.x-u.pos.x,hq.pos.z-u.pos.z)<u.range+12)u.target=hq;}}   // tanks shell the HQ; drone bullets can't hurt it, so drones fight defenders there
   if(u.target&&!u.target.alive)u.target=null;
   const tgt=u.target;let dist;
-  const chase=tgt&&(u.escort||!push||tgt.kind==='base'||Math.hypot(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)<DIFF.detour);   // pushing units don't detour for far fights
+  const chase=tgt&&(u.defend||u.escort||!push||tgt.kind==='base'||Math.hypot(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)<DIFF.detour);   // pushing units don't detour for far fights
   const spd=u.speed*(push?DIFF.rush:1);
   if(u.air){
     const dest=chase?tgt.pos:u.goal;_dir.set(dest.x-u.pos.x,0,dest.z-u.pos.z);dist=_dir.length();_dir.normalize();
