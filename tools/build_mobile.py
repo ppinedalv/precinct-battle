@@ -117,7 +117,7 @@ TOUCH_HTML = '''<div id="touch">
 '''
 
 HELP = '''<div class="keys" style="margin-top:14px">
-      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = turn (the crosshair turns with you, all the way around). Push past the ring to run (Walker) or turbo boost (Hover)</span>
+      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does. Push past the ring to run (Walker) or turbo boost (Hover)</span>
       <b>Right thumb</b><span>Drag the big AIM button (or anywhere empty on the right side) to aim. You can also drag while holding a weapon button</span>
       <b>GUN</b><span>Rotary gun: tap once to start firing (button stays lit), tap again to stop. Watch the heat</span>
       <b>CANNON</b><span>Cannon: tap once to keep firing (button stays lit), tap again to stop</span>
@@ -215,8 +215,8 @@ sub("const $=id=>document.getElementById(id);", "const $=id=>document.getElement
 # touch stick feeds movement (analog) and run/boost
 sub('const keys={};let mouseL', 'const keys={},TOUCH={mx:0,my:0,ax:0,ay:0,boost:false};let mouseL')
 sub("_m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0));\n  if(_m.lengthSq()>0)_m.normalize();",
-    "_m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)+TOUCH.my).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0));\n  if(_m.lengthSq()>1)_m.normalize();")
-sub('yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt;', 'yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt-TOUCH.mx*2.6*dt-TOUCH.ax*2.8*dt;   /* stick left/right and AIM left/right turn */')
+    "_m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)+TOUCH.my).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0)+TOUCH.mx);\n  if(_m.lengthSq()>1)_m.normalize();")
+sub('yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt;', 'yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt-TOUCH.ax*2.8*dt;   /* only the AIM joystick turns the view */')
 sub('pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt,-.7118,.65);', 'pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt+TOUCH.ay*1.2*dt,-.7118,.65);')
 # headlights look ON from the player's chase camera (iPhone build only, user 2026-11-25): a soft beam shining forward-down from
 # each front hover-pod lamp, bright at the lens and fading out, plus a bigger halo that peeks round the pod from behind

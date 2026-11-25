@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1125-1242</div>
+<div id="buildTag">BUILD 1125-1247</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -233,7 +233,7 @@ body.playing #buildTag{display:none}
       <div class="nhint">Same keys as below. Your opponent's computer runs the match and streams your view to you.</div></div>
     <button class="btn" id="go">DEPLOY</button>
     <div class="keys" style="margin-top:14px">
-      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = turn (the crosshair turns with you, all the way around). Push past the ring to run (Walker) or turbo boost (Hover)</span>
+      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does. Push past the ring to run (Walker) or turbo boost (Hover)</span>
       <b>Right thumb</b><span>Drag the big AIM button (or anywhere empty on the right side) to aim. You can also drag while holding a weapon button</span>
       <b>GUN</b><span>Rotary gun: tap once to start firing (button stays lit), tap again to stop. Watch the heat</span>
       <b>CANNON</b><span>Cannon: tap once to keep firing (button stays lit), tap again to stop</span>
@@ -2028,13 +2028,13 @@ function updatePlayer(dt,t){
   const P=player;
   if(!P.alive){P.spin=0;P.respawn-=dt;if(P.respawn<=0){P.alive=true;P.hp=P.maxHp;P.pos.set(0,0,BASE_Z[BLUE]-18);P.vel.set(0,0,0);P.vy=0;P.onGround=true;empCD=0;P.rig.root.visible=true;P.mg=Math.max(P.mg,MG_MAX/2);P.sh=Math.max(P.sh,SH_MAX/2);P.ms=Math.max(P.ms,20);yaw=Math.PI;}return;}
   P.mode=lerp(P.mode,P.modeTarget,clamp(dt*4,0,1));
-  yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt-TOUCH.mx*2.6*dt-TOUCH.ax*2.8*dt;   /* stick left/right and AIM left/right turn */
+  yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt-TOUCH.ax*2.8*dt;   /* only the AIM joystick turns the view */
   pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt+TOUCH.ay*1.2*dt,-.7118,.65);
   const fireGun=mouseL||keys.KeyJ,fireCan=mouseR||keys.KeyK,fireMis=keys.KeyE||keys.KeyL;
   const aimAt=lockTarget&&lockTarget.alive?center(lockTarget,V()):aimPoint;
   const hover=P.mode>.5;
   const f=_t.set(Math.sin(yaw),0,Math.cos(yaw)),r=_t2.set(-Math.cos(yaw),0,Math.sin(yaw));
-  _m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)+TOUCH.my).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0));
+  _m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)+TOUCH.my).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0)+TOUCH.mx);
   if(_m.lengthSq()>1)_m.normalize();
   let speed=hover?21:11;const shift=keys.ShiftLeft||keys.ShiftRight||TOUCH.boost;P.boosting=false;P.running=false;
   if(shift&&hover&&P.energy>1){speed=40;P.energy-=30*dt;P.boosting=true;
@@ -2721,7 +2721,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1242'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1247'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
