@@ -5,7 +5,7 @@ Run after every desktop change:  python3 tools/build_mobile.py
 Then push; the phone picks up the new build the next time the app opens online.
 
 Phone version = 1 player VS COMPUTER only, landscape, touch controls:
-  left thumb  = movement stick (push past the ring to run / turbo boost)
+  left thumb  = movement stick (forward/back, side-step; run/boost only from the RUN button)
   right thumb = drag anywhere on the right half to aim the crosshairs
   buttons     = GUN, CANNON, MISSILE, JUMP, TRANSFORM (+ small EMP and pause)
 Three.js is served from mobile/vendor so the game also runs offline (service worker in mobile/sw.js).
@@ -117,7 +117,7 @@ TOUCH_HTML = '''<div id="touch">
 '''
 
 HELP = '''<div class="keys" style="margin-top:14px">
-      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does. Push past the ring to run (Walker) or turbo boost (Hover)</span>
+      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does.</span>
       <b>Right thumb</b><span>Drag the big AIM button (or anywhere empty on the right side) to aim. You can also drag while holding a weapon button</span>
       <b>GUN</b><span>Rotary gun: tap once to start firing (button stays lit), tap again to stop. Watch the heat</span>
       <b>CANNON</b><span>Cannon: tap once to keep firing (button stays lit), tap again to stop</span>
@@ -126,7 +126,7 @@ HELP = '''<div class="keys" style="margin-top:14px">
       <b>HOVER / WALK</b><span>Transform: Walker (armored) / Hover (fast)</span>
       <b>EMP</b><span>EMP shockwave: freezes nearby enemy tanks, rollers and hover robots and shields you for 7 s (5 per game)</span>
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
-      <b>RUN / BOOST</b><span>Hold: run in Walker, turbo boost in Hover (uses System Energy). Pushing the stick past its ring does the same</span>
+      <b>RUN / BOOST</b><span>Hold: run in Walker, turbo boost in Hover (uses System Energy).</span>
       <b>🔊</b><span>Mute / unmute all sound</span>
       <b>II</b><span>Pause. The pause screen has music on/off, music volume and load your own track</span>
     </div>
@@ -150,7 +150,7 @@ function setStick(o){
   if(!o){TOUCH.mx=TOUCH.my=0;TOUCH.boost=false;stick.style.left=stick.style.top=knob.style.left=knob.style.top='';stick.classList.remove('boost');return;}
   let dx=o.cx-o.x,dy=o.cy-o.y;const d=Math.hypot(dx,dy),k=d>R?R/d:1;
   knob.style.left=(o.x+dx*k)+'px';knob.style.top=(o.y+dy*k)+'px';
-  const m=Math.min(d,R)/R;TOUCH.boost=d>BOOST_R;stick.classList.toggle('boost',TOUCH.boost);
+  const m=Math.min(d,R)/R;
   if(m<DEAD){TOUCH.mx=TOUCH.my=0;return;}
   TOUCH.mx=dx/d*m;TOUCH.my=-dy/d*m;if(Math.abs(TOUCH.mx)<.2)TOUCH.mx=0;if(Math.abs(TOUCH.my)<.2)TOUCH.my=0;}   // per-axis dead zone: pushing straight ahead doesn't drift the turn
 T.addEventListener('touchstart',e=>{e.preventDefault();
@@ -230,7 +230,6 @@ sub("const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,
     "glowAt(0xdfeeff,0,.05,1.15,2.6,pod);}")
 # ...and a pool of headlight on the ground ahead of the player's mech, following it every frame
 sub('updatePlayer(dt,gt);updateHoverHum();', 'updatePlayer(dt,gt);updateHeadPool();updateHoverHum();')
-sub('const shift=keys.ShiftLeft||keys.ShiftRight;', 'const shift=keys.ShiftLeft||keys.ShiftRight||TOUCH.boost;')
 # start / pause screens: touch instructions instead of keyboard keys
 html, n = re.subn(r'<div class="keys" style="margin-top:22px">.*?</div>\s*<div id="credits">', lambda m: HELP, html, flags=re.S)
 if n != 1: sys.exit('build_mobile: keyboard help block not found')

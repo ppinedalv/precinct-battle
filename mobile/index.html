@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1125-1247</div>
+<div id="buildTag">BUILD 1125-1253</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -233,7 +233,7 @@ body.playing #buildTag{display:none}
       <div class="nhint">Same keys as below. Your opponent's computer runs the match and streams your view to you.</div></div>
     <button class="btn" id="go">DEPLOY</button>
     <div class="keys" style="margin-top:14px">
-      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does. Push past the ring to run (Walker) or turbo boost (Hover)</span>
+      <b>Left thumb</b><span>Joystick: up / down = forward / back, left / right = side-step (Walker) or float sideways (Hover). The left stick never turns the view; the AIM joystick does.</span>
       <b>Right thumb</b><span>Drag the big AIM button (or anywhere empty on the right side) to aim. You can also drag while holding a weapon button</span>
       <b>GUN</b><span>Rotary gun: tap once to start firing (button stays lit), tap again to stop. Watch the heat</span>
       <b>CANNON</b><span>Cannon: tap once to keep firing (button stays lit), tap again to stop</span>
@@ -242,7 +242,7 @@ body.playing #buildTag{display:none}
       <b>HOVER / WALK</b><span>Transform: Walker (armored) / Hover (fast)</span>
       <b>EMP</b><span>EMP shockwave: freezes nearby enemy tanks, rollers and hover robots and shields you for 7 s (5 per game)</span>
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
-      <b>RUN / BOOST</b><span>Hold: run in Walker, turbo boost in Hover (uses System Energy). Pushing the stick past its ring does the same</span>
+      <b>RUN / BOOST</b><span>Hold: run in Walker, turbo boost in Hover (uses System Energy).</span>
       <b>🔊</b><span>Mute / unmute all sound</span>
       <b>II</b><span>Pause. The pause screen has music on/off, music volume and load your own track</span>
     </div>
@@ -2036,7 +2036,7 @@ function updatePlayer(dt,t){
   const f=_t.set(Math.sin(yaw),0,Math.cos(yaw)),r=_t2.set(-Math.cos(yaw),0,Math.sin(yaw));
   _m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)+TOUCH.my).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0)+TOUCH.mx);
   if(_m.lengthSq()>1)_m.normalize();
-  let speed=hover?21:11;const shift=keys.ShiftLeft||keys.ShiftRight||TOUCH.boost;P.boosting=false;P.running=false;
+  let speed=hover?21:11;const shift=keys.ShiftLeft||keys.ShiftRight;P.boosting=false;P.running=false;
   if(shift&&hover&&P.energy>1){speed=40;P.energy-=30*dt;P.boosting=true;
     for(const sd of[-1,1])puff(_c.copy(P.pos).setY(P.pos.y+1.6).addScaledVector(f,-2.4).addScaledVector(r,sd*.9),0x89cff0,.7,2.6,.35);}
   else if(shift&&!hover){speed=18;P.running=true;P.energy=Math.min(100,P.energy+8*dt);}
@@ -2678,7 +2678,7 @@ function setStick(o){
   if(!o){TOUCH.mx=TOUCH.my=0;TOUCH.boost=false;stick.style.left=stick.style.top=knob.style.left=knob.style.top='';stick.classList.remove('boost');return;}
   let dx=o.cx-o.x,dy=o.cy-o.y;const d=Math.hypot(dx,dy),k=d>R?R/d:1;
   knob.style.left=(o.x+dx*k)+'px';knob.style.top=(o.y+dy*k)+'px';
-  const m=Math.min(d,R)/R;TOUCH.boost=d>BOOST_R;stick.classList.toggle('boost',TOUCH.boost);
+  const m=Math.min(d,R)/R;
   if(m<DEAD){TOUCH.mx=TOUCH.my=0;return;}
   TOUCH.mx=dx/d*m;TOUCH.my=-dy/d*m;if(Math.abs(TOUCH.mx)<.2)TOUCH.mx=0;if(Math.abs(TOUCH.my)<.2)TOUCH.my=0;}   // per-axis dead zone: pushing straight ahead doesn't drift the turn
 T.addEventListener('touchstart',e=>{e.preventDefault();
@@ -2721,7 +2721,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1247'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1253'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
