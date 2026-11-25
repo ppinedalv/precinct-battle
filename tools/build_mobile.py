@@ -48,9 +48,9 @@ html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-we
 #hq{top:6px;transform:translateX(-50%) scale(.72);transform-origin:top center;gap:24px}
 #counters{top:6px;right:calc(98px + env(safe-area-inset-right));transform:scale(.6);transform-origin:top right}
 .vbar{bottom:auto;top:160px;height:70px;width:7px}
-#hull{left:calc(10px + env(safe-area-inset-left))}#heat{right:calc(10px + env(safe-area-inset-right));top:100px;height:60px}
-.vlbl{bottom:auto;top:146px;font-size:8px}.vlbl[style*="right"]{top:86px}
-.vlbl[style*="left"]{left:calc(4px + env(safe-area-inset-left))!important}.vlbl[style*="right"]{right:calc(4px + env(safe-area-inset-right))!important}
+#hull{left:calc(12px + env(safe-area-inset-left))}#heat{left:calc(40px + env(safe-area-inset-left));right:auto}   /* heat sits right next to hull (user 2026-11-25) */
+.vlbl{bottom:auto;top:146px;font-size:8px}
+.vlbl[style*="left"]{left:calc(4px + env(safe-area-inset-left))!important}.vlbl[style*="right"]{right:auto!important;left:calc(32px + env(safe-area-inset-left))!important}
 #feed{top:54px;font-size:12px}
 #respawn{font-size:20px}#repairMsg{font-size:16px}
 #cross{width:52px;height:52px;margin:-26px 0 0 -26px}
@@ -77,11 +77,11 @@ body:not(.pz) #musicCtl{display:none!important}   /* music settings only on the 
 /* layout after the user's reference (2026-11-25): big main GUN in the corner, the other weapons in an arc around it, utility buttons in a row along the bottom */
 #tGun{width:96px;height:96px;right:calc(26px + env(safe-area-inset-right));bottom:22px;font-size:38px;border:3px solid rgba(255,210,90,.85)}
 #tCan{width:62px;height:62px;right:calc(159px + env(safe-area-inset-right));bottom:39px;border-color:rgba(255,150,80,.8)}
-#tMode{width:56px;height:56px;right:calc(128px + env(safe-area-inset-right));bottom:124px;border-color:rgba(47,208,255,.85)}
-#tMis{width:62px;height:62px;right:calc(43px + env(safe-area-inset-right));bottom:155px;border-color:rgba(255,90,90,.8)}
+#tMode{width:56px;height:56px;right:calc(76px + env(safe-area-inset-right));bottom:154px;border-color:rgba(47,208,255,.85)}
+#tMis{width:62px;height:62px;right:calc(132px + env(safe-area-inset-right));bottom:114px;border-color:rgba(255,90,90,.8)}
 #tJump{width:54px;height:54px;right:calc(263px + env(safe-area-inset-right));bottom:22px;border-color:rgba(93,255,160,.8)}
 #tEmp{width:48px;height:48px;right:calc(336px + env(safe-area-inset-right));bottom:25px;font-size:20px;border-color:rgba(160,120,255,.85)}
-#tRun{width:54px;height:54px;right:calc(400px + env(safe-area-inset-right));bottom:22px;border-color:rgba(255,176,46,.85)}
+#tRun{width:50px;height:50px;right:calc(5px + env(safe-area-inset-right));bottom:157px;border-color:rgba(255,176,46,.85)}
 #tMute{width:38px;height:38px;right:calc(52px + env(safe-area-inset-right));top:8px;border-radius:8px;font-size:17px}
 #tPause{width:38px;height:38px;right:calc(8px + env(safe-area-inset-right));top:8px;border-radius:8px;font:800 13px ui-monospace,Menlo,monospace}
 /* joystick: always visible at its home spot; it jumps under your thumb anywhere on the left side and returns home on release */
@@ -175,7 +175,7 @@ setInterval(()=>{document.body.classList.toggle('pz',started&&paused&&!over);con
 // leaving the app (home button, call, lock screen) pauses the match
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll();if(isPlaying())press('KeyP',true);}});
 document.addEventListener('gesturestart',e=>e.preventDefault());
-window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get paused(){return paused}};   // read-only test hook
+window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 '''
@@ -191,6 +191,9 @@ sub('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js">
 sub("const JOIN_ID=new URLSearchParams(location.search).get('join');", 'const JOIN_ID=null;')
 # no pointer lock on a phone (it would also auto-pause the match)
 sub('function lockPointer(){', 'function lockPointer(){return;')
+# iPhone Safari has no pointer-lock API: document.exitPointerLock is undefined there, and endGame() calls it,
+# so the DEFEAT / VICTORY screen never appeared and the match kept running in slow motion (user 2026-11-25)
+sub("const $=id=>document.getElementById(id);", "const $=id=>document.getElementById(id);\nif(!document.exitPointerLock)document.exitPointerLock=()=>{};")
 # touch stick feeds movement (analog) and run/boost
 sub('const keys={};let mouseL', 'const keys={},TOUCH={mx:0,my:0,boost:false};let mouseL')
 sub("_m.set(0,0,0).addScaledVector(f,(keys.KeyW?1:0)-(keys.KeyS?1:0)).addScaledVector(r,(keys.KeyD?1:0)-(keys.KeyA?1:0));\n  if(_m.lengthSq()>0)_m.normalize();",
