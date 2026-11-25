@@ -967,6 +967,8 @@ for(const team of[BLUE,RED]){
 // deploys one laser hover bot for its team: it rises out of that team's tank tunnel, flies to the enemy HQ and
 // fires green lasers ONLY at the enemy HQ (1 HQ hit per 4-laser volley). Each button then recharges for HQB_CD seconds (5 s, user 2026-11-22).
 const HBOT_HIT_EVERY=2;   // every 2nd laser in a burst = 1 HQ hit, so 2 HQ hits per 4-laser burst (was 1; user 2026-11-22)
+// hover bot HP by level (user 2026-11-24): rotating gun (5 dmg x level damage multiplier) kills in 15 hits on levels 1-8, 22 on level 9, 30 on level 10
+const hbotHP=()=>DIFF.level>=10?300:DIFF.level>=9?165:75;
 const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=2,HBOT_ORBIT=60,HBOT_ALT=22;   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
 const hqButtons=[],hoverBots=[],laserBeams=[];
 const BTN_GLOW=0x3dff7a;   // square green button (user 2026-11-22; was round gold)
@@ -1033,7 +1035,7 @@ function laserZap(pos){if(PVP)fwdSnd('zap',pos,1,1);if(muted||!actx)return;const
 
 function deployHoverBot(team){
   const T=TUNNELS[team],H=buildHoverBot(team),foe=bases[1-team];
-  const u={kind:'hoverbot',team,air:true,alive:true,pos:new THREE.Vector3(T.x,-TUNNEL_DEPTH+1,T.zm+T.dir*13),vel:V(),hp:HBOT_HP,maxHp:HBOT_HP,r:2.4,hy:0,
+  const u={kind:'hoverbot',team,air:true,alive:true,pos:new THREE.Vector3(T.x,-TUNNEL_DEPTH+1,T.zm+T.dir*13),vel:V(),hp:hbotHP(),maxHp:hbotHP(),r:2.4,hy:0,
     mesh:H.g,ring:H.ring,tips:H.tips,phase:'rise',cd:1.2,ang:Math.atan2(T.zm+T.dir*13-foe.pos.z,T.x-foe.pos.x),spin:Math.random()<.5?1:-1,bob:Math.random()*6};
   u.mesh.position.copy(u.pos);u.mesh.rotation.y=team===BLUE?Math.PI:0;scene.add(u.mesh);ents.push(u);hoverBots.push(u);
   dustBurst(T.x,0,T.zm+T.dir*13,1);}
