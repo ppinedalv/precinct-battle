@@ -904,7 +904,8 @@ function buildDrone(team){
 
 // ---------------- difficulty (1 = easy ... 10 = difficult); unit counts, spawn rates and fire rates apply to BOTH teams (even match); the enemy mech AI (speed, aggression) still scales
 function makeDiff(d){const k=(d-1)/9,L=(a,b)=>a+(b-a)*k;const D={level:d,
-  tankT:L(22,5),droneT:L(45,12),rollers:Math.round(L(2,9)),cap:Math.round(L(10,40)),startTanks:Math.round(L(1,7)),
+  tankT:L(22,5),droneT:L(45,12),rollers:Math.round(L(3,14)),rollerT:L(14,5),rollerSpeed:L(11,20),rollerSight:L(35,75),rollerRange:L(26,40),rollerDmg:L(5,9),   /* side-lane rollers scale with level (user 2026-11-24; was 2-9 rollers, 12 s respawn, speed 13, sight 45, range 30, dmg 6) */
+  cap:Math.round(L(10,40)),startTanks:Math.round(L(1,7)),
   redFire:L(1.9,.55),redDmg:L(.55,1.5),turretMul:L(1.7,.65),
   mechSpeed:L(8.5,17),sight:L(55,110),burst:Math.round(L(7,28)),burstPause:L(1.8,.5),ms:[L(5.5,1.4),L(7,2)],salvo:L(0,.65),sh:[L(6,1.6),L(8,2.4)],mechHp:d>=10?1000:d>=9?900:d>=8?600:400,jump:[L(7,2.5),L(10,4.5)],baseAttack:L(0,.8),startDrones:d>=3?1:0,
   rush:L(1,1.45),detour:L(40,12),dmgMul:d>=10?2:d>=9?1.5:1,
@@ -1270,7 +1271,7 @@ function spawnUnit(kind,team,pos,escort=false){
   let n=0;for(const e of ents)if(e.team===team&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller')&&e.alive&&!e.escort)n++;
   if(!escort&&n>=DIFF.cap)return;   // same unit cap for both teams
   const u={kind,team,pos:pos.clone(),vel:V(),alive:true,cd:rand(0,1),think:0,goal:null,target:null,side:Math.random()<.5?1:-1,heading:team===BLUE?Math.PI:0,id:Math.random()};
-  if(kind==='roller'){const t=buildRoller(team);u.mesh=t.g;u.tur=t.tur;u.wheels=t.wheels;u.rbody=t.body;u.roll=0;u.hp=u.maxHp=25;u.r=1.2;u.hy=.8;u.speed=13;u.range=30;u.wheelR=.6;}
+  if(kind==='roller'){const t=buildRoller(team);u.mesh=t.g;u.tur=t.tur;u.wheels=t.wheels;u.rbody=t.body;u.roll=0;u.hp=u.maxHp=25;u.r=1.2;u.hy=.8;u.speed=DIFF.rollerSpeed;u.range=DIFF.rollerRange;u.wheelR=.6;rollerPath(u);}
   else if(kind==='tank'){const t=buildTank(team);u.mesh=t.g;u.mesh.scale.setScalar(1.575);   // 10% smaller (was 1.75)
   u.tur=t.tur;u.wheels=t.wheels;u.roll=0;u.hp=u.maxHp=team===RED?(DIFF.level>=9?140:DIFF.level>=8?105:70):70;u.r=3.42;u.moveR=2.61;u.hy=1.89;u.speed=7.5;u.range=40;u.wheelR=.62*1.575;}
   else{u.mesh=buildDrone(team);u.hp=u.maxHp=40;u.r=2.2;u.hy=0;u.speed=17;u.range=40;u.air=true;u.cruise=rand(30,36);if(u.pos.y>=0)u.pos.y=u.cruise;}
@@ -1766,6 +1767,14 @@ function findTarget(pos,team,range,canAir){
   for(const e of ents){if(!e.alive||e.team===team||(e.air&&!canAir)||e.team===null)continue;
     const dx=e.pos.x-pos.x,dz=e.pos.z-pos.z,d=dx*dx+dz*dz-(e.kind==='base'?80:0);if(d<bd){bd=d;best=e;}}
   return best;}
+// rollers attack down the side lanes (user 2026-11-24): open strip x = +-93 between the outer city blocks (|x| < ~89) and the perimeter wall (|x| > 100).
+// Each new roller takes the other lane from the last one of its team; path = (tunnel mouth) -> lane at home end -> lane at the enemy end -> in front of the enemy HQ, then holds and fights there.
+const ROLLER_LANE_X=93,rollerLaneNext=[1,-1];
+function rollerPath(u){const T=u.team,foe=1-T,dir=Math.sign(BASE_Z[foe]-BASE_Z[T]),side=rollerLaneNext[T];rollerLaneNext[T]=-side;const LX=side*ROLLER_LANE_X;
+  u.path=[];if(u.pos.y<-.5){const TN=TUNNELS[T];u.path.push(V().set(TN.x,0,TN.zm-TN.dir*4));}
+  u.path.push(V().set(LX,0,BASE_Z[T]+dir*22),V().set(LX,0,BASE_Z[foe]-dir*26),V().set(side*40,0,BASE_Z[foe]-dir*30));u.wp=0;}
+function rollerGoal(u){if(!u.path)rollerPath(u);const w=u.path[Math.min(u.wp,u.path.length-1)];
+  if(u.wp<u.path.length-1&&Math.hypot(w.x-u.pos.x,w.z-u.pos.z)<8)u.wp++;return u.path[Math.min(u.wp,u.path.length-1)];}
 function roamGoal(u){
   if(u.roam&&u.roamT>0&&Math.hypot(u.roam.x-u.pos.x,u.roam.z-u.pos.z)>6){u.roamT-=.5;return u.roam;}
   for(let i=0;i<20;i++){const x=rand(-85,85),z=rand(-150,150);if(!blocked(x,z,2)){u.roam=new THREE.Vector3(x,0,z);u.roamT=rand(8,14);return u.roam;}}
@@ -1853,7 +1862,7 @@ function updateUnit(u,dt){
     if(u.frozen<=0)u.frozen=0;return;}
   u.think-=dt;
   const foe=u.team===RED?BLUE:RED,push=(u.kind==='tank'||u.kind==='drone')&&bases[foe].alive;   // both teams' tanks + drones march on the enemy HQ (even match)
-  if(u.think<=0){u.think=rand(.4,.7);u.target=findTarget(u.pos,u.team,u.escort?95:u.air?65:45,u.air);u.goal=u.kind==='roller'?roamGoal(u):push?bases[foe].pos:chooseGoal(u);
+  if(u.think<=0){u.think=rand(.4,.7);u.target=findTarget(u.pos,u.team,u.escort?95:u.air?65:u.kind==='roller'?DIFF.rollerSight:45,u.air);u.goal=u.kind==='roller'?rollerGoal(u):push?bases[foe].pos:chooseGoal(u);
     if(push&&!u.air){const hq=bases[foe];if(Math.hypot(hq.pos.x-u.pos.x,hq.pos.z-u.pos.z)<u.range+12)u.target=hq;}}   // tanks shell the HQ; drone bullets can't hurt it, so drones fight defenders there
   if(u.target&&!u.target.alive)u.target=null;
   const tgt=u.target;let dist;
@@ -1881,7 +1890,7 @@ function updateUnit(u,dt){
     if(d<u.range){u.cd=(u.escort?rand(.42,.58):u.air?rand(.8,1.1):rand(1.3,1.7))*DIFF.redFire;
       _t.sub(_t2).normalize();_t.x+=rand(-.04,.04);_t.y+=rand(-.03,.03);
       if(u.air){_t2.y-=.4;fire('bullet',u.team,_t2,_t,u.dmg||6);}
-      else if(u.kind==='roller'){u.cd=rand(1,1.4)*DIFF.redFire;_t2.y+=.5;_t2.addScaledVector(_t,1.2);fire('bullet',u.team,_t2,_t,6,{tracer:true});puff(_t2,0xffa040,.3,.8,.06);}
+      else if(u.kind==='roller'){u.cd=rand(1,1.4)*DIFF.redFire;_t2.y+=.5;_t2.addScaledVector(_t,1.2);fire('bullet',u.team,_t2,_t,DIFF.rollerDmg,{tracer:true});puff(_t2,0xffa040,.3,.8,.06);}
       else{const k=u.mesh.scale.x;_t2.y+=.6*k;_t2.addScaledVector(_t,2.5*k);fire('shell',u.team,_t2,_t,14,{splash:2.5});}
       sfx(u.air?'mg':'cannon',u.pos,.6);}}}
 
@@ -2134,7 +2143,7 @@ function updateBases(dt,t){
      C.rimGlow.material.opacity=.25+.12*Math.sin(t*2);}
     const s=baseSpawn[b.team];s.tank-=dt;s.drone-=dt;s.roller-=dt;const front=b.team===BLUE?-17:17;
     const TN=TUNNELS[b.team],tunnelPos=()=>_c.set(TN.x+rand(-1.2,1.2),-TUNNEL_DEPTH,TN.zm+TN.dir*rand(14,15));   // declared before first use (was a TDZ error on roller respawn)
-    if(s.roller<=0){s.roller=12;let n=0;for(const e of ents)if(e.alive&&e.kind==='roller'&&e.team===b.team)n++;if(n<DIFF.rollers)spawnUnit('roller',b.team,tunnelPos());}
+    if(s.roller<=0){s.roller=DIFF.rollerT;let n=0;for(const e of ents)if(e.alive&&e.kind==='roller'&&e.team===b.team)n++;if(n<DIFF.rollers)spawnUnit('roller',b.team,tunnelPos());}
     if(s.tank<=0){s.tank=DIFF.tankT;spawnUnit('tank',b.team,tunnelPos());}
     if(s.drone<=0){s.drone=DIFF.droneT;spawnUnit('drone',b.team,tunnelPos());}
     // levels 7-10: each team keeps extra escort ships in the sky: 4 on levels 7-8, 6 on levels 9-10 (user 2026-11-24, was 2); respawn ~15 s after one is shot down (was 20)
