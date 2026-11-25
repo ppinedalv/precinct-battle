@@ -2148,7 +2148,8 @@ function initialSpawn(){
   if(DIFF.level>=7){const N=escortCount();for(let i=0;i<N;i++){const x=(i-(N-1)/2)*12,y=34+(i%2)*6;spawnUnit('drone',RED,new THREE.Vector3(x,y,BASE_Z[RED]+14),true);spawnUnit('drone',BLUE,new THREE.Vector3(x,y,BASE_Z[BLUE]-14),true);}}   // extra sky ships per team on levels 7-10 (4 on 7-8, 6 on 9-10)
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',BLUE,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[BLUE]-30-Math.floor(i/5)*6));
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',RED,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[RED]+30+Math.floor(i/5)*6));
-  for(const e of ents)if(e.kind==='hqturret')e.hitsMax=HQT_HITS;   // all levels: 10 hits, same as the podium cannons (user 2026-11-24)
+  {const l=DIFF.level,h=l>=9?18:l>=7?14:l>=5?12:l>=3?10:8;   // HQ + podium cannon hits to destroy per tier (user 2026-11-24): Easy 8, Normal 10, Hard 12, Veteran 14, Brutal 18
+   for(const e of ents)if(e.kind==='hqturret'||e.kind==='cannon')e.hitsMax=h;}
   rival.maxHp=rival.hp=DIFF.mechHp;if(DIFF.level>=9)player.maxHp=player.hp=DIFF.mechHp;   // levels 9-10: SS-07 hull = RX-13 hull (900 / 1000) (user 2026-11-22); levels 1-8 SS-07 stays 400
  rival.empCharges=EMP_MAX;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // EMP_MAX (5) blasts per game for both mechs, no reloads
 
