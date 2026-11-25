@@ -75,13 +75,14 @@ body:not(.pz) #musicCtl{display:none!important}   /* music settings only on the 
   font:700 9px ui-monospace,Menlo,monospace;letter-spacing:.06em;color:#e6eefa;text-shadow:0 1px 2px #000,0 0 4px #000}
 #touch .tb b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#7a4dff;font:700 10px/17px ui-monospace,Menlo,monospace;text-align:center}
 /* layout after the user's reference (2026-11-25): big main GUN in the corner, the other weapons in an arc around it, utility buttons in a row along the bottom */
-#tGun{width:96px;height:96px;right:calc(130px + env(safe-area-inset-right));bottom:22px;font-size:38px;border:3px solid rgba(255,210,90,.85)}
-#tCan{width:62px;height:62px;right:calc(263px + env(safe-area-inset-right));bottom:39px;border-color:rgba(255,150,80,.8)}
-#tMode{width:56px;height:56px;right:calc(180px + env(safe-area-inset-right));bottom:154px;border-color:rgba(47,208,255,.85)}
-#tMis{width:62px;height:62px;right:calc(236px + env(safe-area-inset-right));bottom:114px;border-color:rgba(255,90,90,.8)}
-#tJump{width:54px;height:54px;right:calc(6px + env(safe-area-inset-right));bottom:16px;border-color:rgba(93,255,160,.8)}
+#tGun{width:62px;height:62px;right:calc(263px + env(safe-area-inset-right));bottom:39px;font-size:28px;border:3px solid rgba(255,210,90,.85)}
+#tCan{width:62px;height:62px;right:calc(236px + env(safe-area-inset-right));bottom:114px;border-color:rgba(255,150,80,.8)}
+#tMode{width:56px;height:56px;right:calc(67px + env(safe-area-inset-right));bottom:42px;border-color:rgba(47,208,255,.85)}
+#tMis{width:62px;height:62px;right:calc(177px + env(safe-area-inset-right));bottom:151px;border-color:rgba(255,90,90,.8)}
+#tAim{width:96px;height:96px;right:calc(130px + env(safe-area-inset-right));bottom:22px;font-size:40px;border:3px solid rgba(93,255,160,.8)}
+#tAim i{position:absolute;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(140,255,190,.7),rgba(30,120,70,.7));border:2px solid rgba(255,255,255,.7);pointer-events:none;font-style:normal;transition:transform .05s}
 #tEmp{width:46px;height:46px;right:calc(4px + env(safe-area-inset-right));top:56px;font-size:20px;border-color:rgba(160,120,255,.85)}
-#tRun{width:50px;height:50px;right:calc(70px + env(safe-area-inset-right));bottom:45px;border-color:rgba(255,176,46,.85)}
+#tRun{width:50px;height:50px;right:calc(8px + env(safe-area-inset-right));bottom:18px;border-color:rgba(255,176,46,.85)}
 #tMute{width:38px;height:38px;right:calc(52px + env(safe-area-inset-right));top:8px;border-radius:8px;font-size:17px}
 #tPause{width:38px;height:38px;right:calc(8px + env(safe-area-inset-right));top:8px;border-radius:8px;font:800 13px ui-monospace,Menlo,monospace}
 /* joystick: always visible at its home spot; it jumps under your thumb anywhere on the left side and returns home on release */
@@ -102,7 +103,7 @@ TOUCH_HTML = '''<div id="touch">
   <div class="tb" id="tCan" data-key="KeyK">◉<span>CANNON</span></div>
   <div class="tb" id="tMis" data-key="KeyL">➶<span>MISSILE</span></div>
   <div class="tb" id="tMode" data-key="KeyF" data-tap="1">⇅<span>HOVER</span></div>
-  <div class="tb" id="tJump" data-key="Space" data-tap="1">⤒<span>JUMP</span></div>
+  <div class="tb" id="tAim" data-aim="1"><i></i><span>AIM · TAP = JUMP</span></div>
   <div class="tb" id="tEmp" data-key="KeyH" data-tap="1">ϟ<span>EMP</span><b>5</b></div>
   <div class="tb" id="tRun" data-key="ShiftLeft">»<span>RUN</span></div>
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
@@ -113,11 +114,11 @@ TOUCH_HTML = '''<div id="touch">
 
 HELP = '''<div class="keys" style="margin-top:14px">
       <b>Left thumb</b><span>Drag anywhere on the left side to move. Push past the ring to run (Walker) or turbo boost (Hover)</span>
-      <b>Right thumb</b><span>Drag anywhere on the right side to aim the crosshairs (you can also drag while holding a weapon button)</span>
+      <b>Right thumb</b><span>Drag the big AIM button (or anywhere empty on the right side) to aim. You can also drag while holding a weapon button</span>
       <b>GUN</b><span>Rotary gun (hold; watch the heat)</span>
       <b>CANNON</b><span>Cannon (hold)</span>
       <b>MISSILE</b><span>Homing missile</span>
-      <b>JUMP</b><span>Jump (Walker mode only): just high enough to reach the nearest rooftop</span>
+      <b>AIM</b><span>Big button: drag it to aim the crosshairs. Tap it to JUMP (Walker mode only): just high enough to reach the nearest rooftop</span>
       <b>HOVER / WALK</b><span>Transform: Walker (armored) / Hover (fast)</span>
       <b>EMP</b><span>EMP shockwave: freezes nearby enemy tanks, rollers and hover robots and shields you for 7 s (5 per game)</span>
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
@@ -145,6 +146,7 @@ function setStick(o){
 T.addEventListener('touchstart',e=>{e.preventDefault();
   for(const t of e.changedTouches){
     const b=t.target.closest&&t.target.closest('.tb');
+    if(b&&b.dataset.aim){own.set(t.identifier,{kind:'aim',el:b,x:t.clientX,y:t.clientY,sx:t.clientX,sy:t.clientY,t0:performance.now(),far:0});b.classList.add('on');continue;}
     if(b){own.set(t.identifier,{kind:'btn',el:b,x:t.clientX,y:t.clientY});b.classList.add('on');
       if(b.dataset.tap){press(b.dataset.key,true);press(b.dataset.key,false);}else press(b.dataset.key,true);continue;}
     if(t.clientX<innerWidth*.45&&![...own.values()].some(o=>o.kind==='stick')){
@@ -157,20 +159,22 @@ T.addEventListener('touchmove',e=>{e.preventDefault();
     if(o.kind==='stick'){o.cx=t.clientX;o.cy=t.clientY;setStick(o);continue;}
     if(o.kind==='btn'&&o.el.dataset.tap)continue;   // tap buttons don't aim
     const dx=t.clientX-o.x,dy=t.clientY-o.y;o.x=t.clientX;o.y=t.clientY;
+    if(o.sx!==undefined){const ox=t.clientX-o.sx,oy=t.clientY-o.sy,d=Math.hypot(ox,oy),k=d>26?26/d:1;o.far=Math.max(o.far,d);o.el.firstChild.style.transform=`translate(${ox*k}px,${oy*k}px)`;}
     if(isPlaying()&&player.alive){yaw-=dx*AIM_X;pitch=clamp(pitch+dy*AIM_Y,-.7118,.65);}}
 },{passive:false});
 function end(e){e.preventDefault();
   for(const t of e.changedTouches){const o=own.get(t.identifier);if(!o)continue;own.delete(t.identifier);
     if(o.kind==='stick')setStick(null);
-    if(o.kind==='btn'){o.el.classList.remove('on');if(!o.el.dataset.tap)press(o.el.dataset.key,false);}}}
+    if(o.kind==='btn'){o.el.classList.remove('on');if(!o.el.dataset.tap)press(o.el.dataset.key,false);}
+    if(o.kind==='aim'&&o.el){o.el.classList.remove('on');o.el.firstChild.style.transform='';
+      if(o.far<12&&performance.now()-o.t0<350){press('Space',true);press('Space',false);}}}}   // quick tap on AIM = jump
 T.addEventListener('touchend',end,{passive:false});T.addEventListener('touchcancel',end,{passive:false});
-function releaseAll(){for(const o of own.values())if(o.kind==='btn'){o.el.classList.remove('on');if(!o.el.dataset.tap)press(o.el.dataset.key,false);}own.clear();setStick(null);}
+function releaseAll(){for(const o of own.values()){if(o.kind==='btn'){o.el.classList.remove('on');if(!o.el.dataset.tap)press(o.el.dataset.key,false);}if(o.kind==='aim'&&o.el){o.el.classList.remove('on');o.el.firstChild.style.transform='';}}own.clear();setStick(null);}
 // show the controls only while a match is running; keep button labels in sync with the game state
 let lastShow=null;
 setInterval(()=>{document.body.classList.toggle('pz',started&&paused&&!over);const show=started&&!over;if(show!==lastShow){T.style.display=show?'block':'none';lastShow=show;if(!show)releaseAll();}
   if(!show)return;if(paused&&own.size)releaseAll();
   $('tMode').querySelector('span').textContent=player.modeTarget?'WALK':'HOVER';$('tRun').querySelector('span').textContent=player.mode>.5?'BOOST':'RUN';$('tMute').textContent=muted?'🔇':'🔊';
-  $('tJump').style.opacity=player.mode<.5&&!player.modeTarget?1:.35;
   const em=$('emp').textContent.match(/\d+/),eb=$('tEmp').querySelector('b');eb.textContent=em?em[0]:'0';$('tEmp').style.opacity=em&&!/\ds$/.test($('emp').textContent.trim())?1:.45;},120);
 // leaving the app (home button, call, lock screen) pauses the match
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll();if(isPlaying())press('KeyP',true);}});
