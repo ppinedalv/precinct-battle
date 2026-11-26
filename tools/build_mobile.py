@@ -134,11 +134,11 @@ HELP = '''<div class="keys" style="margin-top:14px">
 
 TOUCH_JS = r'''
 // ---------------- headlight pool on the ground ahead of the player's mech (iPhone build)
-const HEAD_POOL=new THREE.Mesh(new THREE.PlaneGeometry(19,30),new THREE.MeshBasicMaterial({map:GLOW,color:0xeaf4ff,transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+const HEAD_POOL=new THREE.Mesh(new THREE.PlaneGeometry(19,30),new THREE.MeshBasicMaterial({map:GLOW,color:0xeaf4ff,transparent:true,opacity:.48,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
 HEAD_POOL.rotation.order='YXZ';HEAD_POOL.renderOrder=1;scene.add(HEAD_POOL);
 function updateHeadPool(){const P=player;HEAD_POOL.visible=P.alive;if(!P.alive)return;
   HEAD_POOL.position.set(P.pos.x+Math.sin(yaw)*12,P.pos.y+.07,P.pos.z+Math.cos(yaw)*12);HEAD_POOL.rotation.set(-Math.PI/2,0,0);HEAD_POOL.rotation.y=yaw;
-  HEAD_POOL.material.opacity=P.onGround?.6:.2;}
+  HEAD_POOL.material.opacity=P.onGround?.48:.16;}
 // ---------------- iPhone touch controls (tools/build_mobile.py)
 {
 const T=$('touch'),stick=$('tStick'),knob=$('tKnob');
@@ -221,13 +221,17 @@ sub('pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt,-.7118,.
 # headlights look ON from the player's chase camera (iPhone build only, user 2026-11-25): a soft beam shining forward-down from
 # each front hover-pod lamp, bright at the lens and fading out, plus a bigger halo that peeks round the pod from behind
 sub("const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);}",
-    "const sl=new THREE.SpotLight(0xeaf4ff,72,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);"   # 90 -> 72 (-20%)
+    "const sl=new THREE.SpotLight(0xeaf4ff,58,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);"   # 90 -> 72 -> 58 (two 20% cuts)
     "const bg=new THREE.CylinderGeometry(.3,3.4,17,24,1,true);bg.translate(0,-8.5,0);"
     "const bm=new THREE.ShaderMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,uniforms:{col:{value:new THREE.Color(0xeaf4ff)}},"
     "vertexShader:'varying float vH;void main(){vH=uv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',"
-    "fragmentShader:'uniform vec3 col;varying float vH;void main(){gl_FragColor=vec4(col,.16*(.4+.6*vH));}'});"
+    "fragmentShader:'uniform vec3 col;varying float vH;void main(){gl_FragColor=vec4(col,.128*(.4+.6*vH));}'});"
     "const beam=new THREE.Mesh(bg,bm);beam.position.set(0,0,.72);beam.rotation.x=-Math.PI/2+.13;beam.renderOrder=2;pod.add(beam);"
-    "glowAt(0xb2bfcc,0,.05,1.15,2.6,pod);}")
+    "glowAt(0x8e99a3,0,.05,1.15,2.6,pod);}")
+# lamp lenses + their small glow (seen on RX-13 head-on): 64% of the desktop brightness on iPhone
+sub("const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:2.6,roughness:.1,metalness:0});",
+    "const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:1.66,roughness:.1,metalness:0});")
+sub("glowAt(0xdfeeff,0,0,.72,1.3,pod);glowAt(0xffffff,0,0,.72,.55,pod);", "glowAt(0x8e98a3,0,0,.72,1.3,pod);glowAt(0xa3a3a3,0,0,.72,.55,pod);")
 # ...and a pool of headlight on the ground ahead of the player's mech, following it every frame
 sub('updatePlayer(dt,gt);updateHoverHum();', 'updatePlayer(dt,gt);updateHeadPool();updateHoverHum();')
 # start / pause screens: touch instructions instead of keyboard keys
