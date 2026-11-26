@@ -742,7 +742,9 @@ function updateDusk(dt,t){const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},of
   const fc=$('fCity'),fd=$('fDusk');if(fc&&fd){fc.classList.toggle('on',!DUSK);fd.classList.toggle('on',DUSK);
     $('fHint').textContent=DUSK?'Breach the guarded gate at the north end of the street, then destroy the boss behind it.':'Classic match: capture cannons and destroy the Red HQ.';
     const pick=v=>{if(v===FIELD||started)return;try{localStorage.setItem('pb_field',v);}catch(e){}const u=new URL(location.href);u.searchParams.delete('field');location.href=u.toString();};
-    fc.onclick=()=>pick('city');fd.onclick=()=>pick('dusk');}
+    fc.onclick=()=>pick('city');fd.onclick=()=>pick('dusk');
+    addEventListener('keydown',e=>{if(!started&&e.code==='KeyB'&&!e.repeat)pick(DUSK?'city':'dusk');});   /* B on the start screen switches battlefield (keyboard player) */
+    $('fHint').textContent+=' Press B to switch.';}
   if(DUSK){const ip=document.querySelector('#start .panel > p');if(ip)ip.textContent='Dusk falls on the old neighborhood. A villain has walled off the north end of the street: a giant brain-driven robot with six laser arms guards its lab behind a fortified gate. Fight through its gang vans, tanks and RX-13, breach the gate, then destroy the boss. Stand on your own HQ pad to repair and rearm.';
     const lab=document.querySelector('#hq .hqbar:nth-child(2) .r');if(lab)lab.textContent='BOSS';}}
 
