@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-0906</div>
+<div id="buildTag">BUILD 1126-1020</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1017,6 +1017,7 @@ let yaw=Math.PI,pitch=.12;
 const MG_MAX=500,SH_MAX=50,MS_MAX=50;   /* per mech: gatling rounds (user 2026-11-22: 3000 -> 1000 -> 800; 2026-11-25: 500), cannon shells (150 -> 100 -> 50), missiles (40 -> 50, 2026-11-25) */
 const player={kind:'mech',team:BLUE,isPlayer:true,lives:5,pos:new THREE.Vector3(0,0,BASE_Z[BLUE]-18),vel:V(),vy:0,onGround:true,hp:400,maxHp:400,r:2.2,hy:2.4,alive:true,
   mode:0,modeTarget:0,mg:MG_MAX,sh:SH_MAX,ms:MS_MAX,spin:0,energy:100,heat:0,overheat:false,cdMG:0,cdSH:0,cdMS:0,phase:0,respawn:0};
+const GUN_HEAT_PER=2.1; /* no cooling while firing: ~4 s of continuous fire overheats */
 player.rig=buildMech(BLUE);scene.add(player.rig.root);ents.push(player);
 {const L=new THREE.PointLight(0xffa040,0,16,2);player.rig.muzzleL.add(L);player.muzzleLight=L;}   // gatling muzzle-flash light (flickers per shot)
 const rival={kind:'mech',team:RED,pos:new THREE.Vector3(0,0,BASE_Z[RED]+18),vel:V(),hp:320,maxHp:320,r:2.2,hy:3.0,alive:true,
@@ -2132,13 +2133,13 @@ function updatePlayer(dt,t){
   if(P.mode<.3&&sp>1.5&&P.onGround)footstep(P,null,(.35+clamp(sp/11,0,1)*.45)*.5625,1);else P.stepK=Math.floor(P.phase/Math.PI);
   // weapons
   P.cdMG-=dt;P.cdSH-=dt;P.cdMS-=dt;
-  P.heat=Math.max(0,P.heat-(P.overheat?22:30)*dt);if(P.overheat&&P.heat<35)P.overheat=false;
+  P.heat=Math.max(0,P.heat-(P.overheat?22:(fireGun&&P.spin>.85&&P.mg>0?0:30))*dt);if(P.overheat&&P.heat<35)P.overheat=false;
   const wantSpin=fireGun&&P.mg>0;
   P.spin=clamp(P.spin+(wantSpin?dt/.35:-dt/.8),0,1);
   P.rig.barrels.rotation.z+=P.spin*dt*32;
   if(P.muzzleLight)P.muzzleLight.intensity=Math.max(0,P.muzzleLight.intensity-dt*110);
   if(fireGun&&P.spin>.85&&!P.overheat&&P.mg>0&&P.cdMG<=0){
-    P.cdMG=.075;P.mg--;P.heat+=2.6;if(P.heat>=100){P.heat=100;P.overheat=true;feed('Gun overheated','r');}
+    P.cdMG=.075;P.mg--;P.heat+=GUN_HEAT_PER;if(P.heat>=100){P.heat=100;P.overheat=true;feed('Gun overheated','r');}
     P.rig.muzzleL.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();_t.x+=rand(-.012,.012);_t.y+=rand(-.012,.012);_t.z+=rand(-.012,.012);
     if(PVP)fire('bullet',BLUE,_c,_t,5*DIFF.rivalGunMul,DIFF.level>=9?{byPlayer:true,tracer:true,splash:1.6,heavyGun:true}:{byPlayer:true,tracer:true,gatling:true});else fire('bullet',BLUE,_c,_t,5,{byPlayer:true,tracer:true,gatling:true});muzzleFlash(_c,_t,P);gatlingShot();}
   if(fireCan&&P.sh>0&&P.cdSH<=0){P.cdSH=.65;P.sh--;P.rig.muzzleR.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();
@@ -2525,10 +2526,10 @@ function updatePilot(R,dt,t){
   if(R.mode<.3&&sp>1.5&&R.onGround)footstep(R,R.pos,(.35+clamp(sp/11,0,1)*.45)*.5625,1);else R.stepK=Math.floor(R.phase/Math.PI);
   /* weapons: same rates/ammo as the SS-07; damage = this level's mech weapon settings (same for both mechs in VS PLAYER) */
   R.cdMG-=dt;R.cdSH-=dt;R.cdMS-=dt;
-  R.heat=Math.max(0,R.heat-(R.overheat?22:30)*dt);if(R.overheat&&R.heat<35)R.overheat=false;
+  R.heat=Math.max(0,R.heat-(R.overheat?22:(fireGun&&R.spin>.85&&R.mg>0?0:30))*dt);if(R.overheat&&R.heat<35)R.overheat=false;
   const wantSpin=fireGun&&R.mg>0;R.spin=clamp(R.spin+(wantSpin?dt/.35:-dt/.8),0,1);R.rig.barrels.rotation.z+=R.spin*dt*32;
   if(fireGun&&R.spin>.85&&!R.overheat&&R.mg>0&&R.cdMG<=0){
-    R.cdMG=.075;R.mg--;R.heat+=2.6;if(R.heat>=100){R.heat=100;R.overheat=true;gfeed('Gun overheated','b');}
+    R.cdMG=.075;R.mg--;R.heat+=GUN_HEAT_PER;if(R.heat>=100){R.heat=100;R.overheat=true;gfeed('Gun overheated','b');}
     R.rig.muzzleL.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();_t.x+=rand(-.012,.012);_t.y+=rand(-.012,.012);_t.z+=rand(-.012,.012);
     fire('bullet',RED,_c,_t,5*DIFF.rivalGunMul,DIFF.level>=9?{byPlayer:2,tracer:true,splash:1.6,heavyGun:true}:{byPlayer:2,tracer:true,gatling:true});
     muzzleFlash(_c,_t,R);sfx('mg',R.pos,.7,true);netSnd('gat');}
@@ -2794,7 +2795,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0906'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1020'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
