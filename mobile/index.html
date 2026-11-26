@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-0756</div>
+<div id="buildTag">BUILD 1126-0805</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -372,6 +372,10 @@ for(let gx=-80;gx<=80;gx+=20)for(let gz=-140;gz<=140;gz+=20){
   if(srand()<.22)continue;
   const w=7+srand()*7,d=7+srand()*7,h=5+srand()*22,x=gx+(srand()-.5)*4,z=gz+(srand()-.5)*4;
   if(clearZone(x,z,w,d))addBlock(x,z,w,d,h);}
+{ /* centre building (user 2026-11-26): remove the 4 city blocks closest to the map centre, then put one building on the exact centre (0,0) */
+  const near=buildings.map(b=>[Math.hypot(b.x,b.z),b]).sort((a,b)=>a[0]-b[0]).slice(0,4).map(e=>e[1]);
+  for(const b of near)buildings.splice(buildings.indexOf(b),1);
+  addBlock(0,0,16,16,22);}
 const CITY_N=buildings.length;   // city blocks only (portals pick from these)
 // perimeter walls
 addBlock(-HALF_X-5,0,10,HALF_Z*2+20,26);addBlock(HALF_X+5,0,10,HALF_Z*2+20,26);
@@ -1388,9 +1392,10 @@ function pushOut(p,r){
         if(m===l)p.x=b.x0-r;else if(m===rr)p.x=b.x1+r;else if(m===f)p.z=b.z0-r;else p.z=b.z1+r;}}}
   p.x=clamp(p.x,-HALF_X+r,HALF_X-r);p.z=clamp(p.z,-HALF_Z+r,HALF_Z-r);}
 /* flying units vs buildings (user 2026-11-26: hover bots flew through buildings): a building is solid for a flyer while the flyer's underside (y-clr) is below the roof */
-function airHit(x,z,y,r,clr){for(const b of buildings)if(y-clr<b.h&&x>b.x0-r&&x<b.x1+r&&z>b.z0-r&&z<b.z1+r)return b;return null;}
+let AIR_SOLIDS=buildings;   /* buildings + every other solid structure (HQs, HQ turrets, cannon towers, DEPLOY walls...), filled in by scanAirSolids() once the map is built */
+function airHit(x,z,y,r,clr){for(const b of AIR_SOLIDS)if(y-clr<b.h&&x>b.x0-r&&x<b.x1+r&&z>b.z0-r&&z<b.z1+r)return b;return null;}
 function airPushOut(p,r,clr){if(p.y<=0)return;
-  for(const b of buildings){if(p.y-clr>=b.h)continue;
+  for(const b of AIR_SOLIDS){if(p.y-clr>=b.h)continue;
     if(p.x>b.x0-r&&p.x<b.x1+r&&p.z>b.z0-r&&p.z<b.z1+r){
       const cx=clamp(p.x,b.x0,b.x1),cz=clamp(p.z,b.z0,b.z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);
       if(d>1e-4){if(d<r){p.x=cx+dx/d*r;p.z=cz+dz/d*r;}}
@@ -2675,6 +2680,19 @@ function frame(now){
   if(PVP)renderGuestView(now);}
 updateCamera(0);updateMusicUI();netInit();
 requestAnimationFrame(frame);
+/* flyer obstacles (user 2026-11-26: hover bots must not pass through ANY solid surface): one box per static scene object, measured from its solid meshes only
+   (sprites, lines, glows, beams and see-through effects skipped); units, mechs, city blocks, flat decals, open tunnels and huge ground/sky pieces left out */
+function scanAirSolids(){scene.updateMatrixWorld(true);const skip=new Set([player.rig.root,rival.rig.root]);for(const e of ents)if(e.mesh)skip.add(e.mesh);
+  const extra=[],bb=new THREE.Box3(),mb=new THREE.Box3();
+  for(const c of scene.children){if(skip.has(c)||c.isInstancedMesh||c.isLight||c.isSprite)continue;bb.makeEmpty();
+    c.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||o.isSprite)return;const ms=Array.isArray(o.material)?o.material:[o.material];
+      if(ms.every(m=>m.transparent&&(m.depthWrite===false||m.blending===THREE.AdditiveBlending||m.opacity<.5)))return;
+      if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();mb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+      if(mb.max.y-mb.min.y>60)return;bb.union(mb);});
+    if(bb.isEmpty()||bb.max.y<1.5||bb.min.y<-1||bb.max.x-bb.min.x>45||bb.max.z-bb.min.z>45)continue;
+    extra.push({x0:bb.min.x,x1:bb.max.x,z0:bb.min.z,z1:bb.max.z,h:bb.max.y,x:(bb.min.x+bb.max.x)/2,z:(bb.min.z+bb.max.z)/2,w:bb.max.x-bb.min.x,d:bb.max.z-bb.min.z,air:true});}
+  AIR_SOLIDS=buildings.concat(extra);return extra;}
+const AIR_EXTRA=scanAirSolids();
 window.__game={portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 
@@ -2738,7 +2756,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0756'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0805'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
