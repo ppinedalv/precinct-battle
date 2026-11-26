@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1447</div>
+<div id="buildTag">BUILD 1126-1454</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -781,10 +781,10 @@ const _pR=new THREE.Matrix4(),_pL=new THREE.Matrix4(),_pO=new THREE.Matrix4(),_p
 
 /* lab scientists (user 2026-11-26): bald, white lab coats, goggles; run around the compound and in and out of the lab doors. Instanced (5 draw calls). */
 const LAB_DOORS=[-45,-25,25,45];
-function buildLabCrew(){const N=12,crew=[];
+function buildLabCrew(){const N=24,crew=[];
   const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;scene.add(m);return m;};
   const torso=mk([...torsoItems(0xf2f4f6,0x2b2f36,0xb8c0c8),{geo:rbox(.47,.52,.29,.07),col:0xeef0f2,m:_pm(0,.78,0)},{geo:UBOX,col:0x1e3a2a,m:_ps(0,1.32,.136,.07,.3,.01)},{geo:UBOX,col:0xd8dde2,m:_ps(.13,1.38,.137,.09,.12,.01)}],N);
-  const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),{geo:UBOX,col:0x123a22,m:_ps(.052,1.8,.1,.085,.06,.04)},{geo:UBOX,col:0x123a22,m:_ps(-.052,1.8,.1,.085,.06,.04)},{geo:UBOX,col:0x101010,m:_ps(0,1.8,0,.43,.03,.25)}],N);
+  const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),{geo:UBOX,col:0x123a22,m:_ps(.052,1.8,.1,.085,.06,.04)},{geo:UBOX,col:0x123a22,m:_ps(-.052,1.8,.1,.085,.06,.04)},{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.206,.226,.22))}],N);
   const legs=mk(legItems(0x2a2d33,0x141414),N*2),arms=mk(armItems(0xf2f4f6),N*2),hands=mk([{geo:USPH,col:0xffffff,m:_ps(0,-.66,.02,.075,.1,.065)}],N*2);
   const SK=[0xf0c8a0,0xe0b088,0xc89870,0xf4d2b4];const c=new THREE.Color();
   for(let i=0;i<N;i++){c.setHex(SK[i%4]);head.setColorAt(i,c);hands.setColorAt(i*2,c);hands.setColorAt(i*2+1,c);
@@ -802,7 +802,7 @@ function updateLabCrew(dt){const D=DUSK_DYN.lab;if(!D)return;const {crew,torso,h
       const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz),sp=s.sp*(dp<20?1.5:1);
       if(d<.6){if(s.door){s.hide=rand(2,7);s.x=s.tx;s.z=s.tz-.6;}else labTarget(s);}else{s.x+=dx/d*sp*dt;s.z+=dz/d*sp*dt;s.yaw=Math.atan2(dx,dz);}
       s.ph+=dt*sp*3.4;sw=Math.sin(s.ph)*.75;bob=Math.abs(Math.cos(s.ph))*.06;
-      if(P.alive&&P.pos.y<2&&dp<1.9)labHit(s);else{_pc.set(s.x,1.1,s.z);for(const q of projs)if(q.team===BLUE&&segHit(q.prev,q.pos,_pc,.55)){labHit(s);break;}}}
+      if(P.alive&&P.pos.y<2&&dp<1.9)labHit(s);else{_pc.set(s.x,1.1,s.z);for(const q of projs)if(q.team===BLUE&&segHit(q.prev,q.pos,_pc,.85)){labHit(s);break;}}}
     if(s.dead){if(s.still)return;s.fall=Math.min(1,s.fall+dt*2.4);const k=s.fall*s.fall;lie=-Math.PI/2*k;y0=.16*k;spread=k;if(s.fall>=1)s.still=true;}
     _pe.set(lie+(s.dead?0:.18),s.yaw,0);_pq.setFromEuler(_pe);_pR.compose(_pp.set(s.x,y0+bob,s.z),_pq,_p1);torso.setMatrixAt(i,_pR);head.setMatrixAt(i,_pR);
     for(const sd of[-1,1]){const j=i*2+(sd>0?1:0);
@@ -820,7 +820,7 @@ function updatePeds(dt){const D=DUSK_DYN.peds;if(!D)return;const {peds,torso,hea
       x=P.ax+(P.bx-P.ax)*p.t;z=P.az+(P.bz-P.az)*p.t;const ux=(P.bx-P.ax)/len*p.dir,uz=(P.bz-P.az)/len*p.dir;p.x=x-uz*p.off;p.z=z+ux*p.off;p.yaw=Math.atan2(ux,uz);
       p.ph+=dt*sp*4.2;sw=Math.sin(p.ph)*(.45+p.run*.12);bob=Math.abs(Math.cos(p.ph))*.04;
       if(player.alive&&player.pos.y<2&&Math.hypot(player.pos.x-p.x,player.pos.z-p.z)<1.9)pedDie(p);   /* stepped on */
-      else{_pc.set(p.x,1.1,p.z);for(const q of projs)if(q.team===BLUE&&segHit(q.prev,q.pos,_pc,.55)){pedDie(q===null?p:p);break;}}}   /* shot */
+      else{_pc.set(p.x,1.1,p.z);for(const q of projs)if(q.team===BLUE&&segHit(q.prev,q.pos,_pc,.85)){pedDie(p);break;}}}   /* shot */
     if(p.dead){if(p.fall>=1&&p.still)return;p.fall=Math.min(1,p.fall+dt*2.4);const k=p.fall*p.fall;lie=-Math.PI/2*k;y0=.16*k;spread=k;if(p.fall>=1)p.still=true;}
     _pe.set(lie,p.yaw,0);_pq.setFromEuler(_pe);_pR.compose(_pp.set(p.x,y0+bob,p.z),_pq,_p1);
     torso.setMatrixAt(i,_pR);head.setMatrixAt(i,_pR);
@@ -1107,7 +1107,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     sh.position.set(0,12,BOSS_Z);sh.userData.noAir=true;scene.add(sh);BOSS_RIG.shield=sh;}
   { const G=makeArmGeos(),AM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.7}),GM=new THREE.MeshBasicMaterial({vertexColors:true});BOSS_RIG.edgeMat=GM;
     for(const s of[-1,1])for(let k=0;k<3;k++){const root=new THREE.Group();root.position.set(s*4.95,.7+k*1.45,(1-k)*.6);root.rotation.y=s*Math.PI/2;T.add(root);
-      const segs=[];let par=root;for(let j=0;j<7;j++){const g=new THREE.Group();if(j)g.position.z=1.7;const m=new THREE.Mesh(G.seg,AM);m.castShadow=true;m.scale.setScalar(1-j*.035);g.add(m);const eg=new THREE.Mesh(G.segG,GM);eg.scale.setScalar(1-j*.035);g.add(eg);par.add(g);segs.push(g);par=g;}
+      const segs=[];let par=root;for(let j=0;j<11;j++){const g=new THREE.Group();if(j)g.position.z=1.7*(1-(j-1)*.025);const sc=1-j*.028;const m=new THREE.Mesh(G.seg,AM);m.castShadow=true;m.scale.setScalar(sc);g.add(m);const eg=new THREE.Mesh(G.segG,GM);eg.scale.setScalar(sc);g.add(eg);par.add(g);segs.push(g);par=g;}
       const can=new THREE.Group();can.position.z=1.7;par.add(can);const cm=new THREE.Mesh(G.can,AM);cm.castShadow=true;can.add(cm,new THREE.Mesh(G.canG,GM));
       const muzzle=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff4fd2,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));muzzle.position.z=3.45;muzzle.scale.set(2.8,2.8,1);can.add(muzzle);
       BOSS_RIG.arms.push({s,k,segs,can,muzzle,cd:rand(1,3),aimT:0,ph:Math.random()*6,aim:new THREE.Vector3()});}}
@@ -1146,8 +1146,8 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
   if(tg){const want=Math.atan2(tg.pos.x,tg.pos.z-BOSS_Z);let d=want-R.top.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));R.top.rotation.y+=clamp(d,-.7*dt,.7*dt);}
   else R.top.rotation.y+=Math.sin(t*.25)*.08*dt;
   for(const [i,a] of R.arms.entries()){const up=a.k-1;
-    a.segs.forEach((g,j)=>{const w=Math.sin(t*1.35+j*.75+a.ph)*.11;g.rotation.y=-a.s*(j<5?.21:0)+w*.6;
-      g.rotation.x=(j<3?-.16*up-.08:.1*up+.04)+Math.sin(t*1.1+j*.6+a.ph*1.7)*.09;});}
+    a.segs.forEach((g,j)=>{const w=Math.sin(t*1.35+j*.75+a.ph)*.11;g.rotation.y=-a.s*(j<7?.15:j<9?-.06:0)+w*.6;   /* longer tentacles: 11 segments, wider S-curve (user 2026-11-26) */
+      g.rotation.x=(j<4?-.12*up-.06:j<8?.08*up+.03:-.05)+Math.sin(t*1.1+j*.6+a.ph*1.7)*.08;});}
   R.top.parent.updateMatrixWorld(true);
   const rate=Math.max(1.6,4.4-lvl*.26),dmg=5+lvl;
   for(const a of R.arms){a.cd-=dt;a.aimT=Math.max(0,a.aimT-dt);
@@ -3651,7 +3651,7 @@ function scanAirSolids(){scene.updateMatrixWorld(true);const skip=new Set([playe
     extra.push({x0:bb.min.x,x1:bb.max.x,z0:bb.min.z,z1:bb.max.z,h:bb.max.y,x:(bb.min.x+bb.max.x)/2,z:(bb.min.z+bb.max.z)/2,w:bb.max.x-bb.min.x,d:bb.max.z-bb.min.z,air:true});}
   AIR_SOLIDS=buildings.concat(extra);return extra;}
 const AIR_EXTRA=scanAirSolids();
-window.__game={dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
+window.__game={lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 
 // ---------------- headlight pool on the ground ahead of the player's mech (iPhone build)
@@ -3714,7 +3714,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1447'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1454'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
