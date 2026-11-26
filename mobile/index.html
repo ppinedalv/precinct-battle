@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1125-2021</div>
+<div id="buildTag">BUILD 1125-2028</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -626,7 +626,7 @@ function buildMech(team){
      part(rbox(.54,.28,.06,.03),m.chrome,0,0,.63,pod);part(boxGeo(.46,.2,.04),hl,0,0,.66,pod);
      for(let k=0;k<4;k++)part(cylG(.035,.035,.02,10),E(0xffffff),-.165+k*.11,0,.69,pod,HPI);
      glowAt(0xdfeeff,0,0,.72,1.3,pod);glowAt(0xffffff,0,0,.72,.55,pod);
-     const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);const bg=new THREE.CylinderGeometry(.3,3.4,17,24,1,true);bg.translate(0,-8.5,0);const bm=new THREE.ShaderMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,uniforms:{col:{value:new THREE.Color(0xeaf4ff)}},vertexShader:'varying float vH;void main(){vH=uv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform vec3 col;varying float vH;void main(){gl_FragColor=vec4(col,.2*(.4+.6*vH));}'});const beam=new THREE.Mesh(bg,bm);beam.position.set(0,0,.72);beam.rotation.x=-Math.PI/2+.13;beam.renderOrder=2;pod.add(beam);glowAt(0xdfeeff,0,.05,1.15,2.6,pod);}
+     const sl=new THREE.SpotLight(0xeaf4ff,72,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);const bg=new THREE.CylinderGeometry(.3,3.4,17,24,1,true);bg.translate(0,-8.5,0);const bm=new THREE.ShaderMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,uniforms:{col:{value:new THREE.Color(0xeaf4ff)}},vertexShader:'varying float vH;void main(){vH=uv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform vec3 col;varying float vH;void main(){gl_FragColor=vec4(col,.16*(.4+.6*vH));}'});const beam=new THREE.Mesh(bg,bm);beam.position.set(0,0,.72);beam.rotation.x=-Math.PI/2+.13;beam.renderOrder=2;pod.add(beam);glowAt(0xb2bfcc,0,.05,1.15,2.6,pod);}
     part(torG(.28,.04),m.glow,0,-.26,0,pod,HPI);
     part(boxGeo(.14,.3,.5),m.dark,-s*.36,.2,-.1,pod);}
   // white markings
@@ -2662,11 +2662,11 @@ window.__game={portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 
 // ---------------- headlight pool on the ground ahead of the player's mech (iPhone build)
-const HEAD_POOL=new THREE.Mesh(new THREE.PlaneGeometry(19,30),new THREE.MeshBasicMaterial({map:GLOW,color:0xeaf4ff,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+const HEAD_POOL=new THREE.Mesh(new THREE.PlaneGeometry(19,30),new THREE.MeshBasicMaterial({map:GLOW,color:0xeaf4ff,transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
 HEAD_POOL.rotation.order='YXZ';HEAD_POOL.renderOrder=1;scene.add(HEAD_POOL);
 function updateHeadPool(){const P=player;HEAD_POOL.visible=P.alive;if(!P.alive)return;
   HEAD_POOL.position.set(P.pos.x+Math.sin(yaw)*12,P.pos.y+.07,P.pos.z+Math.cos(yaw)*12);HEAD_POOL.rotation.set(-Math.PI/2,0,0);HEAD_POOL.rotation.y=yaw;
-  HEAD_POOL.material.opacity=P.onGround?.75:.25;}
+  HEAD_POOL.material.opacity=P.onGround?.6:.2;}
 // ---------------- iPhone touch controls (tools/build_mobile.py)
 {
 const T=$('touch'),stick=$('tStick'),knob=$('tKnob');
@@ -2721,7 +2721,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-2021'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-2028'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
