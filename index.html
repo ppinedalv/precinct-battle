@@ -286,12 +286,20 @@ function paintSpots(R,g,X,Z,S){   /* ground: aprons, lots, patio */
   R(F.coffee.x0,F.coffee.z0,F.coffee.x0+9,F.coffee.z1,'#8b6f58');g.strokeStyle='rgba(60,40,30,.6)';g.lineWidth=Math.max(1,S*.06);
   for(let x=F.coffee.x0;x<F.coffee.x0+9;x+=1)for(let z=F.coffee.z0;z<F.coffee.z1;z+=1)g.strokeRect(X(x),Z(z),S,S);}
 function tChair(x,z,ry,c){tFrame(x,0,z,ry,()=>{tBox('metal',c,.5,.06,.5,0,.48,0);tBox('metal',c,.5,.55,.06,0,.78,-.24);for(const a of[-.21,.21])for(const b of[-.21,.21])tBox('metal',0x222,.04,.48,.04,a,.24,b);});}
-function tFireTruck(x,z,ry){tFrame(x,0,z,ry,()=>{const RD=0xb3140f;
-  tBox('metal',RD,2.5,2.4,2.6,0,1.6,3.4);tBox('metal',0x1c2733,2.52,.9,1.2,0,2.2,4.1);tBox('metal',RD,2.5,1.9,6.4,0,1.35,-1.1);tBox('metal',0xd9d9d2,2.55,.2,9,0,.65,.6);
-  tBox('metal',0xc8ccd2,.12,.12,7.5,-.8,2.6,-.6);tBox('metal',0xc8ccd2,.12,.12,7.5,.8,2.6,-.6);for(let i=0;i<14;i++)tBox('metal',0xc8ccd2,1.6,.08,.08,0,2.6,-4.2+i*.55);
-  for(const s of[-1,1])for(const zz of[3.3,-2.2,-3.6])tCyl('matte',0x141416,.55,.4,s*1.15,.55,zz,0,0,Math.PI/2);
-  tBox('glow',0xff2a1a,.5,.22,.3,-.7,2.92,3.4);tBox('glow',0xffffff,.4,.22,.3,0,2.92,3.4);tBox('glow',0xff2a1a,.5,.22,.3,.7,2.92,3.4);
-  for(const s of[-1,1])tBox('glow',0xfff3c8,.4,.25,.06,s*.85,1.2,4.71);});}
+function tFireTruck(x,z,ry){tFrame(x,0,z,ry,()=>{const RD=0xb3140f,CH=0xc8ccd2,GL=0x16212c,DK=0x141416,WH=0xe9e9e4;   /* detailed engine (user 2026-11-26) */
+  tAdd('metal',rbox(2.5,2.3,2.7,.18),RD,0,1.75,3.35);tAdd('metal',rbox(2.46,.9,.06,.03),GL,0,2.25,4.71);for(const s of[-1,1]){tBox('metal',GL,.04,.8,1.1,s*1.26,2.25,3.7);tBox('metal',GL,.04,.8,.8,s*1.26,2.25,2.6);}
+  tBox('metal',CH,1.6,.8,.06,0,1.15,4.72);for(let i=0;i<7;i++)tBox('metal',0x555a60,1.5,.05,.07,0,.82+i*.1,4.74);tBox('metal',CH,2.6,.3,.35,0,.6,4.8);tBox('metal',CH,2.6,.3,.35,0,.6,-4.95);
+  for(const s of[-1,1]){tBox('metal',0x222,.08,.5,.08,s*1.42,2.3,4.3);tBox('metal',CH,.12,.4,.25,s*1.48,2.1,4.3);tBox('glow',0xfff3c8,.42,.25,.06,s*.85,1.25,4.75);tBox('glow',0xffa020,.2,.15,.06,s*1.12,1.6,4.75);}
+  tBox('metal',0x1a1a1c,2.2,.14,.5,0,2.98,3.4);for(let i=0;i<6;i++)tBox('glow',i%2?0xffffff:0xff2a1a,.3,.2,.4,-.85+i*.34,3.12,3.4);
+  tAdd('metal',rbox(2.5,2.1,6.6,.12),RD,0,1.55,-1.05);tBox('metal',0x1a1a1c,2.4,.06,6.5,0,2.63,-1.05);
+  for(const s of[-1,1]){for(let k=0;k<3;k++){tBox('metal',CH,.04,1.4,1.8,s*1.26,1.6,.8-k*2.05);for(let r=0;r<7;r++)tBox('metal',0x9aa0a6,.05,.03,1.8,s*1.28,1.0+r*.2,.8-k*2.05);}
+    tBox('metal',WH,.03,.16,9.4,s*1.27,.85,-.3);tBox('metal',0xf2b51d,.03,.06,9.4,s*1.275,.72,-.3);tBox('metal',CH,.3,.08,1.2,s*1.3,.45,2.0);}
+  tCyl('metal',CH,.55,.9,0,2.95,-3.6,0,0,Math.PI/2);tCyl('matte',0xd8c8a0,.62,.5,0,2.95,-3.6,0,0,Math.PI/2);
+  tCyl('metal',0x3a3d42,.7,.3,0,2.8,-.6);tBox('metal',0x3a3d42,.9,.5,.9,0,3.05,-.6);
+  for(const s of[-1,1])tBox('metal',CH,.12,.14,8.2,s*.6,3.4,-.9,-.04);for(let i=0;i<20;i++)tBox('metal',CH,1.2,.07,.07,0,3.38-i*.016,3.0-i*.41);
+  for(let i=0;i<6;i++)tBox('metal',i%2?0xf2b51d:0x141416,.42,.42,.04,-1.05+i*.42,1.2,-4.38,0,0,.78);
+  for(const s of[-1,1])tBox('glow',0xb3140f,.3,.4,.06,s*1.05,1.9,-4.38);
+  for(const s of[-1,1])for(const zz of[3.3,-2.2,-3.6]){tCyl('matte',DK,.55,.42,s*1.15,.55,zz,0,0,Math.PI/2);tCyl('metal',CH,.32,.44,s*1.15,.55,zz,0,0,Math.PI/2);tCyl('metal',0x555,.1,.46,s*1.15,.55,zz,0,0,Math.PI/2);}});}
 function buildSpots(){const F=SPOTS;
   /* FIRE DEPARTMENT: red brick, 3 bays facing the avenue, hose tower, truck on the apron */
   {const x0=27,x1=41,z0=F.fire.z0+1,z1=F.fire.z1-1,cz=(z0+z1)/2,h=8;addBlock((x0+x1)/2,cz,x1-x0,z1-z0,h+.5);
@@ -338,6 +346,9 @@ function buildSpots(){const F=SPOTS;
     tBox('matte',0xf4e6ea,x1-x0,h,z1-z0,(x0+x1)/2,h/2,cz);for(let i=0;i<6;i++)tBox('matte',0xe86a9e,.08,h*.4,1.3,x0-.05,h*.72,z0+1.2+i*3.2);
     tBox('glow',0xfff0dc,.06,2.2,8,x0-.04,1.4,cz);tBox('matte',0xe86a9e,1.4,.2,12,x0-.7,2.9,cz);
     tAdd('matte',torusG(2.3,1),0xd49a55,(x0+x1)/2,h+3.3,cz,0,Math.PI/2,0);tAdd('matte',torusG(2.32,.85),0xff7ab8,(x0+x1)/2-.35,h+3.35,cz,0,Math.PI/2,0);
+    {const SPR=[0xff3b3b,0xffe14a,0x3dd2ff,0x5dff7a,0xffffff,0xb45cff,0xff9a2a],dx=(x0+x1)/2-.35,dy=h+3.35;   /* colorful sprinkles on the frosting (user 2026-11-26) */
+     for(let i=0;i<150;i++){const u=Math.random()*Math.PI*2,v=(Math.random()<.5?-1:1)*(.45+Math.random()*1.9),R0=2.32,r0=.87,ly=(R0+r0*Math.cos(v))*Math.sin(u),lx=(R0+r0*Math.cos(v))*Math.cos(u),lz=r0*Math.sin(v);
+       tBox('glow',SPR[i%SPR.length],.07,.07,.3,dx+lz,dy+ly,cz-lx,Math.random()*3,Math.random()*3,Math.random()*3);}}
     tBox('metal',0x3a3d42,.4,.8,.4,(x0+x1)/2,h+.4,cz);
     litSign('DONUTS','#ffffff','#e0478a',7,1.2,x0-.1,4,cz,-Math.PI/2,0xff7ab8);}
   /* COFFEE SHOP: awning + outdoor tables, chairs and umbrellas */
@@ -537,11 +548,13 @@ function tHouse(h){tFrame(h.x,0,h.z,h.face,()=>{const {w,d,h1,rh}=h,TR=0xe9e4da,
   tBox('matte',0x3a2a20,1.05,2.1,.1,-w*.12,1.55,fz);
   if(h.porch){tBox('matte',0x6a6560,2.6,.25,1.6,-w*.12,.62,fz-.8);tBox('matte',h.roof,2.8,.15,1.8,-w*.12,2.95,fz-.8);for(const s of[-1,1])tBox('matte',TR,.14,2.3,.14,-w*.12+s*1.2,1.8,fz-1.5);}
   tBox('glow',0xffd9a0,.25,.25,.08,-w*.12+.9,2.45,fz-.05);
-  const win=(x,y,on)=>{tBox(on?'glow':'matte',on?(lit<.5?0xffc777:0xffe2a8):0x1c232c,1.3,1.1,.06,x,y,fz-.02);tBox('matte',TR,1.5,.12,.1,x,y-.6,fz-.05);};
+  const bars=((Math.floor(Math.abs(h.x*7.31+h.z*13.7))%10)<3);   /* ~30% of houses have black security bars on the windows (user 2026-11-26) */
+  const win=(x,y,on)=>{tBox(on?'glow':'matte',on?(lit<.5?0xffc777:0xffe2a8):0x1c232c,1.3,1.1,.06,x,y,fz-.02);tBox('matte',TR,1.5,.12,.1,x,y-.6,fz-.05);tBox('matte',0x8a6a3a,1.42,.08,.08,x,y+.58,fz-.05);
+    if(bars){for(let i=0;i<8;i++)tBox('metal',0x15161a,.035,1.45,.035,x-.7+i*.2,y+.02,fz-.2);for(const yy of[-.7,.74])tBox('metal',0x15161a,1.6,.06,.06,x,y+yy,fz-.2);for(const sx of[-.78,.78])for(const yy of[-.7,.74])tBox('metal',0x15161a,.08,.08,.18,x+sx,y+yy,fz-.12);}};
   if(h.garage)tBox('matte',0xc8c4bb,w*.36,2.1,.08,w*.28,1.55,fz-.02);else win(w*.28,1.9,lit<.55);
   win(-w*.36,1.9,lit<.35);
   if(h1>4){win(-w*.25,4.7,lit<.6);win(w*.2,4.7,lit>.75);}
-  for(const s of[-1,1]){tBox(lit<.5?'glow':'matte',lit<.5?0xffcf8a:0x1c232c,.06,1,1.2,s*(w/2+.03),1.9,d*.1);}});}
+  for(const s of[-1,1]){tBox(lit<.5?'glow':'matte',lit<.5?0xffcf8a:0x1c232c,.06,1,1.2,s*(w/2+.03),1.9,d*.1);if(bars){for(let i=0;i<7;i++)tBox('metal',0x15161a,.035,1.3,.035,s*(w/2+.18),1.92,d*.1-.6+i*.2);for(const yy of[-.62,.66])tBox('metal',0x15161a,.06,.06,1.4,s*(w/2+.18),1.92+yy,d*.1);}}});}
 function tStopSign(x,z,ry){tFrame(x,0,z,ry,()=>{tCyl('metal',0x8c9096,.06,2.6,0,1.3,0);tAdd('matte',STOP_OCT,0xf4f4f0,0,2.6,0,Math.PI/2,0,Math.PI/8,.95,.05,.95);for(const s of[-1,1])tAdd('stop',STOP_FACE,0xffffff,0,2.6,s*.035,0,s>0?0:Math.PI,0,.86,.86,1);});}
 const STOP_OCT=new THREE.CylinderGeometry(.5,.5,1,8),STOP_FACE=new THREE.CircleGeometry(.5,8).rotateZ(Math.PI/8);
 function tHydrant(x,z){tCyl('metal',0xc21d1d,.2,.75,x,.38,z);tAdd('metal',USPH,0xc21d1d,x,.78,z,0,0,0,.4,.3,.4);tCyl('metal',0xd9d9d2,.08,.5,x,.5,z,0,0,Math.PI/2);tCyl('metal',0xc21d1d,.28,.08,x,.05,z);}
@@ -1138,9 +1151,29 @@ function crowdStart(){if(CROWD.on||!actx||!noise)return;CROWD.on=true;const M=ac
     const g=actx.createGain();g.gain.value=0;const pan=actx.createStereoPanner?actx.createStereoPanner():null;
     src.connect(f1);src.connect(f2);f1.connect(g);f2.connect(g);if(pan){pan.pan.value=rand(-.8,.8);g.connect(pan).connect(M);}else g.connect(M);src.start(0,Math.random()*.9);
     CROWD.voices.push({g,f1,f2,next:actx.currentTime+rand(.1,2)});}}
+
+/* shouting voices (user 2026-11-26: "add people yelling every couple of seconds"), made in code: buzzy voice source -> vowel formants -> rasp, pitch rises then falls */
+const YELL_V=[[820,1250,2550],[650,1750,2650],[520,920,2450],[380,2100,2850],[700,1100,2650],[300,850,2400]];let YELL_CURVE=null;
+function yellOnce(vol){if(muted||!actx||!noise)return;const t=actx.currentTime+.02,dur=rand(.32,.85),male=Math.random()<.7,f0=(male?rand(150,240):rand(260,380)),two=Math.random()<.45;
+  const o=actx.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f0*.82,t);o.frequency.linearRampToValueAtTime(f0*rand(1.15,1.4),t+dur*.3);o.frequency.linearRampToValueAtTime(f0*rand(.65,.85),t+dur);
+  const l=actx.createOscillator(),lg=actx.createGain();l.frequency.value=rand(5,8);lg.gain.value=f0*.035;l.connect(lg).connect(o.frequency);
+  if(!YELL_CURVE){YELL_CURVE=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;YELL_CURVE[i]=Math.tanh(x*3);}}
+  const sh=actx.createWaveShaper();sh.curve=YELL_CURVE;const mix=actx.createGain();mix.gain.value=1;
+  const va=YELL_V[Math.floor(Math.random()*YELL_V.length)],vb=YELL_V[Math.floor(Math.random()*YELL_V.length)];
+  va.forEach((f,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';bp.Q.value=[9,11,13][i];bp.frequency.setValueAtTime(f*(male?1:1.15),t);if(two)bp.frequency.setValueAtTime(vb[i]*(male?1:1.15),t+dur*.5);
+    const g=actx.createGain();g.gain.value=[1,.55,.25][i]*3;o.connect(bp).connect(g).connect(mix);});
+  const asp=actx.createBufferSource();asp.buffer=noise;const ab=actx.createBiquadFilter();ab.type='bandpass';ab.frequency.value=2200;ab.Q.value=.8;const ag=actx.createGain();ag.gain.value=.35;asp.connect(ab).connect(ag).connect(mix);
+  const env=actx.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(.3*vol,t+.04);
+  if(two){env.gain.setValueAtTime(.3*vol,t+dur*.45);env.gain.linearRampToValueAtTime(.08*vol,t+dur*.5);env.gain.linearRampToValueAtTime(.3*vol,t+dur*.56);}
+  env.gain.setValueAtTime(.27*vol,t+dur);env.gain.exponentialRampToValueAtTime(.0001,t+dur+.16);
+  const far=Math.random(),lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=far<.4?1400:far<.75?2600:5000;
+  const pan=actx.createStereoPanner?actx.createStereoPanner():null;let out=lp;if(pan){pan.pan.value=rand(-.85,.85);lp.connect(pan);out=pan;}
+  mix.connect(sh).connect(env).connect(lp);out.connect(actx.destination);
+  o.start(t);l.start(t);asp.start(t,Math.random()*.5,dur+.2);o.stop(t+dur+.2);l.stop(t+dur+.2);}
 function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStart();return;}const t=actx.currentTime;
   let n=0;for(const u of THUGS)if(u.alive&&Math.hypot(u.pos.x-player.pos.x,u.pos.z-player.pos.z)<75)n++;
-  const want=muted||over||!BOSS||!BOSS.alive?0:clamp(.22+n/9,.22,1);CROWD.lvl=lerp(CROWD.lvl,want,.03);CROWD.master.gain.setTargetAtTime(CROWD.lvl*.32,t,.2);
+  const want=muted||over||!BOSS||!BOSS.alive?0:clamp(.22+n/9,.22,1);CROWD.lvl=lerp(CROWD.lvl,want,.03);CROWD.master.gain.setTargetAtTime(CROWD.lvl*.45,t,.2);
+  if(want>0&&t>(CROWD.nextYell||0)){yellOnce(.55+.45*CROWD.lvl);if(Math.random()<.3)setTimeout(()=>yellOnce(.4+.4*CROWD.lvl),rand(150,500));CROWD.nextYell=t+rand(1,2.8);}   /* someone yells every couple of seconds */
   for(const v of CROWD.voices){if(t<v.next)continue;const dur=rand(.25,.9),pk=rand(.5,1.4),f=rand(450,950);   /* one shout: formants glide like a yelled vowel */
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
@@ -2427,7 +2460,24 @@ function mOsc(type,f,t,dur,peak,a,dec,filt,toDelay){
   let n=o;if(filt){const fl=actx.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(filt[0],t);fl.frequency.exponentialRampToValueAtTime(filt[1],t+a+dec);fl.Q.value=filt[2]||1;o.connect(fl);n=fl;}
   n.connect(g).connect(music.gain);if(toDelay)g.connect(music.delay);o.start(t);o.stop(t+dur);return o;}
 function mNoise(t,type,freq,peak,dec){const n=actx.createBufferSource();n.buffer=noise;const f=actx.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=actx.createGain();vEnv(g,t,.002,peak,dec);n.connect(f).connect(g).connect(music.gain);n.start(t,Math.random()*.5);n.stop(t+dec+.05);}
-function musicStep(st,t){
+
+/* DUSK field music (user 2026-11-26): original laid-back gangster / G-funk hip hop beat, made in code. 92 BPM, swung 16ths,
+   boom-bap kick + clap snare, hats, gliding 808 bass, Rhodes-style chord stabs, high whiny synth lead. Gm7 - Cm7 - Ebmaj7 - D7 (2 bars each). */
+const HIP_BASS=[31,36,39,38],HIP_CH=[[0,3,7,10],[0,3,7,10],[0,4,7,11],[0,4,7,10]];
+const HIP_LEAD=[0,-1,-1,3,-1,5,-1,3, 7,-1,-1,5,-1,3,-1,-1, 10,-1,7,-1,5,-1,3,-1, 5,-1,-1,-1,0,-1,-1,-1];
+const HIP_KICK=[1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0],HIP_BASSLINE=[0,-1,-1,-1, -1,-1,12,-1, -1,-1,7,-1, -1,-1,10,-1];
+function hipStep(st,t){const s=st%16,bar=Math.floor(st/16),ci=Math.floor(bar/2)%4,R=HIP_BASS[ci],ch=HIP_CH[ci],sw=s%2?SPB*.2:0,tt=t+sw,sec=Math.floor(bar/8)%4;
+  if(HIP_KICK[s]||(s===14&&bar%2)){const o=mOsc('sine',125,tt,.4,.75,.003,.32);o.frequency.exponentialRampToValueAtTime(42,tt+.11);mOsc('triangle',900,tt,.03,.08,.001,.02);}
+  if(s===4||s===12){mNoise(tt,'bandpass',1700,.3,.2);for(let k=0;k<3;k++)mNoise(tt+k*.012,'highpass',1200,.12,.05);mOsc('triangle',190,tt,.1,.14,.001,.08);}
+  if(s%2===0||(sec===2&&s%4===3))mNoise(tt,'highpass',8000,s%4===0?.05:.035,.03);
+  if(s===14&&bar%2===0)mNoise(tt,'highpass',6500,.05,.22);   /* open hat */
+  const bn=HIP_BASSLINE[s];if(bn>=0){const o=mOsc('sine',mtof(R+bn),tt,SPB*(s===0?6:3.5),.42,.006,SPB*(s===0?5.5:3));if(s===0&&bar%2)o.frequency.setTargetAtTime(mtof(R+bn+12),tt+SPB*4,.04);
+    const o2=mOsc('triangle',mtof(R+bn+12),tt,SPB*2,.05,.005,SPB*1.6,[900,300,1]);}
+  if((s===0||s===7||(s===10&&bar%2))&&sec!==0)for(const i of ch){for(const [ty,pk] of[['triangle',.03],['sine',.035]])mOsc(ty,mtof(R+24+i),tt,SPB*3,pk,.004,SPB*2.6,[2400,700,1],true);}
+  if(sec>=2||(sec===1&&bar%2)){const ln=HIP_LEAD[(bar%2)*16+s];if(ln>=0){const o=mOsc('sine',mtof(67+ln),tt,SPB*3.2,.045,.03,SPB*2.8,null,true);
+      o.frequency.setValueAtTime(mtof(67+ln-1),tt);o.frequency.exponentialRampToValueAtTime(mtof(67+ln),tt+.06);
+      const l=actx.createOscillator(),lg=actx.createGain();l.frequency.value=5.5;lg.gain.value=mtof(67+ln)*.012;l.connect(lg).connect(o.frequency);l.start(tt);l.stop(tt+SPB*3.2);}}}
+function musicStep(st,t){if(DUSK)return hipStep(st,t);
   const s=st%16,bar=Math.floor(st/16),ci=Math.floor(bar/2)%4,root=ROOTS[ci],ch=CHORDS[ci],full=Math.floor(bar/8)%4!==0;
   if(s%4===0){const o=mOsc('sine',150,t,.35,.55,.004,.28);o.frequency.exponentialRampToValueAtTime(42,t+.12);}
   if(full&&(s===4||s===12)){mNoise(t,'bandpass',1900,.22,.16);mOsc('triangle',185,t,.12,.1,.002,.09);}
