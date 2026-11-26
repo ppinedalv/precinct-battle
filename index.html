@@ -1090,6 +1090,7 @@ function laserBeam(from,to){
   core.scale.set(.12,.12,L);halo.scale.set(3.2,3.2,1);core.add(halo);core.position.copy(from);core.lookAt(to);scene.add(core);
   laserBeams.push({m:core,life:.2,max:.2});puff(from,0x7dffa0,.5,1.2,.1);puff(to,0x5dff8a,1.4,3.4,.25);puff(to,0x9dffb4,.6,1.6,.12);}
 const _hb=V(),_hb2=V();
+const _hbo=V();
 function updateHoverBots(dt,t){
   for(let i=laserBeams.length-1;i>=0;i--){const b=laserBeams[i];b.life-=dt;
     if(b.life<=0){scene.remove(b.m);b.m.material.dispose();b.m.children[0].material.dispose();laserBeams.splice(i,1);continue;}
@@ -1120,13 +1121,14 @@ function updateHoverBots(dt,t){
     const face=near?Math.atan2(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z):u.vel.lengthSq()>1?Math.atan2(u.vel.x,u.vel.z):u.mesh.rotation.y;
     let df=face-u.mesh.rotation.y;df=Math.atan2(Math.sin(df),Math.cos(df));u.mesh.rotation.y+=df*clamp(dt*4,0,1);
     u.cd-=dt;
-    if(near&&u.parked&&Math.abs(df)<.4){   // parked at the side end: continuous laser stream at the HQ orb until shot down; same damage rate as the bursts (1 HQ hit per second)
+    const hbLos=near&&losClear(u.pos,_hbo.set(foe.pos.x,13.5,foe.pos.z),foe.r);   /* no lasers through buildings (user 2026-11-26) */
+    if(near&&hbLos&&u.parked&&Math.abs(df)<.4){   // parked at the side end: continuous laser stream at the HQ orb until shot down; same damage rate as the bursts (1 HQ hit per second)
       u.lz=(u.lz||0)-dt;u.dmgT=(u.dmgT||0)+dt;
       if(u.lz<=0){u.lz=.09;u.tk=((u.tk||0)+1)%u.tips.length;u.mesh.updateMatrixWorld(true);
         laserBeam(u.tips[u.tk].getWorldPosition(V()),V().set(foe.pos.x+rand(-1.5,1.5),13.5+rand(-1.5,1.5),foe.pos.z+rand(-1.5,1.5)));
         if(u.tk===0)laserZap(u.pos);}
       if(u.dmgT>=1){u.dmgT-=1;damage(foe,1,u.team,false,true);}}
-    else if(near&&u.phase==='fly'&&u.cd<=0&&Math.abs(df)<.4){u.cd=HBOT_VOLLEY;   // burst of 4 green lasers every 2 s (user 2026-11-22) at the enemy HQ orb only
+    else if(near&&hbLos&&u.phase==='fly'&&u.cd<=0&&Math.abs(df)<.4){u.cd=HBOT_VOLLEY;   // burst of 4 green lasers every 2 s (user 2026-11-22) at the enemy HQ orb only
       const orb=V().set(foe.pos.x,13.5,foe.pos.z);u.mesh.updateMatrixWorld(true);
       u.tips.forEach((tip,k)=>setTimeout(()=>{if(over||!u.alive||!foe.alive)return;const from=tip.getWorldPosition(V()),to=V().set(orb.x+rand(-2,2),orb.y+rand(-2,2),orb.z+rand(-2,2));
         laserBeam(from,to);laserZap(from);if(k%HBOT_HIT_EVERY===0)damage(foe,1,u.team,false,true);},k*90));}}}
@@ -1323,6 +1325,12 @@ function airSteer(pos,v,r,clr,side,look){const hs=Math.hypot(v.x,v.z);if(hs<.3)r
   for(const a of AIR_ANG){const ang=a*side,c=Math.cos(ang),s=Math.sin(ang),ex=dx*c+dz*s,ez=-dx*s+dz*c;
     if(!airHit(pos.x+ex*look,pos.z+ez*look,pos.y,r,clr)&&!airHit(pos.x+ex*look*.5,pos.z+ez*look*.5,pos.y,r,clr)){v.x=ex*hs;v.z=ez*hs;return v;}}
   v.x=0;v.z=0;v.y=Math.max(v.y,8);return v;}
+/* line of sight (user 2026-11-26: units shot into the centre building): true when no building blocks the straight line a->b.
+   Buildings that the target itself stands in/on (within tr of the target point, e.g. the HQ's own blocks) don't count. */
+const _los=V();
+function losClear(a,b,tr=0){_los.copy(b).sub(a);const L=_los.length();if(L<.01)return true;_los.divideScalar(L);
+  for(const k of buildings){if(b.x>k.x0-tr&&b.x<k.x1+tr&&b.z>k.z0-tr&&b.z<k.z1+tr)continue;const t=rayBox(a,_los,k,L);if(t>0&&t<L-.3)return false;}
+  return true;}
 const _d=V();
 function steer(pos,dir,r,side){
   for(const a of[0,.45,-.45,.9,-.9,1.5,-1.5,2.2,-2.2]){
@@ -1831,7 +1839,26 @@ function chooseGoal(u){
   if(!best||(owned>=2&&u.id<.5))return bases[1-u.team].pos;
   return best.pos;}
 const _dir=V();
+/* route around buildings (user 2026-11-26: tanks piled up against the centre building): if a building blocks the straight line to dest,
+   head for the corner of that building that makes the shortest way round; buildings dest itself sits in (HQ, portal roofs) are ignored */
+function seg2Hit(ax,az,bx,bz,k,e){let t0=0,t1=1;const dx=bx-ax,dz=bz-az;
+  for(const[o,d,lo,hi]of[[ax,dx,k.x0-e,k.x1+e],[az,dz,k.z0-e,k.z1+e]]){if(Math.abs(d)<1e-9){if(o<=lo||o>=hi)return -1;continue;}
+    let a=(lo-o)/d,b=(hi-o)/d;if(a>b){const x=a;a=b;b=x;}t0=Math.max(t0,a);t1=Math.min(t1,b);if(t0>=t1)return -1;}
+  return t0;}
+const _via=V();
+function routeVia(p,dest,mr){let best=null,bt=2;const e=mr+.4;
+  for(const k of buildings){if(k.h>=26&&(Math.abs(k.x)>HALF_X||Math.abs(k.z)>HALF_Z))continue;   /* perimeter walls */
+    if(dest.x>k.x0-e-3&&dest.x<k.x1+e+3&&dest.z>k.z0-e-3&&dest.z<k.z1+e+3)continue;
+    if(p.x>k.x0-e&&p.x<k.x1+e&&p.z>k.z0-e&&p.z<k.z1+e)continue;   /* already touching it: pushOut handles that, route by the next one */
+    const t=seg2Hit(p.x,p.z,dest.x,dest.z,k,e);if(t>=0&&t<bt){bt=t;best=k;}}
+  if(!best)return dest;
+  const m=mr+2.5;let bc=null,bd=1e18;
+  for(const cx of[best.x0-m,best.x1+m])for(const cz of[best.z0-m,best.z1+m]){
+    if(seg2Hit(p.x,p.z,cx,cz,best,mr+.2)>=0)continue;   /* far corner: can't drive straight to it */
+    const d=Math.hypot(cx-p.x,cz-p.z)+Math.hypot(dest.x-cx,dest.z-cz);if(d<bd){bd=d;bc=[cx,cz];}}
+  if(!bc)return dest;return _via.set(bc[0],0,bc[1]);}
 function moveGround(u,dest,stopDist,speed,dt){const mr=u.moveR||u.r;
+  {const w=routeVia(u.pos,dest,mr);if(w!==dest){dest=w;stopDist=0;}}
   _dir.set(dest.x-u.pos.x,0,dest.z-u.pos.z);const dist=_dir.length();
   if(dist>stopDist){_dir.divideScalar(dist);const s=steer(u.pos,_dir,mr,u.side);u.vel.lerp(_t.copy(s).multiplyScalar(speed),clamp(dt*4,0,1));}
   else u.vel.multiplyScalar(Math.max(0,1-dt*6));
@@ -1925,7 +1952,7 @@ function updateUnit(u,dt){
     u.mesh.position.copy(u.pos);u.mesh.rotation.set(0,Math.atan2(u.vel.x,u.vel.z),0);
     u.mesh.rotateZ(-clamp((u.vel.x*_dir.z-u.vel.z*_dir.x)*.08,-.6,.6));
   }else{
-    dist=moveGround(u,chase?tgt.pos:u.goal,chase?u.range*.7:4,spd,dt);
+    dist=moveGround(u,chase?tgt.pos:u.goal,chase&&!u.noLos?u.range*.7:4,spd,dt);   /* no clear shot: keep moving until there is one */
     {const ry=rampHeight(u.pos.x,u.pos.z);if(ry<0||u.pos.y<0){u.pos.y=Math.max(ry,u.pos.y-12*dt>ry?ry:ry);clampTunnel(u.pos);u.pos.y=rampHeight(u.pos.x,u.pos.z);}}
     if(u.vel.lengthSq()>.5){const h=Math.atan2(u.vel.x,u.vel.z);let d=h-u.heading;d=Math.atan2(Math.sin(d),Math.cos(d));u.heading+=d*clamp(dt*4,0,1);}
     u.mesh.position.copy(u.pos);u.mesh.rotation.y=u.heading;
@@ -1934,7 +1961,8 @@ function updateUnit(u,dt){
     if(tgt)u.tur.rotation.y=Math.atan2(tgt.pos.x-u.pos.x,tgt.pos.z-u.pos.z)-u.heading;}
   u.cd-=dt;
   if(tgt&&u.cd<=0){center(tgt,_t);center(u,_t2);const d=_t.distanceTo(_t2);
-    if(d<u.range){u.cd=(u.escort?rand(.42,.58):u.air?rand(.8,1.1):rand(1.3,1.7))*DIFF.redFire;
+    u.noLos=d<u.range&&!losClear(_t2,_t,tgt.kind==='base'?tgt.r:tgt.r*.5);if(u.noLos)u.cd=.25;   /* never shoot into a building (user 2026-11-26) */
+    if(d<u.range&&!u.noLos){u.cd=(u.escort?rand(.42,.58):u.air?rand(.8,1.1):rand(1.3,1.7))*DIFF.redFire;
       _t.sub(_t2).normalize();_t.x+=rand(-.04,.04);_t.y+=rand(-.03,.03);
       if(u.air){_t2.y-=.4;fire('bullet',u.team,_t2,_t,u.dmg||6);}
       else if(u.kind==='roller'){u.cd=rand(1,1.4)*DIFF.redFire;_t2.y+=.5;_t2.addScaledVector(_t,1.2);fire('bullet',u.team,_t2,_t,DIFF.rollerDmg,{tracer:true});puff(_t2,0xffa040,.3,.8,.06);}
