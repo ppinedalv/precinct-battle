@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-0849</div>
+<div id="buildTag">BUILD 1126-0906</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1729,12 +1729,12 @@ function splashDamage(pos,r,dmg,team,byPlayer,heavy){for(const e of ents){if(!e.
 // ---------------- damage
 const stats={kills:0,start:0};
 let flashT=0;
-const GUN_HITS_PER=20;   /* rotary gun vs hit-count structures (cannons, HQ turrets, HQ): every 20 bullets = 1 heavy hit (user 2026-11-26) */
+const GUN_HITS_PER=e=>e.kind==='base'?10:4;   /* rotary gun vs hit-count structures (user 2026-11-26): cannons + HQ turrets 4 bullets = 1 heavy hit, HQ 10 bullets (was 20 for all: far too slow) */
 function damage(e,amt,team,byPlayer,heavy,gun){
   if(!e.alive)return;
   // red and blue deal the same damage at every difficulty (redDmg multiplier removed 2026-11-21 at user request)
   amt*=DIFF.dmgMul;   // levels 9-10 hit harder (both teams equally)
-  if(e.hitsMax){if(e.team===null)return;if(!heavy){if(!gun)return;e.gunAcc=(e.gunAcc||0)+1;if(e.gunAcc<GUN_HITS_PER)return;e.gunAcc=0;}e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-e.hits/e.hitsMax);
+  if(e.hitsMax){if(e.team===null)return;if(!heavy){if(!gun)return;const N=GUN_HITS_PER(e);e.gunAcc=(e.gunAcc||0)+1;if(e.gunAcc<N){e.hp=e.maxHp*(1-(e.hits+e.gunAcc/N)/e.hitsMax);return;}e.gunAcc=0;}e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-(e.hits+(e.gunAcc||0)/GUN_HITS_PER(e))/e.hitsMax);   /* health bar also counts bullets toward the next hit */
     if(e.kind==='base'&&(e.hits===Math.round(e.hitsMax*.5)||e.hits===Math.round(e.hitsMax*.8)))feed(`${e.team?'RED':'BLUE'} HQ at ${e.hitsMax-e.hits} hits left`,e.team?'b':'r');
     if(e.hits>=e.hitsMax)kill(e,team,byPlayer);return;}
   if(e.isPlayer){if(player.shieldT>0)return;amt*=PVP?(player.mode<.5?DIFF.rivalArmorW:DIFF.rivalArmorH):player.mode<.5?(DIFF.level>=9?DIFF.rivalArmorW:.7):(DIFF.level>=9?DIFF.rivalArmorH:1);flashT=.25;}   // SS-07 armor: takes 70% Walker / 100% hover; levels 9-10 = same heavy armor as RX-13 (lvl 9: 40%/60%, lvl 10: 35%/55%) (user 2026-11-22)
@@ -2794,7 +2794,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0849'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0906'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
