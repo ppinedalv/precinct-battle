@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1022</div>
+<div id="buildTag">BUILD 1126-1030</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1017,6 +1017,8 @@ let yaw=Math.PI,pitch=.12;
 const MG_MAX=500,SH_MAX=50,MS_MAX=50;   /* per mech: gatling rounds (user 2026-11-22: 3000 -> 1000 -> 800; 2026-11-25: 500), cannon shells (150 -> 100 -> 50), missiles (40 -> 50, 2026-11-25) */
 const player={kind:'mech',team:BLUE,isPlayer:true,lives:5,pos:new THREE.Vector3(0,0,BASE_Z[BLUE]-18),vel:V(),vy:0,onGround:true,hp:400,maxHp:400,r:2.2,hy:2.4,alive:true,
   mode:0,modeTarget:0,mg:MG_MAX,sh:SH_MAX,ms:MS_MAX,spin:0,energy:100,heat:0,overheat:false,cdMG:0,cdSH:0,cdMS:0,phase:0,respawn:0};
+function hullCol(f){/* hull bar: green 100% -> orange 50% -> red <=20% (user 11/26) */const L=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t)),G=[46,204,90],O=[255,150,30],R=[255,52,38];
+  const c=f>=.5?L(O,G,Math.min(1,(f-.5)/.5)):f<=.2?R:L(R,O,(f-.2)/.3);return `rgb(${c})`;}
 const GUN_HEAT_PER=1; /* no cooling while firing: 100 rounds of continuous fire = peak heat (overheat) */
 player.rig=buildMech(BLUE);scene.add(player.rig.root);ents.push(player);
 {const L=new THREE.PointLight(0xffa040,0,16,2);player.rig.muzzleL.add(L);player.muzzleLight=L;}   // gatling muzzle-flash light (flickers per shot)
@@ -1845,7 +1847,7 @@ function updateHUD(){
   $('cRu').textContent=pad3(ru);$('cBu').textContent=pad3(bu);$('cRo').textContent=ro+'/4';$('cBo').textContent=bo+'/4';
   $('hqB').style.width=(bases[0].hp/bases[0].maxHp*100)+'%';$('hqR').style.width=(bases[1].hp/bases[1].maxHp*100)+'%';
   $('hqBn').textContent=`${bases[0].hitsMax-bases[0].hits}/${bases[0].hitsMax}`;$('hqRn').textContent=`${bases[1].hitsMax-bases[1].hits}/${bases[1].hitsMax}`;
-  $('hull').firstChild.style.height=(player.hp/player.maxHp*100)+'%';$('hull').classList.toggle('low',player.alive&&player.hp/player.maxHp<=.2);
+  $('hull').firstChild.style.height=(player.hp/player.maxHp*100)+'%';$('hull').firstChild.style.background=hullCol(player.hp/player.maxHp);$('hull').classList.toggle('low',player.alive&&player.hp/player.maxHp<=.2);
   $('heat').firstChild.style.height=player.heat+'%';$('heat').firstChild.style.background=player.overheat?'#ff4a3d':'';
   $('energy').firstChild.style.width=player.energy+'%';
   $('aMG').textContent=Math.floor(player.mg);$('aSH').textContent=Math.floor(player.sh);$('aMS').textContent=Math.floor(player.ms);
@@ -2660,7 +2662,7 @@ function guestHUD(s){
   const [bh,bm,rh,rm,ba,ra]=s.hq;
   $('cRu').textContent=pad3(s.u[0]);$('cBu').textContent=pad3(s.u[1]);$('cRo').textContent=s.u[2]+'/4';$('cBo').textContent=s.u[3]+'/4';
   $('hqB').style.width=((1-bh/bm)*100)+'%';$('hqR').style.width=((1-rh/rm)*100)+'%';$('hqBn').textContent=`${bm-bh}/${bm}`;$('hqRn').textContent=`${rm-rh}/${rm}`;
-  $('hull').firstChild.style.height=(s.hp/s.mhp*100)+'%';$('hull').classList.toggle('low',s.al&&s.hp/s.mhp<=.2);
+  $('hull').firstChild.style.height=(s.hp/s.mhp*100)+'%';$('hull').firstChild.style.background=hullCol(s.hp/s.mhp);$('hull').classList.toggle('low',s.al&&s.hp/s.mhp<=.2);
   $('heat').firstChild.style.height=s.heat+'%';$('heat').firstChild.style.background=s.oh?'#ff4a3d':'';
   $('energy').firstChild.style.width=s.en+'%';
   $('aMG').textContent=Math.floor(s.mg);$('aSH').textContent=Math.floor(s.sh);$('aMS').textContent=Math.floor(s.ms);
@@ -2795,7 +2797,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1022'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1030'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
