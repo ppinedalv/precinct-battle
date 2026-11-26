@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1125-1253</div>
+<div id="buildTag">BUILD 1125-2021</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1009,9 +1009,9 @@ function setDifficulty(d){diffLevel=clamp(Math.round(d),1,10);DIFF=makeDiff(diff
 // ---------------- entities
 const ents=[],projs=[],crates=[],turrets=[];
 let yaw=Math.PI,pitch=.12;
-const MG_MAX=800,SH_MAX=100;   /* per mech: gatling rounds (user 2026-11-22: 3000 -> 1000 -> 800), cannon shells (150 -> 100) */
+const MG_MAX=500,SH_MAX=50,MS_MAX=50;   /* per mech: gatling rounds (user 2026-11-22: 3000 -> 1000 -> 800; 2026-11-25: 500), cannon shells (150 -> 100 -> 50), missiles (40 -> 50, 2026-11-25) */
 const player={kind:'mech',team:BLUE,isPlayer:true,lives:5,pos:new THREE.Vector3(0,0,BASE_Z[BLUE]-18),vel:V(),vy:0,onGround:true,hp:400,maxHp:400,r:2.2,hy:2.4,alive:true,
-  mode:0,modeTarget:0,mg:MG_MAX,sh:SH_MAX,ms:40,spin:0,energy:100,heat:0,overheat:false,cdMG:0,cdSH:0,cdMS:0,phase:0,respawn:0};
+  mode:0,modeTarget:0,mg:MG_MAX,sh:SH_MAX,ms:MS_MAX,spin:0,energy:100,heat:0,overheat:false,cdMG:0,cdSH:0,cdMS:0,phase:0,respawn:0};
 player.rig=buildMech(BLUE);scene.add(player.rig.root);ents.push(player);
 {const L=new THREE.PointLight(0xffa040,0,16,2);player.rig.muzzleL.add(L);player.muzzleLight=L;}   // gatling muzzle-flash light (flickers per shot)
 const rival={kind:'mech',team:RED,pos:new THREE.Vector3(0,0,BASE_Z[RED]+18),vel:V(),hp:320,maxHp:320,r:2.2,hy:3.0,alive:true,
@@ -1730,7 +1730,7 @@ const WRECK_MAT=new THREE.MeshStandardMaterial({color:0x15161a,roughness:.95,met
 const PICKUPS={
   bullets:{color:0xffd24a,css:'#ffd24a',label:'Gatling ammo +300',apply:P=>{P.mg=Math.min(MG_MAX,P.mg+300);}},
   cannon:{color:0xff8a2a,css:'#ff8a2a',label:'Cannon shells +20',apply:P=>{P.sh=Math.min(SH_MAX,P.sh+20);}},
-  missile:{color:0xff4a7a,css:'#ff4a7a',label:'Missiles +10',apply:P=>{P.ms=Math.min(40,P.ms+10);}},
+  missile:{color:0xff4a7a,css:'#ff4a7a',label:'Missiles +10',apply:P=>{P.ms=Math.min(MS_MAX,P.ms+10);}},
   repair:{color:0x3dff8a,css:'#3dff8a',label:'Hull repaired +120',apply:P=>{P.hp=Math.min(P.maxHp,P.hp+120);}}};
 const PK_GEO={wire:new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(.9,1)),glass:new THREE.SphereGeometry(.86,24,16),ring:new THREE.TorusGeometry(1,.05,6,32)};
 function pkMat(c){return new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.75,flatShading:true,roughness:.35,metalness:.3});}
@@ -2026,7 +2026,7 @@ function computeAim(){
 
 function updatePlayer(dt,t){
   const P=player;
-  if(!P.alive){P.spin=0;P.respawn-=dt;if(P.respawn<=0){P.alive=true;P.hp=P.maxHp;P.pos.set(0,0,BASE_Z[BLUE]-18);P.vel.set(0,0,0);P.vy=0;P.onGround=true;empCD=0;P.rig.root.visible=true;P.mg=Math.max(P.mg,MG_MAX/2);P.sh=Math.max(P.sh,SH_MAX/2);P.ms=Math.max(P.ms,20);yaw=Math.PI;}return;}
+  if(!P.alive){P.spin=0;P.respawn-=dt;if(P.respawn<=0){P.alive=true;P.hp=P.maxHp;P.pos.set(0,0,BASE_Z[BLUE]-18);P.vel.set(0,0,0);P.vy=0;P.onGround=true;empCD=0;P.rig.root.visible=true;P.mg=Math.max(P.mg,MG_MAX/2);P.sh=Math.max(P.sh,SH_MAX/2);P.ms=Math.max(P.ms,MS_MAX/2);yaw=Math.PI;}return;}
   P.mode=lerp(P.mode,P.modeTarget,clamp(dt*4,0,1));
   yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt-TOUCH.ax*2.8*dt;   /* only the AIM joystick turns the view */
   pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt+TOUCH.ay*1.2*dt,-.7118,.65);
@@ -2090,7 +2090,7 @@ function updatePlayer(dt,t){
    const needs=P.hp<P.maxHp||P.mg<MG_MAX||P.sh<SH_MAX||P.ms<40,rm=$('repairMsg');
    if(onPad&&needs){const wasDamaged=P.hp<P.maxHp;
      P.hp=Math.min(P.maxHp,P.hp+P.maxHp/15*dt);                      // 0 -> 100% hull in 15 seconds
-     P.mg=Math.min(MG_MAX,P.mg+MG_MAX/5*dt);P.sh=Math.min(SH_MAX,P.sh+SH_MAX/5*dt);P.ms=Math.min(40,P.ms+40/5*dt);
+     P.mg=Math.min(MG_MAX,P.mg+MG_MAX/5*dt);P.sh=Math.min(SH_MAX,P.sh+SH_MAX/5*dt);P.ms=Math.min(MS_MAX,P.ms+MS_MAX/5*dt);
      const pulse=.5+.5*Math.sin(t*8);pad.ring.material.color.setHex(0x3dff8a);pad.disc.material.color.setHex(0x3dff8a);pad.disc.material.opacity=.18+.2*pulse;
      if(Math.random()<.5){const a=Math.random()*6.283,r=rand(1,2.6);puff(_c.set(P.pos.x+Math.cos(a)*r,P.pos.y+rand(.3,2),P.pos.z+Math.sin(a)*r),0x5dffa0,.25,.6,.7,0,rand(2.5,4),0);}
      rm.style.display='block';rm.textContent='REPAIRING  '+Math.floor(P.hp/P.maxHp*100)+'%';
@@ -2284,7 +2284,7 @@ function initialSpawn(){
   {const l=DIFF.level,h=l>=9?18:l>=7?14:l>=5?12:l>=3?10:8;   // HQ + podium cannon hits to destroy per tier (user 2026-11-24): Easy 8, Normal 10, Hard 12, Veteran 14, Brutal 18
    for(const e of ents)if(e.kind==='hqturret'||e.kind==='cannon')e.hitsMax=h;}
   rival.maxHp=rival.hp=DIFF.mechHp;if(DIFF.level>=9)player.maxHp=player.hp=DIFF.mechHp;   // levels 9-10: SS-07 hull = RX-13 hull (900 / 1000) (user 2026-11-22); levels 1-8 SS-07 stays 400
- rival.empCharges=EMP_MAX;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // EMP_MAX (5) blasts per game for both mechs, no reloads
+ rival.empCharges=EMP_MAX;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.ms=MS_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // EMP_MAX (5) blasts per game for both mechs, no reloads
 
 // ---------------- rooftop portals (re-added 2026-11-22 at user request): 4 glowing rings on low rooftops (one per map quarter). A mech that steps in
 // re-appears on a random OTHER portal rooftop, with a teleport sound on entry and on arrival.
@@ -2402,7 +2402,7 @@ function guestLeft(c){if(c&&NET.conn!==c)return;if(!NET.conn)return;NET.conn=nul
   if(!started){pvpStatus('Opponent left. Waiting for them to rejoin with the same link…','err');updateGoBtn();}}
 function rivalToAI(){const R=rival;R.face=R.rig.root.rotation.y;R.target=null;R.think=0;R.cd=R.cd||0;R.burst=0;R.cdMS=Math.max(R.cdMS||0,2);R.boosting=false;R.running=false;}
 function startPvp(){const R=rival;PVP=true;
-  R.mode=R.mode||0;R.modeTarget=R.modeTarget||0;R.spin=0;R.energy=100;R.heat=0;R.overheat=false;R.cdMG=0;R.cdSH=0;R.cdMS=0;R.ms=R.ms??40;R.mg=R.mg??MG_MAX;R.sh=R.sh??SH_MAX;
+  R.mode=R.mode||0;R.modeTarget=R.modeTarget||0;R.spin=0;R.energy=100;R.heat=0;R.overheat=false;R.cdMG=0;R.cdSH=0;R.cdMS=0;R.ms=R.ms??MS_MAX;R.mg=R.mg??MG_MAX;R.sh=R.sh??SH_MAX;
   R.vy=R.vy||0;R.onGround=R.onGround!==false;R.assault=false;R.usePortal=null;R.reloading=false;if(R.empCharges===undefined)R.empCharges=EMP_MAX;R.empCD=0;
   RIN.yaw=R.rig.root.rotation.y;RIN.pitch=.12;RIN.keys={};RIN.ml=RIN.mr=false;
   ensureGuestView();
@@ -2429,7 +2429,7 @@ function updatePilot(R,dt,t){
   R.empCD=Math.max(0,(R.empCD||0)-dt);R.flashT=Math.max(0,(R.flashT||0)-dt);
   if(!R.alive){R.spin=0;R.boosting=false;R.respawn-=dt;
     if(R.respawn<=0){R.alive=true;R.hp=R.maxHp;R.pos.set(0,0,BASE_Z[RED]+18);R.vel.set(0,0,0);R.vy=0;R.onGround=true;R.mode=R.modeTarget=0;R.empCD=0;R.rig.root.visible=true;
-      R.mg=Math.max(R.mg,MG_MAX/2);R.sh=Math.max(R.sh,SH_MAX/2);R.ms=Math.max(R.ms,20);RIN.yaw=0;RIN.pitch=.12;feed('Enemy mech has redeployed','r');}return;}
+      R.mg=Math.max(R.mg,MG_MAX/2);R.sh=Math.max(R.sh,SH_MAX/2);R.ms=Math.max(R.ms,MS_MAX/2);RIN.yaw=0;RIN.pitch=.12;feed('Enemy mech has redeployed','r');}return;}
   R.mode=lerp(R.mode,R.modeTarget,clamp(dt*4,0,1));
   RIN.yaw+=((K.ArrowLeft?1:0)-(K.ArrowRight?1:0))*2.3*dt;
   RIN.pitch=clamp(RIN.pitch+((K.ArrowDown?1:0)-(K.ArrowUp?1:0))*1.1*dt,-.7118,.65);
@@ -2482,7 +2482,7 @@ function updatePilot(R,dt,t){
   {const pad=bases[1].pad,onPad=bases[1].alive&&R.pos.y<1&&Math.hypot(R.pos.x-RED_PAD.x,R.pos.z-RED_PAD.z)<6.2;
    const needs=R.hp<R.maxHp||R.mg<MG_MAX||R.sh<SH_MAX||R.ms<40;R.repairing=null;
    if(onPad&&needs){const was=R.hp<R.maxHp;
-     R.hp=Math.min(R.maxHp,R.hp+R.maxHp/15*dt);R.mg=Math.min(MG_MAX,R.mg+MG_MAX/5*dt);R.sh=Math.min(SH_MAX,R.sh+SH_MAX/5*dt);R.ms=Math.min(40,R.ms+40/5*dt);
+     R.hp=Math.min(R.maxHp,R.hp+R.maxHp/15*dt);R.mg=Math.min(MG_MAX,R.mg+MG_MAX/5*dt);R.sh=Math.min(SH_MAX,R.sh+SH_MAX/5*dt);R.ms=Math.min(MS_MAX,R.ms+MS_MAX/5*dt);
      const pulse=.5+.5*Math.sin(t*8);pad.ring.material.color.setHex(0x3dff8a);pad.disc.material.color.setHex(0x3dff8a);pad.disc.material.opacity=.18+.2*pulse;
      if(Math.random()<.5){const a=Math.random()*6.283,rr=rand(1,2.6);puff(_c.set(R.pos.x+Math.cos(a)*rr,R.pos.y+rand(.3,2),R.pos.z+Math.sin(a)*rr),0x5dffa0,.25,.6,.7,0,rand(2.5,4),0);}
      R.repairing=Math.floor(R.hp/R.maxHp*100);if(was&&R.hp>=R.maxHp){gfeed('Hull fully repaired','r');netSnd('chime');}}
@@ -2721,7 +2721,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-1253'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1125-2021'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
