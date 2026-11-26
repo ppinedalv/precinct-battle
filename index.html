@@ -757,10 +757,27 @@ function throwMolotov(u,P){const hand=u.arm.localToWorld(_th.set(0,-.8,0)).clone
   const m=new THREE.Group();const btl=new THREE.Mesh(UCYL,new THREE.MeshStandardMaterial({color:0x2f6a3a,roughness:.2,metalness:.1}));btl.scale.set(.2,.42,.2);m.add(btl);
   const f=new THREE.Sprite(FLAME_SPR);f.position.y=.35;f.scale.set(.9,.9,1);m.add(f);m.position.copy(hand);scene.add(m);
   MOLOTOVS.push({m,pos:hand,vel:new THREE.Vector3((tx-hand.x)/T,(ty-hand.y+.5*G*T*T)/T,(tz-hand.z)/T),G,life:4,smokeT:0});}
+
+/* Molotov sounds (user 2026-11-26), made in code: breaking glass, flame whoosh, crackling fire */
+const _sv=pos=>clamp(1.1-pos.distanceTo(player.pos)/90,0,1);
+function glassBreak(pos){if(muted||!actx||!noise)return;const v=_sv(pos);if(v<.04)return;const t=actx.currentTime,out=actx.destination;
+  for(let i=0;i<7;i++){const t0=t+i*rand(.008,.03)+(i?rand(0,.05):0),n=actx.createBufferSource();n.buffer=noise;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=rand(2500,5500);
+    const g=actx.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime((i?.22:.5)*v,t0+.003);g.gain.exponentialRampToValueAtTime(.0005,t0+rand(.05,.16));n.connect(hp).connect(g).connect(out);n.start(t0,Math.random()*.7,.2);n.stop(t0+.2);}
+  for(let i=0;i<6;i++){const t0=t+rand(.02,.3),o=actx.createOscillator();o.type='sine';o.frequency.value=rand(3200,7200);const g=actx.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.06*v,t0+.002);g.gain.exponentialRampToValueAtTime(.0002,t0+rand(.08,.25));o.connect(g).connect(out);o.start(t0);o.stop(t0+.3);}}
+function fireWhoosh(pos){if(muted||!actx||!noise)return;const v=_sv(pos);if(v<.04)return;const t=actx.currentTime+.04,n=actx.createBufferSource();n.buffer=noise;n.loop=true;
+  const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(300,t);lp.frequency.exponentialRampToValueAtTime(2200,t+.25);lp.frequency.exponentialRampToValueAtTime(500,t+1.1);
+  const g=actx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.55*v,t+.18);g.gain.exponentialRampToValueAtTime(.0005,t+1.3);n.connect(lp).connect(g).connect(actx.destination);n.start(t);n.stop(t+1.35);}
+const FIRE_SND={g:null};
+function fireAudio(dt){if(!actx||!noise)return;if(!FIRE_SND.g){const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const bp=actx.createBiquadFilter();bp.type='lowpass';bp.frequency.value=700;
+    const g=actx.createGain();g.gain.value=0;n.connect(bp).connect(g).connect(actx.destination);n.start();FIRE_SND.g=g;}
+  let v=0;for(const f of FIRES){const k=Math.min(1,f.t/1.5)*clamp(1.1-Math.hypot(f.x-player.pos.x,f.z-player.pos.z)/70,0,1);v=Math.max(v,k);
+    if(!muted&&k>.05&&Math.random()<.35){const t=actx.currentTime,c=actx.createBufferSource();c.buffer=noise;const hp=actx.createBiquadFilter();hp.type='bandpass';hp.frequency.value=rand(1200,4200);hp.Q.value=2;   /* crackle */
+      const g=actx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(rand(.05,.2)*k,t+.002);g.gain.exponentialRampToValueAtTime(.0002,t+rand(.01,.04));c.connect(hp).connect(g).connect(actx.destination);c.start(t,Math.random()*.9,.06);c.stop(t+.06);}}
+  FIRE_SND.g.gain.setTargetAtTime(muted||paused?0:v*.28,actx.currentTime,.15);}
 function molotovBurst(p){const g=_th2.set(p.x,Math.max(.3,p.y),p.z);
   puff(g,0xfff0b0,2.5,7,.25);for(let i=0;i<12;i++)puff(_c.set(g.x+rand(-2,2),g.y+rand(0,2.5),g.z+rand(-2,2)),Math.random()<.5?0xff6a14:0xffb030,rand(1.8,3),rand(5,8),rand(.5,.9),rand(-3,3),rand(2,6),rand(-3,3));
   for(let i=0;i<5;i++)puff(_c.set(g.x+rand(-1.5,1.5),g.y+rand(1,3),g.z+rand(-1.5,1.5)),0x2a1e18,2.5,6,rand(1.2,2),0,rand(2,4),0);
-  playBoom(g,3.5)||sfx('boom',g,.5);
+  glassBreak(g);fireWhoosh(g);
   const P=player;if(P.alive&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<4.8&&P.pos.y<3)damage(P,14+DIFF.level*.8,RED,false,false);
   FIRES.push({x:p.x,z:p.z,t:4.5,tick:0});}
 function updateThugs(dt,t){const P=player;updateCorpses(dt);
@@ -788,6 +805,7 @@ function updateThugs(dt,t){const P=player;updateCorpses(dt);
     b.smokeT-=dt;if(b.smokeT<=0){b.smokeT=.05;puff(b.pos,0xff8a2a,.35,.9,.25);}
     const P2=player,hitP=P2.alive&&b.pos.distanceTo(center(P2,_th))<2.6;
     if(b.pos.y<=0||hitP||insideBuilding(b.pos)||b.life<=0){molotovBurst(b.pos);scene.remove(b.m);b.m.children[0].material.dispose();MOLOTOVS.splice(i,1);}}
+  fireAudio(dt);
   for(let i=FIRES.length-1;i>=0;i--){const f=FIRES[i];f.t-=dt;if(f.t<=0){FIRES.splice(i,1);continue;}const k=Math.min(1,f.t/1.5);
     for(let j=0;j<2;j++)if(Math.random()<.8*k){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*3.6;puff(_c.set(f.x+Math.cos(a)*r,.3,f.z+Math.sin(a)*r),Math.random()<.5?0xff6a14:0xffa030,rand(.8,1.6),rand(2,3.5),rand(.4,.7),0,rand(2.5,4.5),0);}
     if(Math.random()<.15*k)puff(_c.set(f.x+rand(-2,2),2,f.z+rand(-2,2)),0x2a1e18,1.5,4,1.4,0,3,0);
@@ -3433,7 +3451,7 @@ function frame(now){
   if(DEMO&&!started)begin();
   if(GUEST&&started){guestFrame(dt);return;}
   if(PVP&&started&&paused){pauseNoteT-=dt;if(pauseNoteT<=0){pauseNoteT=.5;netSend({t:'pause'});}}
-  if(!started||paused){if(DUSK&&CROWD.master)CROWD.master.gain.setTargetAtTime(0,actx.currentTime,.1);updateHoverHum();updateGunWhine();updateScanner(0);updateBoostAudio(false);updateCamera(dt);updateSky(now/1000);renderer.render(scene,camera);return;}
+  if(!started||paused){if(DUSK&&actx){if(CROWD.master)CROWD.master.gain.setTargetAtTime(0,actx.currentTime,.1);if(FIRE_SND.g)FIRE_SND.g.gain.setTargetAtTime(0,actx.currentTime,.1);}updateHoverHum();updateGunWhine();updateScanner(0);updateBoostAudio(false);updateCamera(dt);updateSky(now/1000);renderer.render(scene,camera);return;}
   if(over)dt*=.3;
   gt+=dt;sndCount=0;flashT-=dt;
   updatePlayer(dt,gt);updateHoverHum();updateGunWhine();updateScanner(dt);updateBoostAudio(!!player.boosting&&player.alive);if(PVP)updatePilot(rival,dt,gt);else if(!DUSK){updateRival(rival,dt,gt);updateRivalEMP(rival,dt);}
