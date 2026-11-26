@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-0841</div>
+<div id="buildTag">BUILD 1126-0849</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -835,6 +835,7 @@ function buildMech(team){
 // hover-mode leg pose (user 2026-11-22): legs swept straight back under the jet, hips slid rearward so the feet trail behind
 // the thruster, body sits lower. th = hip swing, sh = knee bend, ft = extra foot tilt, hipZ = hip slide, y = body height in hover.
 const HOVER_LEG={th:1.42,sh:-.12,ft:.55,hipZ:-.9,y:1.05};
+const HOVER_BANK=3*Math.PI/180;   /* hover side-slide tilt: 3 degrees (user 2026-11-26, was 5) right when moving right, left when moving left */
 function poseMech(rig,m,phase,amp,t){
   for(const L of rig.legs){
     const p=phase+(L.s>0?Math.PI:0);
@@ -855,7 +856,7 @@ function poseMech(rig,m,phase,amp,t){
      rig.body.position.y-=ext(0)-ext(c)+ext(c)*(1-Math.cos(.22*sa))*(1-m);}}
   {const a=Math.abs((rig.strafe||0)*(1-m));                         // gallop hop + lean into the side-step
    rig.body.position.y+=Math.max(0,Math.sin(phase*2.3))*.16*amp*a;
-   rig.body.rotation.z=lerp(Math.sin(phase)*.03*amp*(1-a)-(rig.strafe||0)*.07*amp,0,m);}
+   rig.body.rotation.z=lerp(Math.sin(phase)*.03*amp*(1-a)-(rig.strafe||0)*.07*amp,-(rig.strafe||0)*HOVER_BANK,m);}   /* hover: bank 3 deg toward the side it slides to (user 2026-11-26), both mechs */
   const dA=rig.lastT===undefined?0:clamp(t-rig.lastT,0,.1);rig.lastT=t;
   rig.fan.rotation.z+=dA*(3+m*24+amp*5);
   rig.flame.scale.setScalar(1.1+m*.4+Math.random()*.06);rig.flame.material.opacity=.55+m*.45;
@@ -2793,7 +2794,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0841'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0849'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
