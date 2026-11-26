@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1501</div>
+<div id="buildTag">BUILD 1126-1510</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -811,7 +811,7 @@ function labHit(p){if(p.dead)return;p.dead=true;p.fall=0;puff(_pc.set(p.x,1,p.z)
 function updateLabCrew(dt){const D=DUSK_DYN.lab;if(!D)return;const {crew,torso,head,legs,arms,hands}=D,P=player;
   crew.forEach((s,i)=>{let lie=0,y0=0,sw=0,bob=0,spread=0;
     if(!s.dead){if(s.hide>0){s.hide-=dt;if(s.hide<=0){s.z=DC_FRONT+1.3;labTarget(s);}else{for(const m of[torso,head])m.setMatrixAt(i,_Z0);for(const m of[legs,arms,hands]){m.setMatrixAt(i*2,_Z0);m.setMatrixAt(i*2+1,_Z0);}return;}}
-      const dp=P.alive?Math.hypot(P.pos.x-s.x,P.pos.z-s.z):1e9;if(dp<16&&!s.door&&Math.random()<.05){s.tx=s.x+(s.x-P.pos.x)*2;s.tz=s.z+(s.z-P.pos.z)*2;if(!labOk(s.tx,s.tz)){s.tx=LAB_DOORS[Math.floor(Math.random()*4)];s.tz=DC_FRONT+1.3;s.door=true;}}
+      const dp=P.alive?Math.hypot(P.pos.x-s.x,P.pos.z-s.z):1e9;if(dp<20&&Math.random()<dt*.45)screamAt(s.x,s.z);if(dp<16&&!s.door&&Math.random()<.05){s.tx=s.x+(s.x-P.pos.x)*2;s.tz=s.z+(s.z-P.pos.z)*2;if(!labOk(s.tx,s.tz)){s.tx=LAB_DOORS[Math.floor(Math.random()*4)];s.tz=DC_FRONT+1.3;s.door=true;}}
       const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz),sp=s.sp*(dp<20?1.5:1);
       if(d<.6){if(s.door){s.hide=rand(2,7);s.x=s.tx;s.z=s.tz-.6;}else labTarget(s);}else{s.x+=dx/d*sp*dt;s.z+=dz/d*sp*dt;s.yaw=Math.atan2(dx,dz);}
       s.ph+=dt*sp*3.4;sw=Math.sin(s.ph)*.75;bob=Math.abs(Math.cos(s.ph))*.06;
@@ -828,7 +828,7 @@ function updatePeds(dt){const D=DUSK_DYN.peds;if(!D)return;const {peds,torso,hea
   peds.forEach((p,i)=>{const P=p.P,len=Math.hypot(P.bx-P.ax,P.bz-P.az);let lie=0,y0=0,sw=0,bob=0,spread=0;
     if(!p.dead){let x=P.ax+(P.bx-P.ax)*p.t,z=P.az+(P.bz-P.az)*p.t;
       let near=1e9,nx=0,nz=0;for(const m of[player,rival]){if(!m.alive)continue;const d=Math.hypot(m.pos.x-x,m.pos.z-z);if(d<near){near=d;nx=m.pos.x;nz=m.pos.z;}}
-      if(near<18){p.run=2.5;const ux=(P.bx-P.ax)/len,uz=(P.bz-P.az)/len;p.dir=((x-nx)*ux+(z-nz)*uz)>=0?1:-1;}else p.run=Math.max(0,p.run-dt*.5);
+      if(near<18){if(p.run<=.05||Math.random()<dt*.4)screamAt(x,z);p.run=2.5;const ux=(P.bx-P.ax)/len,uz=(P.bz-P.az)/len;p.dir=((x-nx)*ux+(z-nz)*uz)>=0?1:-1;}else p.run=Math.max(0,p.run-dt*.5);
       const sp=p.sp*(1+p.run*1.6);p.t+=p.dir*sp*dt/len;if(p.t>1){p.t=1;p.dir=-1;}if(p.t<0){p.t=0;p.dir=1;}
       x=P.ax+(P.bx-P.ax)*p.t;z=P.az+(P.bz-P.az)*p.t;const ux=(P.bx-P.ax)/len*p.dir,uz=(P.bz-P.az)/len*p.dir;p.x=x-uz*p.off;p.z=z+ux*p.off;p.yaw=Math.atan2(ux,uz);
       p.ph+=dt*sp*4.2;sw=Math.sin(p.ph)*(.45+p.run*.12);bob=Math.abs(Math.cos(p.ph))*.04;
@@ -1254,6 +1254,23 @@ function yellOnce(vol){if(muted||!actx||!noise)return;const t=actx.currentTime+.
   const pan=actx.createStereoPanner?actx.createStereoPanner():null;let out=lp;if(pan){pan.pan.value=rand(-.85,.85);lp.connect(pan);out=pan;}
   mix.connect(sh).connect(env).connect(lp);out.connect(actx.destination);
   o.start(t);l.start(t);asp.start(t,Math.random()*.5,dur+.2);o.stop(t+dur+.2);l.stop(t+dur+.2);}
+
+/* panicked screams from fleeing people (user 2026-11-26), made in code, positioned by distance + left/right of the camera */
+let SCREAM_NEXT=0;const _scr=new THREE.Vector3(),_scr2=new THREE.Vector3();
+function screamAt(x,z){if(muted||!actx||!noise||!DUSK)return;const now=actx.currentTime;if(now<SCREAM_NEXT)return;
+  const d=Math.hypot(x-player.pos.x,z-player.pos.z),vol=clamp(1.15-d/70,0,1);if(vol<.05)return;SCREAM_NEXT=now+rand(.3,.7);
+  _scr.set(x,1.6,z).sub(camera.position).normalize();_scr2.set(1,0,0).applyQuaternion(camera.quaternion);const panv=clamp(_scr.dot(_scr2),-1,1)*.9;
+  const t=now+.01,dur=rand(.55,1.15),fem=Math.random()<.55,f0=fem?rand(520,820):rand(300,460);
+  const o=actx.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f0*.75,t);o.frequency.exponentialRampToValueAtTime(f0*rand(1.25,1.5),t+dur*.25);o.frequency.exponentialRampToValueAtTime(f0*rand(.8,1.0),t+dur);
+  const l=actx.createOscillator(),lg=actx.createGain();l.frequency.value=rand(6,9);lg.gain.value=f0*.05;l.connect(lg).connect(o.frequency);
+  if(!YELL_CURVE){YELL_CURVE=new Float32Array(256);for(let i=0;i<256;i++){const xx=i/128-1;YELL_CURVE[i]=Math.tanh(xx*3);}}
+  const V=Math.random()<.6?[900,1350,2900]:[420,2350,3100],mix=actx.createGain();   /* "aah" or "eee" */
+  V.forEach((f,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';bp.Q.value=[8,10,12][i];bp.frequency.value=f*(fem?1.15:1);const g=actx.createGain();g.gain.value=[1,.6,.35][i]*3;o.connect(bp).connect(g).connect(mix);});
+  const asp=actx.createBufferSource();asp.buffer=noise;const ab=actx.createBiquadFilter();ab.type='bandpass';ab.frequency.value=3000;ab.Q.value=.9;const ag=actx.createGain();ag.gain.value=.3;asp.connect(ab).connect(ag).connect(mix);
+  const sh=actx.createWaveShaper();sh.curve=YELL_CURVE;const env=actx.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(.34*vol,t+.05);env.gain.setValueAtTime(.3*vol,t+dur*.8);env.gain.exponentialRampToValueAtTime(.0001,t+dur+.18);
+  const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800+vol*4500;mix.connect(sh).connect(env).connect(lp);
+  if(actx.createStereoPanner){const pn=actx.createStereoPanner();pn.pan.value=panv;lp.connect(pn).connect(actx.destination);}else lp.connect(actx.destination);
+  o.start(t);l.start(t);asp.start(t,Math.random()*.5,dur+.2);o.stop(t+dur+.25);l.stop(t+dur+.25);}
 function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStart();return;}const t=actx.currentTime;
   let n=0;for(const u of THUGS)if(u.alive&&Math.hypot(u.pos.x-player.pos.x,u.pos.z-player.pos.z)<75)n++;
   const want=muted||over||!BOSS||!BOSS.alive?0:clamp(.22+n/9,.22,1);CROWD.lvl=lerp(CROWD.lvl,want,.03);CROWD.master.gain.setTargetAtTime(CROWD.lvl*.45,t,.2);
@@ -3776,7 +3793,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1501'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1510'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
