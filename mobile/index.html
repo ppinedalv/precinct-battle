@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1020</div>
+<div id="buildTag">BUILD 1126-1022</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1017,7 +1017,7 @@ let yaw=Math.PI,pitch=.12;
 const MG_MAX=500,SH_MAX=50,MS_MAX=50;   /* per mech: gatling rounds (user 2026-11-22: 3000 -> 1000 -> 800; 2026-11-25: 500), cannon shells (150 -> 100 -> 50), missiles (40 -> 50, 2026-11-25) */
 const player={kind:'mech',team:BLUE,isPlayer:true,lives:5,pos:new THREE.Vector3(0,0,BASE_Z[BLUE]-18),vel:V(),vy:0,onGround:true,hp:400,maxHp:400,r:2.2,hy:2.4,alive:true,
   mode:0,modeTarget:0,mg:MG_MAX,sh:SH_MAX,ms:MS_MAX,spin:0,energy:100,heat:0,overheat:false,cdMG:0,cdSH:0,cdMS:0,phase:0,respawn:0};
-const GUN_HEAT_PER=2.1; /* no cooling while firing: ~4 s of continuous fire overheats */
+const GUN_HEAT_PER=1; /* no cooling while firing: 100 rounds of continuous fire = peak heat (overheat) */
 player.rig=buildMech(BLUE);scene.add(player.rig.root);ents.push(player);
 {const L=new THREE.PointLight(0xffa040,0,16,2);player.rig.muzzleL.add(L);player.muzzleLight=L;}   // gatling muzzle-flash light (flickers per shot)
 const rival={kind:'mech',team:RED,pos:new THREE.Vector3(0,0,BASE_Z[RED]+18),vel:V(),hp:320,maxHp:320,r:2.2,hy:3.0,alive:true,
@@ -2795,7 +2795,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1020'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1022'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
