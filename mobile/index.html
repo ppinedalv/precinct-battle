@@ -173,7 +173,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-0833</div>
+<div id="buildTag">BUILD 1126-0841</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1083,14 +1083,15 @@ for(const b of bases)for(const s of[-1,1]){
   const z=b.pos.z,g=new THREE.Group();g.position.set(s*18.5,0,z);scene.add(g);
   box(.26,2.6,2.6,M(0x1a1c21,{roughness:.5,metalness:.7}),s*.13,2.5,0,g);   // dark wall plate
   /* round yellow bubble button (user 2026-11-26, was a square green glowing one): flat face with a quarter-round edge, set in a round recessed socket, no glow */
-  const capMat=M(0x2fd866,{metalness:.15,roughness:.35});   /* green again (user 2026-11-26), solid colour, no glow */
+  const capMat=M(0x2fd866,{emissive:0x0fb83e,emissiveIntensity:.8,metalness:.15,roughness:.35});   /* green, glowing again (user 2026-11-26) */
   const bezel=new THREE.Mesh(new THREE.TorusGeometry(.78,.1,14,48),M(0x3a3e47,{metalness:.85,roughness:.3}));bezel.rotation.y=Math.PI/2;bezel.position.set(s*.27,2.4,0);g.add(bezel);   /* steel ring around the hole */
   const hole=new THREE.Mesh(new THREE.CircleGeometry(.72,48),M(0x070809,{roughness:.9}));hole.rotation.y=s*Math.PI/2;hole.position.set(s*.262,2.4,0);g.add(hole);   /* dark socket the button sinks into */
   const R=.62,E=.2,H=.34,prof=[new THREE.Vector2(0,H),new THREE.Vector2(R-E,H)];
   for(let i=1;i<=8;i++){const a=i/8*Math.PI/2;prof.push(new THREE.Vector2(R-E+Math.sin(a)*E,H-E+Math.cos(a)*E));}   /* quarter-circle edge */
   prof.push(new THREE.Vector2(R,0));prof.reverse();   /* lathe points must run bottom -> top or the faces point inward */
   const cap=new THREE.Mesh(new THREE.LatheGeometry(prof,48),capMat);cap.rotation.z=-s*Math.PI/2;cap.position.set(s*.2,2.4,0);cap.castShadow=true;g.add(cap);   /* lathe axis points out of the wall */
-  const glow=null;
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:BTN_GLOW,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));
+  glow.position.set(s*.75,2.4,0);glow.scale.set(3.4,3.4,1);g.add(glow);   /* soft green halo around the bubble */
   const lbl=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.62),stencilLetters('DEPLOY','#f2b51d',774)   /* yellow, same stencil font as the mech's rear letters (user 2026-11-24) */);lbl.rotation.y=s*Math.PI/2;lbl.position.set(s*.28,3.95,0);g.add(lbl);
   hqButtons.push({team:b.team,s,base:b,cap,capMat,glow,cd:0,press:0,capX:s*.2,stand:new THREE.Vector3(s*21.2,0,z)});}
 
@@ -1131,7 +1132,8 @@ function buildHoverBot(team){
 
 function hqButtonSound(pos){if(PVP)fwdSnd('hqb',pos,1,1);if(muted||!actx)return;const t=actx.currentTime,dist=pos?pos.distanceTo(player.pos):0,v=Math.max(.35,clamp(1-dist/160,0,1));
   /* deep click (user 2026-11-26, replaces the long electrical click): low muffled clack as the button bottoms out, then a softer deep release click. Synthesized, no samples. */
-  const out=actx.createGain();out.gain.value=v;out.connect(actx.destination);
+  const out=actx.createGain(),lim=actx.createDynamicsCompressor();lim.threshold.value=-3;lim.ratio.value=12;lim.attack.value=.001;lim.release.value=.1;
+  out.gain.value=v*2.5;out.connect(lim).connect(actx.destination);   /* 2.5x louder (user 2026-11-26), limiter keeps it from clipping */
   const knock=(tk,amp,freq,len)=>{const n=actx.createBufferSource();n.buffer=noise;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=freq;lp.Q.value=2.5;
     const g=actx.createGain();g.gain.setValueAtTime(amp,tk);g.gain.exponentialRampToValueAtTime(.001,tk+len);n.connect(lp).connect(g).connect(out);n.start(tk,Math.random()*.4);n.stop(tk+len+.01);};
   const thump=(tk,amp,f0,len)=>{const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(f0,tk);o.frequency.exponentialRampToValueAtTime(f0*.45,tk+len);
@@ -1156,7 +1158,7 @@ function updateHQButtons(dt,t){
   for(const B of hqButtons){
     B.cd=Math.max(0,B.cd-dt);B.press=Math.max(0,B.press-dt);
     const ready=B.cd<=0&&B.base.alive,pulse=.75+.25*Math.sin(t*4+B.s);
-    B.capMat.color.setHex(ready?0x2fd866:0x145a2a);   /* charging = dull dark green, no glow */
+    B.capMat.color.setHex(ready?0x2fd866:0x145a2a);B.capMat.emissiveIntensity=ready?.55+.35*pulse:.05;B.glow.material.opacity=ready?.3+.3*pulse:.06;   /* ready: pulsing green glow; charging: dim */
     {const k=B.press>0?1-B.press/.6:1,dep=k<.25?k/.25:1-(k-.25)/.75;B.cap.position.x=B.capX-B.s*.3*Math.max(0,Math.sin(dep*Math.PI/2));}   /* press: sinks into the wall (fast), then slides back out */
     const m=B.team===BLUE?player:rival,touching=m.alive&&m.pos.y<4&&Math.hypot(m.pos.x-B.stand.x,m.pos.z-B.stand.z)<HQB_R;
     if(!touching){B.held=false;continue;}
@@ -1328,6 +1330,11 @@ function tapeStrip(x1,z1,x2,z2,w=.5){const L=Math.hypot(x2-x1,z2-z1),tex=TAPE_TE
   const m=new THREE.Mesh(new THREE.PlaneGeometry(L,w),new THREE.MeshStandardMaterial({map:tex,roughness:.3,metalness:.1,polygonOffset:true,polygonOffsetFactor:-3}));
   m.rotation.x=-Math.PI/2;m.rotation.z=-Math.atan2(z2-z1,x2-x1);m.position.set((x1+x2)/2,.04,(z1+z2)/2);m.receiveShadow=true;scene.add(m);}
 function tapeRect(x0,z0,x1,z1){tapeStrip(x0,z0,x1,z0);tapeStrip(x1,z0,x1,z1);tapeStrip(x1,z1,x0,z1);tapeStrip(x0,z1,x0,z0);}
+/* yellow/black floor-tape frame around each DEPLOY wall button (user 2026-11-26): same TAPE_TEX stripes, square around the round socket, on the wall plate */
+for(const B of hqButtons){const g=B.cap.parent,s=B.s,w=.22,c=1.09,L=2*c+w;
+  for(const [vert,dy,dz] of[[0,c,0],[0,-c,0],[1,0,c],[1,0,-c]]){const tex=TAPE_TEX.clone();tex.needsUpdate=true;tex.repeat.set(L/(w*4.4),1);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(L,w),new THREE.MeshStandardMaterial({map:tex,roughness:.3,metalness:.1,polygonOffset:true,polygonOffsetFactor:-3}));
+    m.rotation.set(0,s*Math.PI/2,0);if(vert)m.rotateZ(Math.PI/2);m.position.set(s*.266,2.4+dy,dz);g.add(m);}}
 for(const T of TUNNELS){buildTunnel(T);
   for(const off of[1.2,3.0]){const za=T.zm-T.dir*off,zb=T.zd+T.dir*(off+.8);tapeRect(T.x-TUNNEL_HW-off,Math.min(za,zb),T.x+TUNNEL_HW+off,Math.max(za,zb));}}
 // sectional floor tape across the map
@@ -1706,9 +1713,10 @@ function updateProjs(dt){
     if(hitEnt||boom){
       if(p.heavyGun){puff(p.pos,0xfff0c0,.5,1.8,.12);for(let k=0;k<2;k++)puff(p.pos,0xff7a20,.35,1.1,rand(.25,.45),rand(-5,5),rand(2,6),rand(-5,5));puff(p.pos,0x3a2a22,.5,1.6,.8,0,rand(1.5,3),0);if(Math.random()<.15)sfx('hit',p.pos,.8);}   // RX-13 heavy gatling (levels 9-10): small blast + sparks + smoke on every impact
       if(p.cluster){const o=p.pos.clone(),dm=p.dmg*.3,tm=p.team;for(let k=0;k<3;k++)setTimeout(()=>{if(over)return;const q=o.clone().add(V().set(rand(-5,5),0,rand(-5,5)));q.y=Math.max(q.y,.5);explosion(q,4.5);splashDamage(q,4,dm,tm,false,false);camShake=Math.max(camShake,.25);},160+k*150);}   // RX-13 levels 9-10: 3 secondary blasts around each missile/mortar impact
-      if(p.splash>0){splashDamage(p.pos,p.splash,p.dmg,p.team,p.byPlayer,p.type==='shell'||p.type==='missile');if(!p.heavyGun)explosion(p.pos,p.boom||(p.type==='missile'?2.4:p.type==='flak'?1.3:1.8));}
-      else{const armored=p.gatling&&hitEnt&&(hitEnt.kind==='tank'||hitEnt.kind==='cannon'||hitEnt.kind==='base'||hitEnt.kind==='hqturret');   // rotary guns only hurt mechs and drones
-        if(hitEnt&&!armored)damage(hitEnt,p.dmg,p.team,p.byPlayer,p.type==='shell'||p.type==='missile');
+      if(p.splash>0){if(p.heavyGun&&hitEnt&&hitEnt.hitsMax)damage(hitEnt,0,p.team,p.byPlayer,false,true);   /* RX-13 heavy gun (lvl 9-10) counts toward structure hits too */
+        splashDamage(p.pos,p.splash,p.dmg,p.team,p.byPlayer,p.type==='shell'||p.type==='missile');if(!p.heavyGun)explosion(p.pos,p.boom||(p.type==='missile'?2.4:p.type==='flak'?1.3:1.8));}
+      else{const armored=p.gatling&&hitEnt&&!!hitEnt.hitsMax;   /* rotary guns now hurt everything (user 2026-11-26): tanks by hp, structures by the 20-bullets-per-hit counter; sparks still show on structures */
+        if(hitEnt)damage(hitEnt,p.dmg,p.team,p.byPlayer,p.type==='shell'||p.type==='missile',p.gatling);
         if(armored){puff(p.pos,0xffffff,.25,.9,.12);puff(p.pos,0xffe0a0,.15,.6,.2,rand(-4,4),rand(1,4),rand(-4,4));}puff(p.pos,p.tracer||p.team!==BLUE?0xffa040:0xa8ecff,.4,1.6,.18);}
       if(p.type==='flak')sfx('flak',p.pos);
       scene.remove(p.mesh);projs.splice(i,1);continue;}
@@ -1720,11 +1728,12 @@ function splashDamage(pos,r,dmg,team,byPlayer,heavy){for(const e of ents){if(!e.
 // ---------------- damage
 const stats={kills:0,start:0};
 let flashT=0;
-function damage(e,amt,team,byPlayer,heavy){
+const GUN_HITS_PER=20;   /* rotary gun vs hit-count structures (cannons, HQ turrets, HQ): every 20 bullets = 1 heavy hit (user 2026-11-26) */
+function damage(e,amt,team,byPlayer,heavy,gun){
   if(!e.alive)return;
   // red and blue deal the same damage at every difficulty (redDmg multiplier removed 2026-11-21 at user request)
   amt*=DIFF.dmgMul;   // levels 9-10 hit harder (both teams equally)
-  if(e.hitsMax){if(!heavy||e.team===null)return;e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-e.hits/e.hitsMax);
+  if(e.hitsMax){if(e.team===null)return;if(!heavy){if(!gun)return;e.gunAcc=(e.gunAcc||0)+1;if(e.gunAcc<GUN_HITS_PER)return;e.gunAcc=0;}e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-e.hits/e.hitsMax);
     if(e.kind==='base'&&(e.hits===Math.round(e.hitsMax*.5)||e.hits===Math.round(e.hitsMax*.8)))feed(`${e.team?'RED':'BLUE'} HQ at ${e.hitsMax-e.hits} hits left`,e.team?'b':'r');
     if(e.hits>=e.hitsMax)kill(e,team,byPlayer);return;}
   if(e.isPlayer){if(player.shieldT>0)return;amt*=PVP?(player.mode<.5?DIFF.rivalArmorW:DIFF.rivalArmorH):player.mode<.5?(DIFF.level>=9?DIFF.rivalArmorW:.7):(DIFF.level>=9?DIFF.rivalArmorH:1);flashT=.25;}   // SS-07 armor: takes 70% Walker / 100% hover; levels 9-10 = same heavy armor as RX-13 (lvl 9: 40%/60%, lvl 10: 35%/55%) (user 2026-11-22)
@@ -2784,7 +2793,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0833'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-0841'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
