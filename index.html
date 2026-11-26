@@ -988,7 +988,7 @@ const HBOT_HIT_EVERY=2;   // every 2nd laser in a burst = 1 HQ hit, so 2 HQ hits
 // hover bot HP per difficulty tier (user 2026-11-24). Rotating gun = 5 dmg x level damage multiplier (1x levels 1-8, 1.5x level 9, 2x level 10); cannon flak = 11 x same.
 // gun hits / cannon hits: Easy 15 / 7, Normal 18 / 9, Hard 21 / 10, Veteran 25 / 12, Brutal 30 / 14
 const hbotHP=()=>{const l=DIFF.level;return l>=10?300:l>=9?225:l>=7?125:l>=5?105:l>=3?90:75;};
-const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=1.2,HBOT_FIRE_R=110,HBOT_ORBIT=60,HBOT_ALT=22;   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
+const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=1.2,HBOT_FIRE_R=110,HBOT_ORBIT=60,HBOT_ALT=22,HBOT_CLR_R=3.4,HBOT_CLR_Y=2;   /* hover bot body clearance vs buildings: 3.4 sideways, 2 below */   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
 const hqButtons=[],hoverBots=[],laserBeams=[];
 const BTN_GLOW=0x3dff7a;   // square green button (user 2026-11-22; was round gold)
 for(const b of bases)for(const s of[-1,1]){
@@ -1106,8 +1106,10 @@ function updateHoverBots(dt,t){
         _hb.set(foe.pos.x+Math.cos(u.ang)*HBOT_ORBIT,HBOT_ALT,foe.pos.z+Math.sin(u.ang)*HBOT_ORBIT);
         _hb.x=clamp(_hb.x,-HALF_X+8,HALF_X-8);_hb.z=clamp(_hb.z,-HALF_Z+8,HALF_Z-8);}
       else _hb.set(u.pos.x,HBOT_ALT+6,u.pos.z);
+      {const B=airHit(_hb.x,_hb.z,_hb.y,HBOT_CLR_R,HBOT_CLR_Y);if(B)_hb.y=B.h+HBOT_CLR_Y+2;}   /* parking spot inside a tall building: hover just above its roof instead */
       _hb2.copy(_hb).sub(u.pos);const d=_hb2.length();if(d>.01)_hb2.multiplyScalar(Math.min(23.4,d*1.62)/d);
-      u.vel.lerp(_hb2,clamp(dt*2.2,0,1));u.pos.addScaledVector(u.vel,dt);}
+      airSteer(u.pos,_hb2,HBOT_CLR_R,HBOT_CLR_Y,u.spin,12);   /* fly AROUND buildings, never through (user 2026-11-26) */
+      u.vel.lerp(_hb2,clamp(dt*2.2,0,1));u.pos.addScaledVector(u.vel,dt);airPushOut(u.pos,HBOT_CLR_R,HBOT_CLR_Y);}
     u.mesh.position.set(u.pos.x,u.pos.y+Math.sin(t*2.2+u.bob)*.35,u.pos.z);
     u.ring.rotation.z+=dt*.8;
     const near=foe.alive&&Math.hypot(foe.pos.x-u.pos.x,foe.pos.z-u.pos.z)<HBOT_FIRE_R;   // starts firing on the way in (user 2026-11-24: 72 -> 110)
@@ -1301,6 +1303,21 @@ function pushOut(p,r){
       else{const l=p.x-b.x0,rr=b.x1-p.x,f=p.z-b.z0,k=b.z1-p.z,m=Math.min(l,rr,f,k);
         if(m===l)p.x=b.x0-r;else if(m===rr)p.x=b.x1+r;else if(m===f)p.z=b.z0-r;else p.z=b.z1+r;}}}
   p.x=clamp(p.x,-HALF_X+r,HALF_X-r);p.z=clamp(p.z,-HALF_Z+r,HALF_Z-r);}
+/* flying units vs buildings (user 2026-11-26: hover bots flew through buildings): a building is solid for a flyer while the flyer's underside (y-clr) is below the roof */
+function airHit(x,z,y,r,clr){for(const b of buildings)if(y-clr<b.h&&x>b.x0-r&&x<b.x1+r&&z>b.z0-r&&z<b.z1+r)return b;return null;}
+function airPushOut(p,r,clr){if(p.y<=0)return;
+  for(const b of buildings){if(p.y-clr>=b.h)continue;
+    if(p.x>b.x0-r&&p.x<b.x1+r&&p.z>b.z0-r&&p.z<b.z1+r){
+      const cx=clamp(p.x,b.x0,b.x1),cz=clamp(p.z,b.z0,b.z1),dx=p.x-cx,dz=p.z-cz,d=Math.hypot(dx,dz);
+      if(d>1e-4){if(d<r){p.x=cx+dx/d*r;p.z=cz+dz/d*r;}}
+      else{const l=p.x-b.x0,rr=b.x1-p.x,f=p.z-b.z0,k=b.z1-p.z,m=Math.min(l,rr,f,k);
+        if(m===l)p.x=b.x0-r;else if(m===rr)p.x=b.x1+r;else if(m===f)p.z=b.z0-r;else p.z=b.z1+r;}}}}
+/* turns a flyer's desired velocity v (x/z part) around buildings ahead; keeps v.y; if every heading is blocked it stops and climbs */
+const AIR_ANG=[0,.35,-.35,.7,-.7,1.1,-1.1,1.6,-1.6,2.2,-2.2,2.8,-2.8];
+function airSteer(pos,v,r,clr,side,look){const hs=Math.hypot(v.x,v.z);if(hs<.3)return v;const dx=v.x/hs,dz=v.z/hs;
+  for(const a of AIR_ANG){const ang=a*side,c=Math.cos(ang),s=Math.sin(ang),ex=dx*c+dz*s,ez=-dx*s+dz*c;
+    if(!airHit(pos.x+ex*look,pos.z+ez*look,pos.y,r,clr)&&!airHit(pos.x+ex*look*.5,pos.z+ez*look*.5,pos.y,r,clr)){v.x=ex*hs;v.z=ez*hs;return v;}}
+  v.x=0;v.z=0;v.y=Math.max(v.y,8);return v;}
 const _d=V();
 function steer(pos,dir,r,side){
   for(const a of[0,.45,-.45,.9,-.9,1.5,-1.5,2.2,-2.2]){
@@ -1899,7 +1916,7 @@ function updateUnit(u,dt){
     else if(!chase&&dist<8)_dir.set(-_dir.z,0,_dir.x);
     u.vel.lerp(_t.copy(_dir).multiplyScalar(spd),clamp(dt*1.3,0,1));
     u.pos.addScaledVector(u.vel,dt);u.pos.y=u.pos.y<2?u.pos.y+12*dt:lerp(u.pos.y,u.cruise,dt);
-    u.pos.x=clamp(u.pos.x,-HALF_X,HALF_X);u.pos.z=clamp(u.pos.z,-HALF_Z,HALF_Z);
+    u.pos.x=clamp(u.pos.x,-HALF_X,HALF_X);u.pos.z=clamp(u.pos.z,-HALF_Z,HALF_Z);airPushOut(u.pos,u.r+.6,1.2);   /* drones never clip a building while climbing */
     u.mesh.position.copy(u.pos);u.mesh.rotation.set(0,Math.atan2(u.vel.x,u.vel.z),0);
     u.mesh.rotateZ(-clamp((u.vel.x*_dir.z-u.vel.z*_dir.x)*.08,-.6,.6));
   }else{
