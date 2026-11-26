@@ -1,5 +1,5 @@
 // Precinct Battle offline cache. VERSION is rewritten by tools/build_mobile.py on every build.
-const VERSION='9f5cfb5422';
+const VERSION='dfd07edf9d';
 const CACHE='pb-'+VERSION;
 const FILES=['./','index.html','manifest.json','vendor/three.module.js','vendor/addons/geometries/RoundedBoxGeometry.js',
   'vendor/addons/environments/RoomEnvironment.js','icons/icon-180.png','icons/icon-192.png','icons/icon-512.png'];
