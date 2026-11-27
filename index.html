@@ -1673,7 +1673,7 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
   if(tg.onGround===false){_bt.set(tg.pos.x+rand(-2,2),groundAt(tg.pos.x,tg.pos.z,.5,tg.pos.y),tg.pos.z+rand(-2,2));   /* mech in the air from a jump = safe: the bolt misses into the ground below it, no damage (user 2026-11-27) */
     dialShot();lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
   dialShot();lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,5.42)).clone(),BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),.44,.75);lightningStrike(BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),_bt,.44,1,5);   /* every bolt lasts twice as long (user 2026-11-27) */}},90);   /* quick re-strike flicker */
-  damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);if(tg.isPlayer&&!(player.shieldT>0))elecCrackle();   /* mech hit by the lightning: electric crackle */puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
+  damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);if(tg.isPlayer&&!(player.shieldT>0)){elecCrackle();player.zapT=1.6;}   /* mech hit by the lightning: electric crackle */puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
   for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
   O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
 function updateLightningBolts(dt){for(let i=LBOLTS.length-1;i>=0;i--){const L=LBOLTS[i];L.life-=dt;
@@ -1815,7 +1815,20 @@ function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStar
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
     v.next=t+dur+rand(.15,1.6-CROWD.lvl);}}
-function updateDusk(dt,t){updateSeaMonster(dt);if(DC_LEDS){const U=DC_LEDS.material.uniforms;U.t.value=t;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
+/* electric current crawling around and through the mech after a lightning hit (user 2026-11-27): ~1.6 s of short arcs over the body,
+   some straight through it, plus a pulsing blue glow on the mech */
+let ZAP_GLOW=null;const _za=new THREE.Vector3(),_zb=new THREE.Vector3();
+function updateMechZap(dt){const P=player;if(!(P.zapT>0)||!P.alive){if(ZAP_GLOW)ZAP_GLOW.visible=false;if(!P.alive)P.zapT=0;return;}
+  P.zapT-=dt;const k=Math.min(1,P.zapT/.6),R=2.3,Y0=P.pos.y+.6,H=4.4;
+  if(!ZAP_GLOW){ZAP_GLOW=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x3f86ff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));ZAP_GLOW.userData.noAir=true;scene.add(ZAP_GLOW);}
+  ZAP_GLOW.visible=true;ZAP_GLOW.position.set(P.pos.x,P.pos.y+2.6,P.pos.z);ZAP_GLOW.scale.setScalar(7+rand(-1,1.5));ZAP_GLOW.material.opacity=k*(.45+.35*Math.random());
+  P.zapAcc=(P.zapAcc||0)+dt;while(P.zapAcc>.045){P.zapAcc-=.045;if(Math.random()>k*.95+.05)continue;
+    const a=rand(0,6.283),y=Y0+rand(0,H);_za.set(P.pos.x+Math.cos(a)*R*rand(.8,1.05),y,P.pos.z+Math.sin(a)*R*rand(.8,1.05));
+    if(Math.random()<.35){const b=a+Math.PI+rand(-.5,.5);_zb.set(P.pos.x+Math.cos(b)*R,Y0+rand(0,H),P.pos.z+Math.sin(b)*R);}   /* straight through the body */
+    else{const b=a+rand(-1.3,1.3);_zb.set(P.pos.x+Math.cos(b)*R*rand(.85,1.1),Math.max(P.pos.y+.2,y+rand(-1.8,1.8)),P.pos.z+Math.sin(b)*R*rand(.85,1.1));}   /* crawling over the surface */
+    lightningStrike(_za.clone(),_zb.clone(),rand(.09,.18),rand(.18,.3),Math.random()<.4?1:0);
+    if(Math.random()<.3)puff(_za,0xbfe0ff,.15,.5,.12);}}
+function updateDusk(dt,t){updateSeaMonster(dt);updateMechZap(dt);if(DC_LEDS){const U=DC_LEDS.material.uniforms;U.t.value=t;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
   updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
   for(const p of['A','B'])for(const c of['r','y','g'])st(p,c);
