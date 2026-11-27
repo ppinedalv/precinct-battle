@@ -220,8 +220,8 @@ sub('yaw+=((keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0))*2.3*dt;', 'yaw+=((keys.Ar
 sub('pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt,-.7118,.65);', 'pitch=clamp(pitch+((keys.ArrowDown?1:0)-(keys.ArrowUp?1:0))*1.1*dt+TOUCH.ay*1.2*dt,-.7118,.65);')
 # headlights look ON from the player's chase camera (iPhone build only, user 2026-11-25): a soft beam shining forward-down from
 # each front hover-pod lamp, bright at the lens and fading out, plus a bigger halo that peeks round the pod from behind
-sub("const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);}",
-    "const sl=new THREE.SpotLight(0xeaf4ff,58,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);"   # 90 -> 72 -> 58 (two 20% cuts)
+sub("const sl=new THREE.SpotLight(0xeaf4ff,DUSK?63:90,40,.42,.55,1.3);   /* dusk streets: 30% dimmer headlights (user 2026-11-27) */sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);}",
+    "const sl=new THREE.SpotLight(0xeaf4ff,DUSK?41:58,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);"   # 90 -> 72 -> 58 (two 20% cuts)
     "const bg=new THREE.CylinderGeometry(.3,3.4,17,24,1,true);bg.translate(0,-8.5,0);"
     "const bm=new THREE.ShaderMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,uniforms:{col:{value:new THREE.Color(0xeaf4ff)}},"
     "vertexShader:'varying float vH;void main(){vH=uv.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',"
@@ -229,9 +229,9 @@ sub("const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,
     "const beam=new THREE.Mesh(bg,bm);beam.position.set(0,0,.72);beam.rotation.x=-Math.PI/2+.13;beam.renderOrder=2;pod.add(beam);"
     "glowAt(0x8e99a3,0,.05,1.15,2.6,pod);}")
 # lamp lenses + their small glow (seen on RX-13 head-on): 64% of the desktop brightness on iPhone
-sub("const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:2.6,roughness:.1,metalness:0});",
-    "const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:1.66,roughness:.1,metalness:0});")
-sub("glowAt(0xdfeeff,0,0,.72,1.3,pod);glowAt(0xffffff,0,0,.72,.55,pod);", "glowAt(0x8e98a3,0,0,.72,1.3,pod);glowAt(0xa3a3a3,0,0,.72,.55,pod);")
+sub("const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:DUSK?1.82:2.6,roughness:.1,metalness:0});",
+    "const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:DUSK?1.16:1.66,roughness:.1,metalness:0});")
+sub("for(const gs of[glowAt(0xdfeeff,0,0,.72,1.3,pod),glowAt(0xffffff,0,0,.72,.55,pod)])if(DUSK)gs.material.opacity=.7;", "for(const gs of[glowAt(0x8e98a3,0,0,.72,1.3,pod),glowAt(0xa3a3a3,0,0,.72,.55,pod)])if(DUSK)gs.material.opacity=.7;")
 # ...and a pool of headlight on the ground ahead of the player's mech, following it every frame
 sub('updatePlayer(dt,gt);updateHoverHum();', 'updatePlayer(dt,gt);updateHeadPool();updateHoverHum();')
 # start / pause screens: touch instructions instead of keyboard keys

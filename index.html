@@ -221,14 +221,14 @@ scene.background=new THREE.Color(0x070a12);
 scene.fog=new THREE.Fog(0x070a12,70,280);
 const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,700);
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
-scene.add(DUSK?new THREE.HemisphereLight(0xc49a6c,0x3a2a1c,1.15):new THREE.HemisphereLight(0x6a7ba8,0x14141c,1.1));
+scene.add(DUSK?new THREE.HemisphereLight(0xb4b4b0,0x2e2d30,1.32):new THREE.HemisphereLight(0x6a7ba8,0x14141c,1.1));
 const moon=new THREE.DirectionalLight(0xa8bcff,1.6);
 moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
 Object.assign(moon.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:320});
 moon.shadow.bias=-0.0005;
 scene.add(moon,moon.target);
 const fill=new THREE.PointLight(0xc4d6ff,60,30,1.6);scene.add(fill);
-if(DUSK){scene.background=new THREE.Color(0x140c06);scene.fog=new THREE.Fog(0x5a3418,90,380);moon.color.setHex(0xffb07a);moon.intensity=1.9;}   /* dusk light */
+if(DUSK){scene.background=new THREE.Color(0x0f0e10);scene.fog=new THREE.Fog(0x4a4440,90,380);moon.color.setHex(0xffdcc4);moon.intensity=2.05;}   /* dusk light: less warm + a bit brighter (user 2026-11-26, was hemi 0xc49a6c/1.15, fog 0x5a3418, sun 0xffb07a/1.9) */
 if(DUSK){camera.far=420;camera.updateProjectionMatrix();}   /* lag fix 2026-11-26: nothing past the fog (380) is drawn; sky + stars scaled to fit inside the view distance */
 
 // ---------------- textures & shared materials
@@ -578,7 +578,8 @@ function smashCar(v){v.smashed=true;const S=v.set,tilt=new THREE.Matrix4().makeR
   for(let i=0;i<14;i++)puff(_c.set(v.x+rand(-1,1),rand(.6,1.4),v.z+rand(-1,1)),Math.random()<.5?0xeaf6ff:0x9fdcff,rand(.12,.25),.1,rand(.4,.8),rand(-6,6),rand(2,6),rand(-6,6));
   dustBurst(v.x,0,v.z,.6);sfx('hit',_c.set(v.x,1,v.z),2);playBoom(_c,2.5)||sfx('boom',_c,.3);camShake=Math.max(camShake,.25);}
 function updateCars(){const P=player;if(!P.alive||P.pos.y>2.6)return;
-  for(const S of CAR_SETS)for(const v of S.list){if(v.smashed)continue;const b=v.block;if(P.pos.x<b.x0-P.r-.35||P.pos.x>b.x1+P.r+.35||P.pos.z<b.z0-P.r-.35||P.pos.z>b.z1+P.r+.35)continue;smashCar(v);}}
+  if(P.vy>0)return;const r=P.r*.55;   /* smash only when the mech lands on top from a jump; walking or hovering into a car just bumps it (user 2026-11-27) */
+  for(const S of CAR_SETS)for(const v of S.list){if(v.smashed)continue;const b=v.block;if(P.pos.y<b.h-.3||P.pos.x<b.x0-r||P.pos.x>b.x1+r||P.pos.z<b.z0-r||P.pos.z>b.z1+r)continue;smashCar(v);}}
 /* trees: leafy clusters in several greens (faceted, wobbly outlines), real branches; pines from jagged stacked cones */
 const LEAF_G=[0,1,2,3].map(sd=>{const g=new THREE.IcosahedronGeometry(1,1),p=g.attributes.position;
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),k=1+.2*Math.sin(7*x+sd*1.7)*Math.sin(6*y+sd)+.14*Math.sin(9*z+3*x+sd*2.3);p.setXYZ(i,x*k,y*k*.85,z*k);}g.computeVertexNormals();return g;});
@@ -1027,9 +1028,13 @@ function molotovBurst(p){const g=_th2.set(p.x,Math.max(.3,p.y),p.z);
   fireballBurst(g.x,g.y,g.z);for(let i=0;i<12;i++)spawnFlame(p.x+rand(-2.4,2.4),0,p.z+rand(-2.4,2.4),rand(.9,1.6));   /* fireball bursting apart with sparks, then burning ground flames */
   for(let i=0;i<6;i++)puff(_c.set(g.x+rand(-2,2),g.y+rand(2,4),g.z+rand(-2,2)),0x2a1e18,3,7,rand(1.4,2.2),rand(-1,1),rand(2,4),rand(-1,1));
   glassBreak(g);fireWhoosh(g);
-  const P=player;if(P.alive&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<4.8&&P.pos.y<3)damage(P,14+DIFF.level*.8,RED,false,false);
+  const P=player;if(P.alive&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<4.8&&P.pos.y<3){damage(P,14+DIFF.level*.8,RED,false,false);P.smokeT=5;}   /* mech smokes for 5 s (user 2026-11-27) */
   FIRES.push({x:p.x,z:p.z,t:4.5,tick:0});}
-function updateThugs(dt,t){const P=player;updateCorpses(dt);updateFlames(dt);updateBlast(dt);
+function updateThugs(dt,t){const P=player;
+  if(P.smokeT>0){P.smokeT-=dt;if(!P.alive)P.smokeT=0;const k=Math.min(1,P.smokeT/1.5);   /* Molotov hit: smoke pours off the mech and trails behind it */
+    for(let n=0;n<3;n++)if(Math.random()<dt*14*(.4+.6*k)){const c=[0x1c1c1e,0x2a2a2d,0x3a3a3e][Math.floor(Math.random()*3)];
+      dustP(P.pos.x+rand(-1.1,1.1),P.pos.y+P.hy+rand(-.6,1.4),P.pos.z+rand(-1.1,1.1),{color:c,life:rand(1.6,2.6),a:rand(.8,1.4),b:rand(3.5,6),drag:.6,rot:rand(-.6,.6),alpha:.2+.45*k,vx:rand(-.4,.4),vy:rand(1.5,3),vz:rand(-.4,.4)});}
+    if(P.smokeT>3.5&&Math.random()<.3)puff(_c.set(P.pos.x+rand(-1,1),P.pos.y+P.hy+rand(-.5,1),P.pos.z+rand(-1,1)),Math.random()<.5?0xff6a1a:0xffb040,rand(.3,.6),rand(1,2),rand(.3,.5),0,rand(1,3),0);}updateCorpses(dt);updateFlames(dt);updateBlast(dt);
   if(BOSS&&BOSS.alive&&P.alive){DUSK_DYN.thugT=(DUSK_DYN.thugT??3)-dt;if(DUSK_DYN.thugT<=0){DUSK_DYN.thugT=lerp(6,2.2,(DIFF.level-1)/9);if(THUGS.filter(u=>u.alive&&u.role!=='guard').length<thugCap())spawnThug();}}
   for(let i=THUGS.length-1;i>=0;i--){const u=THUGS[i];if(!u.alive){THUGS.splice(i,1);continue;}
     if(u.frozen>0){u.frozen-=dt;continue;}
@@ -1343,12 +1348,59 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
     if(a.aimT>0)a.can.lookAt(a.aim);else{a.can.getWorldPosition(_bt);_bt2.set(0,0,1).applyQuaternion(R.top.getWorldQuaternion(new THREE.Quaternion()));
       a.can.lookAt(_bt.addScaledVector(_bt2,30).add(new THREE.Vector3(a.s*6,(a.k-1)*4+Math.sin(t+a.ph)*2,0)));}
     a.muzzle.material.opacity=.55+.45*Math.sin(t*6+a.ph)+(a.aimT>.4?1:0);}
-  const bp=R.bubbles.geometry.attributes.position;for(let i=0;i<bp.count;i++){let y=bp.getY(i)+dt*rand(.8,1.8);if(y>13.6)y=5.6;bp.setY(i,y);}bp.needsUpdate=true;}
+  const bp=R.bubbles.geometry.attributes.position;for(let i=0;i<bp.count;i++){let y=bp.getY(i)+dt*rand(.8,1.8);if(y>13.6)y=5.6;bp.setY(i,y);}bp.needsUpdate=true;
+  updateLightningOrb(b,tg,dt,t,dmg);}
 function bossArmDown(e){const a=e.arm;a.dead=true;a.tag.sp.visible=false;a.muzzle.visible=false;const p=e.pos.clone();
   for(let i=0;i<6;i++)setTimeout(()=>{explosion(_bt.copy(p).add(new THREE.Vector3(rand(-1.5,1.5),rand(-1,1.5),rand(-1.5,1.5))),rand(2.5,4.5));},i*130);
   setTimeout(()=>{explosion(p,6);camShake=Math.max(camShake,.6);a.can.visible=false;for(let j=8;j<a.segs.length;j++)a.segs[j].visible=false;},700);
   const left=BOSS_RIG.arms.filter(x=>!x.dead).length;feed(left?`Laser arm destroyed! ${left} left`:'All laser arms destroyed! Now destroy the brain!','b');}
-function bossDeath(b){const R=BOSS_RIG;R.dead=1;R.glass.visible=false;R.liquid.visible=false;if(R.cap)R.cap.visible=false;for(const e of R.eyeGlow)e.visible=false;if(R.dialGlow)R.dialGlow.visible=false;if(R.mouth)R.mouth.material.color.setHex(0x220000);if(R.edgeMat)R.edgeMat.color.setScalar(.12);R.shield.visible=false;R.bubbles.visible=false;b.tag.sp.visible=false;
+/* ---- lightning orb (user 2026-11-27): once every laser arm is destroyed, a ball of electric light rises out of the boss's crown and
+   strikes the mech (or the nearest blue unit) with jagged lightning bolts until the brain is destroyed. Original effect, synthesized thunder. */
+const LBOLTS=[],_lsd=new THREE.Vector3();let LORB=null;
+function lightningPath(a,b,jag){const L=a.distanceTo(b),n=Math.max(6,Math.min(18,Math.round(L/4))),pts=[a.clone()];
+  for(let i=1;i<n;i++){const k=i/n,amp=Math.sin(k*Math.PI)*Math.min(4,L*.09)*jag;pts.push(a.clone().lerp(b,k).add(new THREE.Vector3(rand(-1,1)*amp,rand(-1,1)*amp,rand(-1,1)*amp)));}
+  pts.push(b.clone());return pts;}
+function lightningMesh(pts,r,mat){const path=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)path.add(new THREE.LineCurve3(pts[i],pts[i+1]));
+  return new THREE.Mesh(new THREE.TubeGeometry(path,pts.length*2,r,5,false),mat);}
+function lightningStrike(from,to,life=.38,thin=1){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning (user 2026-11-27 reference): white-blue core, deep blue glow, many fine forks */
+  const core=softBeamMat(0xcfe6ff,1),glow=softBeamMat(0x2a6bff,.8),haze=softBeamMat(0x0b2cff,.32);core.fog=glow.fog=haze.fog=false;   /* soft blurry edges, no hard rim (user 2026-11-27) */
+  const pts=lightningPath(from,to,1);g.add(lightningMesh(pts,.2*thin,core),lightningMesh(pts,.6*thin,glow));if(thin>=1)g.add(lightningMesh(pts,1.6,haze));
+  if(thin>=1){const fork=(o,dir,len,r,depth)=>{const end=o.clone().addScaledVector(dir,len).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(len*.45));
+      const bp=lightningPath(o,end,1.5);g.add(lightningMesh(bp,r*1.6,core),lightningMesh(bp,r*4,glow));
+      if(depth>0){const j=1+Math.floor(Math.random()*(bp.length-2));fork(bp[j],_lsd.copy(end).sub(o).normalize(),len*.55,r*.6,depth-1);}};
+    const dir=new THREE.Vector3().subVectors(to,from).normalize();
+    for(let k=0;k<5;k++){const i=1+Math.floor(Math.random()*(pts.length-2));fork(pts[i],dir.clone().add(new THREE.Vector3(rand(-1,1),rand(-.6,.6),rand(-1,1))).normalize(),rand(4,9),.05,1);}
+    for(const [q,sc] of[[from,7],[to,10]]){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x2f6cff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));sp.position.copy(q);sp.scale.setScalar(sc);g.add(sp);}}   /* blue glow where it leaves the orb and where it hits */
+  scene.add(g);LBOLTS.push({g,mats:[core,glow,haze],ops:[1,.8,.32],life,max:life});}
+function thunderSnd(pos){if(muted||!actx||!noise)return;const v=clamp(1-pos.distanceTo(player.pos)/260,0,1);if(v<.05)return;const t=actx.currentTime;   /* dry high-voltage arc (user reference 2026-11-27): instant snap, dense 3-8 kHz sizzle, 120 Hz buzz, ~0.7 s tail, no rumble. Synthesized. */
+  const out=actx.createGain();out.gain.value=v*1.3;const lim=actx.createDynamicsCompressor();lim.threshold.value=-6;lim.ratio.value=10;out.connect(lim).connect(actx.destination);
+  const snap=actx.createBufferSource();snap.buffer=noise;const shp=actx.createBiquadFilter();shp.type='highpass';shp.frequency.value=2500;const sg=actx.createGain();
+  sg.gain.setValueAtTime(1.4,t);sg.gain.exponentialRampToValueAtTime(.001,t+.035);snap.connect(shp).connect(sg).connect(out);snap.start(t,Math.random()*.5);snap.stop(t+.05);
+  const hiss=actx.createBufferSource();hiss.buffer=noise;hiss.loop=true;const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=5200;bp.Q.value=.6;const hg=actx.createGain();
+  hg.gain.setValueAtTime(.001,t);let x=t;while(x<t+1.1){const k=Math.exp(-Math.max(0,x-t-.4)/.25);hg.gain.setValueAtTime((.25+Math.random()*.75)*k*.9,x);x+=.004+Math.random()*.014;}hg.gain.setValueAtTime(.0001,t+1.15);   /* chaotic crackle grains */
+  hiss.connect(bp).connect(hg).connect(out);hiss.start(t);hiss.stop(t+1.2);
+  const buzz=actx.createOscillator();buzz.type='sawtooth';buzz.frequency.setValueAtTime(120,t);const bf=actx.createBiquadFilter();bf.type='bandpass';bf.frequency.value=1500;bf.Q.value=1.2;const bz=actx.createGain();
+  bz.gain.setValueAtTime(.001,t);bz.gain.exponentialRampToValueAtTime(.55,t+.01);bz.gain.setValueAtTime(.55,t+.42);bz.gain.exponentialRampToValueAtTime(.001,t+1.1);buzz.connect(bf).connect(bz).connect(out);buzz.start(t);buzz.stop(t+1.15);}
+function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out of the round dial on the front of the boss base, which lights up blue (user 2026-11-27) */
+  if(!LORB){if(!R.arms.length||R.arms.some(a=>!a.dead)||!R.dialGlow)return;const T=R.top;
+    const sp=(c,s,o)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,transparent:true,opacity:o,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));m.position.set(0,2.1,6.1);m.scale.setScalar(s);m.userData.noAir=true;T.add(m);return m;};
+    LORB={core:sp(0xdcefff,2.4,0),halo:sp(0x2f6cff,8,0),age:0,cd:1.6,arc:0,flash:0};
+    feed('The boss dial is charged! Lightning incoming. Destroy the brain!','r');thunderSnd(R.dialGlow.getWorldPosition(_bt));}
+  const O=LORB,T=R.top,dg=R.dialGlow;O.age+=dt;O.flash=Math.max(0,O.flash-dt*3);const on=Math.min(1,O.age/1.2);
+  const p=.85+.15*Math.sin(t*11)+rand(-.1,.1);dg.material.color.setHex(0x3f86ff);dg.material.opacity=Math.min(1,(.7+.3*p)*on+O.flash);dg.scale.setScalar(6.5+3*on*p+O.flash*4);
+  O.core.material.opacity=on*(.75+.25*p)+O.flash;O.core.scale.setScalar(2.4*p+O.flash*3);O.halo.material.opacity=on*.7*p+O.flash*.5;O.halo.scale.setScalar(8*p+O.flash*6);
+  O.arc-=dt;if(on>.3&&O.arc<=0){O.arc=rand(.07,.14);const c=T.localToWorld(_bt2.set(0,2.1,6.15)).clone();   /* small arcs crackling across the dial face */
+    {const a=rand(0,Math.PI*2),r=rand(1,2.2);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*r,2.1+Math.sin(a)*r,6.15)),.08,.25);}}
+  O.cd-=dt;if(O.age<1.2||O.cd>0||!tg)return;
+  const from=T.localToWorld(new THREE.Vector3(0,2.1,6.3));center(tg,_bt);if(!losClear(from,_bt,tg.r)){O.cd=.5;return;}
+  lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,6.3)).clone(),_bt,.22);}},90);   /* quick re-strike flicker */
+  damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
+  for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
+  O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
+function updateLightningBolts(dt){for(let i=LBOLTS.length-1;i>=0;i--){const L=LBOLTS[i];L.life-=dt;
+  if(L.life<=0){scene.remove(L.g);L.g.traverse(o=>{if(o.geometry&&!o.isSprite)o.geometry.dispose();if(o.isSprite)o.material.dispose();});for(const m of L.mats)m.dispose();LBOLTS.splice(i,1);continue;}
+  const k=L.life/L.max,fl=Math.random()<.3?.35:1;L.mats.forEach((m,j)=>m.uniforms.op.value=L.ops[j]*k*fl);L.g.traverse(o=>{if(o.isSprite)o.material.opacity=k*fl;});}}
+function bossDeath(b){const R=BOSS_RIG;R.dead=1;if(LORB){for(const sp of[LORB.core,LORB.halo]){sp.removeFromParent();sp.material.dispose();}LORB=null;}R.glass.visible=false;R.liquid.visible=false;if(R.cap)R.cap.visible=false;for(const e of R.eyeGlow)e.visible=false;if(R.dialGlow)R.dialGlow.visible=false;if(R.mouth)R.mouth.material.color.setHex(0x220000);if(R.edgeMat)R.edgeMat.color.setScalar(.12);R.shield.visible=false;R.bubbles.visible=false;b.tag.sp.visible=false;
   R.brainMat.emissiveIntensity=0;R.brainMat.color.setHex(0x6a3a44);for(const tb of R.tubes)tb.core.visible=false;for(const a of R.arms)a.muzzle.visible=false;
   for(let i=0;i<10;i++)setTimeout(()=>{puff(_bt.set(rand(-5,5),rand(14,20),BOSS_Z+rand(-5,5)),0xff7ae0,rand(2,4),rand(6,10),.6);explosion(_bt,rand(4,7));},i*220);
   feed('THE BOSS IS DESTROYED!','b');}
@@ -1392,6 +1444,12 @@ const VAN_MUZ=[new THREE.Vector3(2.49,1.48,.35),new THREE.Vector3(2.4,1.39,1.35)
 function spawnVan(i){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=i===undefined?-dir*186:rand(-170,170);
   const v={kind:'van',team:RED,pos:new THREE.Vector3(x,0,e.z+dir*3),vel:V(),hp:90,maxHp:90,r:2.8,hy:1.4,alive:true,mesh:gangVanMesh(),street:e,dir,cd:rand(.5,2),burst:0,bt:0,think:0,target:null};
   v.mesh.position.copy(v.pos);v.mesh.rotation.y=dir*Math.PI/2;scene.add(v.mesh);ents.push(v);DUSK_DYN.vans.push(v);}
+function crushVan(v){v.alive=false;v.hp=0;const m=v.mesh,geos=[];   /* jumped on (user 2026-11-27): flattened, crumpled metal, gunmen crushed; the wreck stays 45 s */
+  m.traverse(o=>{if(!o.isMesh)return;if(o.material===THUG_MAT){o.visible=false;return;}const g=crumple(o.geometry.clone(),VDIM[2].L,2);o.geometry=g;geos.push(g);});
+  m.scale.set(1.04,.46,1.02);m.rotation.z=rand(-.06,.06);m.position.y=.06;bloodAt(v.pos.x,.03,v.pos.z,2.6);
+  for(let i=0;i<14;i++)puff(_c.set(v.pos.x+rand(-2,2),rand(.6,1.4),v.pos.z+rand(-1,1)),Math.random()<.5?0xeaf6ff:0x9fdcff,rand(.12,.25),.1,rand(.4,.8),rand(-6,6),rand(2,6),rand(-6,6));
+  dustBurst(v.pos.x,0,v.pos.z,.8);sfx('hit',_c.set(v.pos.x,1,v.pos.z),2);playBoom(_c,3)||sfx('boom',_c,.4);camShake=Math.max(camShake,.4);feed('Gang van crushed!','b');
+  setTimeout(()=>{scene.remove(m);for(const g of geos)g.dispose();},45000);}
 function updateVans(dt){const D=DUSK_DYN;
   for(let i=D.vans.length-1;i>=0;i--){const v=D.vans[i];if(!v.alive){D.vans.splice(i,1);D.vanRespawn=(D.vanRespawn||[]).concat(16);continue;}
     if(v.frozen>0){v.frozen-=dt;continue;}
@@ -1400,6 +1458,7 @@ function updateVans(dt){const D=DUSK_DYN;
     const sp=v.target?3.5:9;v.pos.x+=v.dir*sp*dt;
     if(Math.abs(v.pos.x)>188){const sx=Math.sign(v.pos.x);v.pos.x=sx*188;v.dir=-sx;v.pos.z=v.street.z+v.dir*3;v.mesh.rotation.y=v.dir*Math.PI/2;}
     v.mesh.position.copy(v.pos);v.mesh.position.y=Math.abs(Math.sin(performance.now()/90))*.03;
+    {const P=player;if(P.alive&&!P.onGround&&P.vy<=0&&P.pos.y>1.1&&P.pos.y<3.4&&Math.abs(P.pos.x-v.pos.x)<2.45+P.r*.5&&Math.abs(P.pos.z-v.pos.z)<1+P.r*.5){crushVan(v);continue;}}   /* crushed only when the mech lands on it from a jump (user 2026-11-27) */
     if(v.target&&v.target.alive){v.cd-=dt;if(v.cd<=0&&v.burst<=0){v.burst=5;v.cd=rand(1.4,2.3);}
       if(v.burst>0){v.bt-=dt;if(v.bt<=0){v.bt=.09;v.burst--;v.mesh.updateMatrixWorld(true);const mz=v.mesh.localToWorld(VAN_MUZ[v.burst%2].clone());center(v.target,_bt).sub(mz);
         _bt.x+=rand(-1.2,1.2);_bt.y+=rand(-.8,.8);_bt.z+=rand(-1.2,1.2);_bt.normalize();fire('bullet',RED,mz,_bt,3,{tracer:true,small:true});muzzleFlash(mz,_bt);gunshotSound(mz);}}}
@@ -1456,7 +1515,7 @@ function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStar
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
     v.next=t+dur+rand(.15,1.6-CROWD.lvl);}}
-function updateDusk(dt,t){updateCrowd();const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
+function updateDusk(dt,t){updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
   for(const p of['A','B'])for(const c of['r','y','g'])st(p,c);
   for(const n of DUSK_DYN.neon){if(n.off>0){n.off-=dt;n.m.opacity=.15;continue;}if(Math.random()<.004)n.off=rand(.05,.25);n.m.opacity=.9+.1*Math.sin(t*9+n.ph);}
@@ -1772,11 +1831,11 @@ function buildMech(team){
     part(boxGeo(.04,.3,.6),m.rubber,s*.31,-.02,-.2,pod);
     for(let k=0;k<3;k++)part(boxGeo(.03,.05,.05),m.glow,s*.32,-.02,.25+k*.12,pod);
     /* LED headlight on the front of each hover pod (user 2026-11-24): chrome bezel, bright white lens, LED dots, glow + real spotlight */
-    {const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:2.6,roughness:.1,metalness:0});
+    {const hl=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xeaf4ff,emissiveIntensity:DUSK?1.82:2.6,roughness:.1,metalness:0});
      part(rbox(.54,.28,.06,.03),m.chrome,0,0,.63,pod);part(boxGeo(.46,.2,.04),hl,0,0,.66,pod);
      for(let k=0;k<4;k++)part(cylG(.035,.035,.02,10),E(0xffffff),-.165+k*.11,0,.69,pod,HPI);
-     glowAt(0xdfeeff,0,0,.72,1.3,pod);glowAt(0xffffff,0,0,.72,.55,pod);
-     const sl=new THREE.SpotLight(0xeaf4ff,90,40,.42,.55,1.3);sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);}
+     for(const gs of[glowAt(0xdfeeff,0,0,.72,1.3,pod),glowAt(0xffffff,0,0,.72,.55,pod)])if(DUSK)gs.material.opacity=.7;
+     const sl=new THREE.SpotLight(0xeaf4ff,DUSK?63:90,40,.42,.55,1.3);   /* dusk streets: 30% dimmer headlights (user 2026-11-27) */sl.position.set(0,0,.7);sl.target.position.set(0,-1.6,9);pod.add(sl);pod.add(sl.target);}
     part(torG(.28,.04),m.glow,0,-.26,0,pod,HPI);
     part(boxGeo(.14,.3,.5),m.dark,-s*.36,.2,-.1,pod);}
   // white markings
@@ -2227,7 +2286,7 @@ for(const team of(DUSK?[]:[BLUE,RED])){
     tu.tag=makeHealthTag(.1,.028);tu.tag.sp.position.set(s*14,11.5,z);scene.add(tu.tag.sp);}
 }
 if(DUSK){bases.push(BLUE_GHOST);buildBossCompound();}   /* dusk: no Blue HQ; bases[1] = the boss */
-/* dusk ammo recharge pad at the south end of the main avenue (user 2026-11-26): reloads gun, cannon and missiles (no hull repair on this field) */
+/* dusk ammo recharge pad at the south end of the main avenue (user 2026-11-26): reloads gun, cannon and missiles and repairs the hull (hull repair added user 2026-11-27) */
 const DUSK_PAD_POS=new THREE.Vector3(0,0,186);let DUSK_PAD=null;
 if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAir=true;scene.add(g);
   const plate=new THREE.Mesh(new THREE.CylinderGeometry(7.4,7.7,.3,6),new THREE.MeshStandardMaterial({color:0x2a2d33,metalness:.7,roughness:.45}));plate.position.y=.15;plate.receiveShadow=true;g.add(plate);
@@ -2448,6 +2507,7 @@ function makeTurret(pos,teamFn,range,owner){   // runs during the HQ build (befo
     box(.34,.05,.05,HQT_GREEN,s*.3,0,2.26,pitchG);}
   box(.08,.08,.5,HQT_GREEN,0,.2,.55,pitchG);                               // centre sight
   const lamp=box(.3,.3,.3,E(0x9aa3b5),0,.55,-.6,head);                    // team-colour lamp (blue/red) so you can still tell whose turret it is
+  bakeMech({root:g,head,pitchG,lamp},'hqt');   /* lag fix (user 2026-11-27): merge the fixed parts of each moving section */
   const t={pos:pos.clone().setY(pos.y+1.15*S),head,pitchG,lamp,teamFn,range,cd:Math.random(),owner,hq:true};head.rotation.y=pos.z>0?Math.PI:0;turrets.push(t);return t;}
 
 function makeHealthTag(w,h){const c=document.createElement('canvas');c.width=256;c.height=72;const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
@@ -2492,6 +2552,7 @@ function makeCannon(pos,teamFn,range){
   box(.12,.12,5.3,glow,0,0,3.15,pitchG);
   for(let k=0;k<11;k++)box(.62,.08,.12,glow,0,-.24,1.0+k*.46,pitchG);
   box(.5,.22,.8,dark,0,-.32,.6,pitchG);
+  bakeMech({root:g,head,pitchG,lamp},'cn');   /* lag fix (user 2026-11-27) */
   const t={pos:pos.clone().setY(pos.y+1.75),head,pitchG,lamp,teamFn,range,cd:Math.random(),owner:null,heavy:true,mats:{armor,glow},lastTeam:'init'};head.rotation.y=pos.z>0?Math.PI:0;turrets.push(t);return t;}
 
 // yellow/black zoning tape laid on the ground around each tunnel opening
@@ -3396,14 +3457,14 @@ function updatePlayer(dt,t){
     fire('missile',BLUE,_c,_t,96*(PVP?DIFF.rivalMul:1),{splash:PVP?DIFF.rivalSplashMis:4.5,boom:PVP?DIFF.rivalBoomMis:12,life:5.5,target:lockTarget,aimPt:lockTarget?null:aimAt.clone(),byPlayer:true,cluster:PVP&&DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);if(!playSample(missileBuf,null,.9))sfx('missile',null);}
   // HQ repair pad
   {const pad=DUSK?DUSK_PAD:bases[0].pad,onPad=DUSK?(P.alive&&P.pos.y<1.2&&Math.hypot(P.pos.x-DUSK_PAD_POS.x,P.pos.z-DUSK_PAD_POS.z)<6.2):(bases[0].alive&&P.pos.y<1&&Math.hypot(P.pos.x,P.pos.z-(BASE_Z[BLUE]-16))<6.2);
-   const needs=(!DUSK&&P.hp<P.maxHp)||P.mg<MG_MAX||P.sh<SH_MAX||(DUSK?P.ms<MS_MAX:P.ms<40),rm=$('repairMsg');
-   if(onPad&&needs){const wasDamaged=P.hp<P.maxHp;
-     if(!DUSK)P.hp=Math.min(P.maxHp,P.hp+P.maxHp/15*dt);                      // 0 -> 100% hull in 15 seconds (dusk pad: ammo only)
+   const needs=P.hp<P.maxHp||P.mg<MG_MAX||P.sh<SH_MAX||(DUSK?P.ms<MS_MAX:P.ms<40),rm=$('repairMsg');
+   if(onPad&&needs){const wasDamaged=P.hp<P.maxHp,ammoLow=P.mg<MG_MAX||P.sh<SH_MAX||P.ms<MS_MAX;
+     P.hp=Math.min(P.maxHp,P.hp+P.maxHp/15*dt);                      // 0 -> 100% hull in 15 seconds (dusk pad repairs the hull too, user 2026-11-27)
      P.mg=Math.min(MG_MAX,P.mg+MG_MAX/5*dt);P.sh=Math.min(SH_MAX,P.sh+SH_MAX/5*dt);P.ms=Math.min(MS_MAX,P.ms+MS_MAX/5*dt);
      const pulse=.5+.5*Math.sin(t*8);pad.ring.material.color.setHex(0x3dff8a);pad.disc.material.color.setHex(0x3dff8a);pad.disc.material.opacity=.18+.2*pulse;
      if(Math.random()<.5){const a=Math.random()*6.283,r=rand(1,2.6);puff(_c.set(P.pos.x+Math.cos(a)*r,P.pos.y+rand(.3,2),P.pos.z+Math.sin(a)*r),0x5dffa0,.25,.6,.7,0,rand(2.5,4),0);}
-     rm.style.display='block';rm.textContent=DUSK?'RELOADING AMMO  '+Math.floor((P.mg/MG_MAX+P.sh/SH_MAX+P.ms/MS_MAX)/3*100)+'%':'REPAIRING  '+Math.floor(P.hp/P.maxHp*100)+'%';
-     if(DUSK&&P.mg>=MG_MAX&&P.sh>=SH_MAX&&P.ms>=MS_MAX){feed('Ammo fully reloaded','b');repairChime();}
+     rm.style.display='block';rm.textContent=DUSK?'HULL  '+Math.floor(P.hp/P.maxHp*100)+'%   AMMO  '+Math.floor((P.mg/MG_MAX+P.sh/SH_MAX+P.ms/MS_MAX)/3*100)+'%':'REPAIRING  '+Math.floor(P.hp/P.maxHp*100)+'%';
+     if(DUSK&&ammoLow&&P.mg>=MG_MAX&&P.sh>=SH_MAX&&P.ms>=MS_MAX){feed('Ammo fully reloaded','b');repairChime();}
      if(wasDamaged&&P.hp>=P.maxHp){feed('Hull fully repaired','b');repairChime();}}
    else{const pc=DUSK?0xf2b51d:TEAMCOL[BLUE];pad.ring.material.color.setHex(pc);pad.disc.material.color.setHex(pc);pad.disc.material.opacity=onPad?.25:.12;rm.style.display='none';}}
   // crates
