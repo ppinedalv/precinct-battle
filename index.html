@@ -1396,7 +1396,9 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
     {const a=rand(0,Math.PI*2),r=rand(1,2.2);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*r,2.1+Math.sin(a)*r,6.15)),.08,.25);}}
   O.cd-=dt;if(O.age<1.2||O.cd>0||!tg)return;
   const from=T.localToWorld(new THREE.Vector3(0,2.1,6.3));center(tg,_bt);if(!losClear(from,_bt,tg.r)){O.cd=.5;return;}
-  lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,6.3)).clone(),_bt,.22);}},90);   /* quick re-strike flicker */
+  if(tg.onGround===false){_bt.set(tg.pos.x+rand(-2,2),groundAt(tg.pos.x,tg.pos.z,.5,tg.pos.y),tg.pos.z+rand(-2,2));   /* mech in the air from a jump = safe: the bolt misses into the ground below it, no damage (user 2026-11-27) */
+    lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
+  lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,6.3)).clone(),_bt,.22);}},90);   /* quick re-strike flicker */
   damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
   for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
   O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
