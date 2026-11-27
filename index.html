@@ -853,16 +853,22 @@ const _ps=(x,y,z,sx,sy,sz)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z)
 /* scientist safety goggles (user 2026-11-27: more accurate detail, round yellow front lenses): rubber eye cups, chrome bezel rings,
    yellow lenses with a glint, vent nubs on top, nose bridge, strap mounts at the sides. Returns {geo,col,m} items; k scales, ex = eye offset, zf = face front */
 let GOG_G=null;
-function goggleItems(ex,y,zf,k){if(!GOG_G)GOG_G={cup:new THREE.CylinderGeometry(.043,.048,.05,18).rotateX(Math.PI/2),rim:new THREE.TorusGeometry(.039,.008,8,24),lens:new THREE.CylinderGeometry(.034,.034,.012,22).rotateX(Math.PI/2)};
-  const it=[],at=(x,yy,z)=>_ps(x*k,y+(yy-y)*k,zf+z*k,k,k,k),G=GOG_G;
+/* goggles v2 (user 2026-11-27, styled on the user's reference photo, no logo): big round mirrored yellow lenses (orange lower crescent,
+   bright yellow upper highlight), thick glossy black rims, deep vented cups with 3 slots each side, folding rubber bridge, side mounts */
+function goggleItems(ex,y,zf,k){if(!GOG_G)GOG_G={cup:new THREE.CylinderGeometry(.056,.05,.052,22).rotateX(Math.PI/2),rim:new THREE.TorusGeometry(.05,.012,10,28),lens:new THREE.CylinderGeometry(.045,.045,.01,26).rotateX(Math.PI/2),
+    disc:new THREE.CylinderGeometry(1,1,.01,22).rotateX(Math.PI/2)};
+  const it=[],G=GOG_G,P=(x,yy,z,sx=k,sy=k,sz=k)=>_ps(x*k,y+yy*k,zf+z*k,sx,sy,sz);
   for(const sd of[-1,1]){const x=sd*ex/k;
-    it.push({geo:G.cup,col:0x1b1c1e,m:at(x,y,.0)});                                   /* rubber eye cup */
-    it.push({geo:G.rim,col:0xb9bdc3,m:at(x,y,.026)});                                 /* chrome bezel */
-    it.push({geo:G.lens,col:0xffc414,m:at(x,y,.026)});                                /* round yellow lens */
-    it.push({geo:USPH,col:0xfff4c2,m:_ps(x*k-.012*k,y+.013*k,zf+.033*k,.014*k,.01*k,.004*k)});   /* glint */
-    for(const vx of[-.016,.016])it.push({geo:UBOX,col:0x2c2d30,m:_ps((x+vx)*k,y+.046*k,zf,.01*k,.008*k,.018*k)});   /* vent nubs */
-    it.push({geo:UBOX,col:0x2c2d30,m:_ps((x+sd*.049)*k,y,zf-.008*k,.012*k,.03*k,.03*k)});}   /* strap mount */
-  it.push({geo:UBOX,col:0x1b1c1e,m:_ps(0,y-.004*k,zf+.004*k,(ex/k*2-.07)*k+.012*k,.014*k,.02*k)});   /* nose bridge */
+    it.push({geo:G.cup,col:0x0b0b0c,m:P(x,0,0)});                                       /* glossy black eye cup */
+    for(let v=0;v<3;v++){const a=(v-1)*.55;it.push({geo:UBOX,col:0x2c2d31,m:P(x+sd*.055*Math.cos(a),.055*Math.sin(a),-.004,.006*k,.012*k,.026*k)});}   /* vent slots on the outer side */
+    it.push({geo:G.rim,col:0x111113,m:P(x,0,.026)});                                    /* thick front rim */
+    it.push({geo:G.lens,col:0xffb414,m:P(x,0,.026)});                                   /* yellow lens */
+    it.push({geo:G.disc,col:0xff7a1a,m:P(x+sd*.006,-.016,.032,.03*k,.022*k,k)});         /* orange lower crescent */
+    it.push({geo:G.disc,col:0xffe45a,m:P(x-sd*.008,.014,.033,.026*k,.02*k,k)});          /* bright yellow mirrored highlight */
+    it.push({geo:USPH,col:0xfffbe6,m:P(x-sd*.016,.024,.037,.012*k,.008*k,.003*k)});     /* glint */
+    it.push({geo:UBOX,col:0x141416,m:P(x+sd*.062,0,-.006,.016*k,.04*k,.034*k)});         /* strap mount */
+    it.push({geo:UBOX,col:0x7a7e84,m:P(x+sd*.07,0,-.006,.004*k,.022*k,.014*k)});}        /* buckle pin */
+  const bw=Math.max(.012,(ex/k)*2-.1);for(let j=0;j<3;j++)it.push({geo:UBOX,col:j%2?0x1c1c1f:0x0d0d0f,m:P(0,-.004+(j-1)*.008,.008-.002*j,(bw+.006)*k,.007*k,.022*k)});   /* folding rubber bridge */
   return it;}
 function headItems(skin,hair,eyes,cap){const it=[{geo:cylG(.06,.065,.14,10),col:skin,m:_pm(0,1.6,0)},{geo:USPH,col:skin,m:_ps(0,1.77,0,.2,.25,.22)},
   {geo:UBOX,col:skin,m:_pm(0,1.755,.112)}, {geo:UBOX,col:eyes,m:_ps(.046,1.795,.1,.04,.022,.012)},{geo:UBOX,col:eyes,m:_ps(-.046,1.795,.1,.04,.022,.012)},
@@ -943,7 +949,7 @@ const LAB_DOORS=[-45,-25,25,45];
 function buildLabCrew(){const N=38,crew=[];
   const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;scene.add(m);return m;};
   const torso=mk([...torsoItems(0xf2f4f6,0x2b2f36,0xb8c0c8),{geo:rboxL(.47,.52,.29,.07),col:0xeef0f2,m:_pm(0,.78,0)},{geo:UBOX,col:0x1e3a2a,m:_ps(0,1.32,.136,.07,.3,.01)},{geo:UBOX,col:0xd8dde2,m:_ps(.13,1.38,.137,.09,.12,.01)}],N);
-  const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),...goggleItems(.052,1.8,.125,1),{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.206,.226,.22))}],N);
+  const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),...goggleItems(.06,1.8,.13,1),{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.108,.12,.32))}   /* snug head strap (was 2x the head size, user 2026-11-27) */],N);
   const legs=mk(thighItems(0x2a2d33),N*2),shins=mk(shinItems(0x2a2d33,0x141414),N*2),arms=mk(upperItems(0xf2f4f6),N*2),fores=mk(foreItems(0xf2f4f6),N*2),hands=mk([{geo:USPH,col:0xffffff,m:_ps(0,-.35,.02,.075,.1,.065)}],N*2);
   const SK=[0xf0c8a0,0xe0b088,0xc89870,0xf4d2b4];const c=new THREE.Color();
   for(let i=0;i<N;i++){c.setHex(SK[i%4]);head.setColorAt(i,c);hands.setColorAt(i*2,c);hands.setColorAt(i*2+1,c);
@@ -1277,8 +1283,8 @@ function tScientist(x,y,z,ry,s=1){tFrame(x,y,z,ry,()=>{const CO=0xe8ecef,SK=0xd8
   tBox('lab',0x1e3a2a,.12*s,.3*s,.02*s,0,1.55*s,.19*s);   /* tie */
   for(const sd of[-1,1])tBox('lab',CO,.15*s,.75*s,.17*s,sd*.38*s,1.35*s,.06*s,0,-.25,0);
   tAdd('lab',USPH,SK,0,2.02*s,0,0,0,0,.42*s,.48*s,.42*s);
-  tBox('lab',0x101214,.42*s,.05*s,.04*s,0,2.06*s,.17*s);   /* strap */
-  for(const g of goggleItems(.1*s,2.06*s,.215*s,1.9*s))TB.lab.push({geo:g.geo,col:g.col,m:TF.clone().multiply(g.m)});});}
+  tAdd('lab',torusG(1,.09,28),0x101214,0,2.06*s,0,Math.PI/2,0,0,.218*s,.218*s,.5*s);   /* head strap hugging the head (user 2026-11-27) */
+  for(const g of goggleItems(.114*s,2.06*s,.22*s,1.9*s))TB.lab.push({geo:g.geo,col:g.col,m:TF.clone().multiply(g.m)});});}
 function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowing edge strips; detailed laser cannon (user 2026-11-26) */
   const seg=[],segG=[],can=[],canG=[],m=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(sx,sy,sz));
   seg.push({geo:UCYL,col:0x8f969f,m:m(0,0,.85,Math.PI/2,0,0,1.5,1.55,1.5)},{geo:torusG(.78,.13),col:0xd9a21b,m:m(0,0,1.55)},{geo:torusG(.74,.08),col:0x4a4e55,m:m(0,0,.35)},{geo:USPH,col:0x2a2c30,m:m(0,0,0,0,0,0,1.3,1.3,1.3)});
