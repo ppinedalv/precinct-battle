@@ -1038,7 +1038,7 @@ function updateThugs(dt,t){const P=player;
   if(BOSS&&BOSS.alive&&P.alive){DUSK_DYN.thugT=(DUSK_DYN.thugT??3)-dt;if(DUSK_DYN.thugT<=0){DUSK_DYN.thugT=lerp(6,2.2,(DIFF.level-1)/9);if(THUGS.filter(u=>u.alive&&u.role!=='guard').length<thugCap())spawnThug();}}
   for(let i=THUGS.length-1;i>=0;i--){const u=THUGS[i];if(!u.alive){THUGS.splice(i,1);continue;}
     if(u.frozen>0){u.frozen-=dt;continue;}
-    if(P.alive&&P.pos.y<2&&Math.abs(u.pos.y-P.pos.y)<2&&Math.hypot(P.pos.x-u.pos.x,P.pos.z-u.pos.z)<1.9){kill(u,BLUE,true);continue;}   /* stepped on */
+    if(P.alive&&P.pos.y<2&&Math.abs(u.pos.y-P.pos.y)<2&&Math.hypot(P.pos.x-u.pos.x,P.pos.z-u.pos.z)<2.2){kill(u,BLUE,true);continue;}   /* stepped on / walked through (user 2026-11-27: 2.2, was 1.9) */
     const dx=P.pos.x-u.pos.x,dz=P.pos.z-u.pos.z,d=Math.hypot(dx,dz),range=u.role==='molotov'?32:u.role==='guard'?80:55;
     u.think-=dt;if(u.think<=0){u.think=.3;u.los=P.alive&&d<range&&losClear(_th.set(u.pos.x,u.pos.y+1.6,u.pos.z),center(P,_th2),P.r);}
     let moving=false;
@@ -1547,7 +1547,7 @@ ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
 const sky=new THREE.Group();scene.add(sky);
 if(DUSK){const dome=new THREE.Mesh(new THREE.SphereGeometry(560,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
   vertexShader:'varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:'varying vec3 vP;void main(){float h=vP.y;vec3 hor=vec3(1.,.8,.38),org=vec3(.86,.4,.1),blu=vec3(.06,.11,.29),top=vec3(.008,.012,.035);   /* like the user reference photo (2026-11-27): thin dusk-yellow horizon -> orange -> deep blue -> near black overhead */float s=max(0.,dot(normalize(vec3(-.75,0.,-.66)),normalize(vec3(vP.x,0.,vP.z)+1e-4)));vec3 c=h<.09?mix(hor,org,smoothstep(-.04,.09,h)):h<.28?mix(org,blu,smoothstep(.09,.28,h)):mix(blu,top,smoothstep(.28,.7,h));   /* yellow/orange a little higher (user 2026-11-27, was .05/.2/.65) */c+=vec3(1.,.62,.18)*pow(s,8.)*smoothstep(.18,0.,h)*.5;gl_FragColor=vec4(c,1.);}'}));
+  fragmentShader:'varying vec3 vP;void main(){float h=vP.y;vec3 blu=vec3(.06,.11,.29),top=vec3(.008,.012,.035),hor=mix(vec3(1.,.8,.38),blu,.1),org=mix(vec3(.86,.4,.1),blu,.1);   /* yellow + orange 10% more see-through (user 2026-11-27) */   /* like the user reference photo (2026-11-27): thin dusk-yellow horizon -> orange -> deep blue -> near black overhead */float s=max(0.,dot(normalize(vec3(-.75,0.,-.66)),normalize(vec3(vP.x,0.,vP.z)+1e-4)));vec3 c=h<.09?mix(hor,org,smoothstep(-.04,.09,h)):h<.28?mix(org,blu,smoothstep(.09,.28,h)):mix(blu,top,smoothstep(.28,.7,h));   /* yellow/orange a little higher (user 2026-11-27, was .05/.2/.65) */c+=vec3(1.,.62,.18)*pow(s,8.)*smoothstep(.18,0.,h)*.45;gl_FragColor=vec4(c,1.);}'}));
   dome.renderOrder=-10;dome.frustumCulled=false;sky.add(dome);sky.scale.setScalar(.7);}   /* fits inside the dusk view distance (420) */   /* dusk sky: orange horizon -> violet -> deep blue */
 const starMat=new THREE.ShaderMaterial({uniforms:{uTime:{value:0},uPR:{value:renderer.getPixelRatio()}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
   vertexShader:`attribute float aPhase;attribute float aSize;uniform float uTime;uniform float uPR;varying float vA;
@@ -3267,7 +3267,7 @@ function moveGround(u,dest,stopDist,speed,dt){const mr=u.moveR||u.r;
   if(dist>stopDist){_dir.divideScalar(dist);const s=steer(u.pos,_dir,mr,u.side);u.vel.lerp(_t.copy(s).multiplyScalar(speed),clamp(dt*4,0,1));}
   else u.vel.multiplyScalar(Math.max(0,1-dt*6));
   // separation
-  for(const o of ents){if(o===u||!o.alive||o.air||o.kind==='base'||o.kind==='hqturret')continue;const dx=u.pos.x-o.pos.x,dz=u.pos.z-o.pos.z,d2=dx*dx+dz*dz,m=u.r+o.r;
+  for(const o of ents){if(o===u||!o.alive||o.air||o.kind==='base'||o.kind==='hqturret'||(u.kind==='thug'&&o.isPlayer))continue;const dx=u.pos.x-o.pos.x,dz=u.pos.z-o.pos.z,d2=dx*dx+dz*dz,m=u.r+o.r;
     if(d2<m*m&&d2>1e-4){const d=Math.sqrt(d2),k=(m-d)/d*.5;u.pos.x+=dx*k;u.pos.z+=dz*k;}}
   u.pos.addScaledVector(u.vel,dt);pushOut(u.pos,mr);return dist;}
 
