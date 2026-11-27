@@ -903,17 +903,38 @@ function headItems(skin,hair,eyes,cap){const it=[{geo:cylG(.06,.065,.14,10),col:
   {geo:UBOX,col:hair,m:_ps(.046,1.825,.104,.05,.012,.012)},{geo:UBOX,col:hair,m:_ps(-.046,1.825,.104,.05,.012,.012)},{geo:UBOX,col:0x5a2a26,m:_ps(0,1.71,.103,.06,.012,.012)}];
   it[2].m=_ps(0,1.755,.112,.035,.06,.05);for(const s of[-1,1])it.push({geo:USPH,col:skin,m:_ps(s*.102,1.77,0,.04,.07,.05)});
   if(cap)it.push(...cap);else it.push({geo:USPH,col:hair,m:_ps(0,1.83,-.015,.212,.17,.232)});return it;}
-function thighItems(pants){return [{geo:rboxL(.16,.47,.18,.05),col:pants,m:_pm(0,-.23,0)},{geo:USPH,col:pants,m:_ps(0,-.46,0,.08,.08,.09)}];}   /* knees (user 2026-11-26) */
-function shinItems(pants,shoe){return [{geo:rboxL(.14,.43,.16,.05),col:pants,m:_pm(0,-.2,.01)},{geo:rboxL(.15,.1,.29,.04),col:shoe,m:_pm(0,-.42,.05)},{geo:UBOX,col:0xd8d8d0,m:_ps(0,-.465,.05,.152,.02,.292)}];}
-function legItems(pants,shoe){return [{geo:rboxL(.16,.47,.18,.05),col:pants,m:_pm(0,-.23,0)},{geo:rboxL(.14,.43,.16,.05),col:pants,m:_pm(0,-.66,.01)},
-  {geo:rboxL(.15,.1,.29,.04),col:shoe,m:_pm(0,-.88,.05)},{geo:UBOX,col:0xd8d8d0,m:_ps(0,-.925,.05,.152,.02,.292)}];}
-function upperItems(sleeve,w=.13){return [{geo:rboxL(w,.33,w+.01,.05),col:sleeve,m:_pm(0,-.16,0)},{geo:USPH,col:sleeve,m:_ps(0,-.31,.01,w*.48,w*.48,w*.5)}];}   /* elbows (user 2026-11-26): upper arm pivots at the shoulder, */
-function foreItems(sleeve,w=.11){return [{geo:rboxL(w,.31,w+.01,.045),col:sleeve,m:_pm(0,-.15,.02)}];}   /* forearm pivots at the elbow, .31 below the shoulder */
+function thighItems(pants){return [{geo:limbG(.47,.096,.074,.01,1,1.1),col:pants,m:_pm(0,-.23,0)},{geo:foldG(.08,1,1.1),col:pants,m:_pm(0,-.38,0)},{geo:USPH,col:pants,m:_ps(0,-.46,0,.08,.08,.09)}];}   /* knees (user 2026-11-26) */
+let _TG=null;function TORSO_G(){if(_TG)return _TG;const pts=[[0,.3],[.12,.3],[.235,.27],[.245,.2],[.235,.08],[.215,-.05],[.2,-.17],[.205,-.26],[.15,-.29],[0,-.29]].map(([r,y])=>new THREE.Vector2(r,y));   /* chest -> waist taper, rounded shoulders */
+  pts.reverse();_TG=new THREE.LatheGeometry(pts,16);_TG.scale(1,1,.58);_TG.computeVertexNormals();return _TG;}
+/* natural people shapes (user 2026-11-27): rounded tapered limbs + torso (lathe profiles), cuffs and fabric folds, real shoe shape
+   (sole outline: round heel, narrow waist, wide ball, round toe; white sole layer, upper sloping down to the toe) */
+const _limbC=new Map();
+function limbG(h,r0,r1,bulge=0,sx=1,sz=1){const k=[h,r0,r1,bulge,sx,sz].join('|');let g=_limbC.get(k);if(g)return g;const pts=[],N=9;
+  pts.push(new THREE.Vector2(0,h/2));pts.push(new THREE.Vector2(r0*.55,h/2));
+  for(let i=0;i<=N;i++){const u=i/N,r=r0+(r1-r0)*u+bulge*Math.sin(Math.PI*u),y=h/2-.02-u*(h-.04);pts.push(new THREE.Vector2(r,y));}
+  pts.push(new THREE.Vector2(r1*.55,-h/2));pts.push(new THREE.Vector2(0,-h/2));
+  pts.reverse();g=new THREE.LatheGeometry(pts,12);g.scale(sx,1,sz);   /* lathe wants bottom -> top so faces point outward */g.computeVertexNormals();_limbC.set(k,g);return g;}
+function foldG(r,sx=1,sz=1){return limbG(.018,r,r,0,sx,sz);}   /* thin fabric fold ring */
+let SHOE_G=null;
+function shoeGeos(){if(SHOE_G)return SHOE_G;const L=.3,outline=[];
+  const w=t=>{const ball=Math.exp(-Math.pow((t-.7)/.17,2)),waist=Math.exp(-Math.pow((t-.42)/.12,2));return (.05+.028*ball-.007*waist)*Math.pow(Math.max(0,1-Math.pow(2*t-1,8)),.5);};
+  for(let i=0;i<=30;i++){const t=i/30;outline.push([w(t),-L/2+L*t]);}for(let i=30;i>=0;i--){const t=i/30;outline.push([-w(t)*(t>.55?.92:1),-L/2+L*t]);}   /* inner edge a little straighter at the toe */
+  const mk=(depth,ins,bev)=>{const sh=new THREE.Shape();outline.forEach(([x,z],i)=>{const X=x*ins,Z=z*(.97+.03*ins);i?sh.lineTo(X,Z):sh.moveTo(X,Z);});
+    const g=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:bev>0,bevelThickness:bev,bevelSize:bev*.6,bevelSegments:2,curveSegments:4});g.rotateX(Math.PI/2);return g;};   /* shape in x/z, extruded downward */
+  const sole=mk(.028,1,0);sole.translate(0,.028,0);
+  const up=mk(.07,.9,.025);up.translate(0,.098+.025,0);const p=up.attributes.position;
+  for(let i=0;i<p.count;i++){const z=p.getZ(i),t=(z+L/2)/L,y=p.getY(i);if(y>.04){const drop=t>.55?Math.pow((t-.55)/.45,1.6)*.07:0;p.setY(i,y-drop);}}   /* upper slopes down to a low rounded toe */
+  up.computeVertexNormals();sole.computeVertexNormals();SHOE_G={sole,up};return SHOE_G;}
+function shoeItems(shoe,y,z,sc=1){const G=shoeGeos();return [{geo:G.up,col:shoe,m:_pm(0,y,z).multiply(_ps(0,0,0,sc,sc,sc))},{geo:G.sole,col:0xd8d8d0,m:_pm(0,y,z).multiply(_ps(0,0,0,sc,sc,sc))}];}
+function shinItems(pants,shoe){return [{geo:limbG(.43,.072,.062,.012,1,1.08),col:pants,m:_pm(0,-.2,.01)},{geo:limbG(.06,.074,.083,0,1,1.08),col:pants,m:_pm(0,-.39,.01)},{geo:foldG(.073,1,1.08),col:pants,m:_pm(0,-.1,.01)},{geo:foldG(.07,1,1.08),col:pants,m:_pm(0,-.29,.01)},...shoeItems(shoe,-.475,.06)];}   /* tapered calf, flared cuff, folds, shoe */
+function legItems(pants,shoe){return [{geo:limbG(.47,.096,.074,.01,1,1.1),col:pants,m:_pm(0,-.23,0)},{geo:limbG(.43,.072,.062,.012,1,1.08),col:pants,m:_pm(0,-.66,.01)},{geo:limbG(.06,.074,.083,0,1,1.08),col:pants,m:_pm(0,-.85,.01)},...shoeItems(shoe,-.935,.06)];}
+function upperItems(sleeve,w=.13){return [{geo:limbG(.33,w*.56,w*.46,.006),col:sleeve,m:_pm(0,-.16,0)},{geo:foldG(w*.49),col:sleeve,m:_pm(0,-.24,0)},{geo:USPH,col:sleeve,m:_ps(0,-.31,.01,w*.48,w*.48,w*.5)}];}   /* elbows (user 2026-11-26): upper arm pivots at the shoulder, */
+function foreItems(sleeve,w=.11){return [{geo:limbG(.31,w*.52,w*.42,.008),col:sleeve,m:_pm(0,-.15,.02)},{geo:limbG(.04,w*.47,w*.5,0),col:sleeve,m:_pm(0,-.285,.02)},{geo:foldG(w*.5),col:sleeve,m:_pm(0,-.06,.02)}];}   /* tapered forearm, sleeve cuff, fold */   /* forearm pivots at the elbow, .31 below the shoulder */
 const _pE=new THREE.Matrix4(),_pE2=new THREE.Matrix4();
 function elbowSet(fores,hands,j,armM,el){_pE.compose(_pp.set(0,-.31,0),_pq.setFromEuler(_pe.set(el,0,0)),_p1);_pE2.multiplyMatrices(armM,_pE);fores.setMatrixAt(j,_pE2);hands.setMatrixAt(j,_pE2);}
-function armItems(sleeve){return [{geo:rboxL(.13,.33,.14,.05),col:sleeve,m:_pm(0,-.16,0)},{geo:rboxL(.11,.31,.12,.045),col:sleeve,m:_pm(0,-.46,.02)}];}
-function torsoItems(shirt,belt,dark){return [{geo:rboxL(.38,.17,.24,.06),col:belt,m:_pm(0,.99,0)},{geo:rboxL(.44,.56,.26,.09),col:shirt,m:_pm(0,1.28,0)},
-  {geo:rboxL(.5,.15,.27,.07),col:shirt,m:_pm(0,1.5,0)},{geo:UBOX,col:dark,m:_ps(0,1.28,.133,.018,.48,.01)},{geo:UBOX,col:0xb8a040,m:_ps(0,.99,.122,.06,.06,.01)}];}
+function armItems(sleeve){return [{geo:limbG(.33,.073,.06,.006),col:sleeve,m:_pm(0,-.16,0)},{geo:limbG(.31,.057,.046,.008),col:sleeve,m:_pm(0,-.46,.02)}];}
+function torsoItems(shirt,belt,dark){return [{geo:rboxL(.38,.17,.24,.06),col:belt,m:_pm(0,.99,0)},{geo:TORSO_G(),col:shirt,m:_pm(0,1.28,0)},{geo:foldG(.2,1.08,.6),col:shirt,m:_pm(0,1.06,0)},{geo:foldG(.215,1.08,.6),col:shirt,m:_pm(0,1.17,0)},
+  {geo:rboxL(.5,.12,.27,.06),col:shirt,m:_pm(0,1.51,0)},{geo:UBOX,col:dark,m:_ps(0,1.28,.133,.018,.48,.01)},{geo:UBOX,col:0xb8a040,m:_ps(0,.99,.122,.06,.06,.01)}];}
 /* civilians (instanced) */
 function buildPeds(){DUSK_DYN.pedGroups=[];buildPedGroup(34,false);buildPedGroup(6,true);DUSK_DYN.peds=DUSK_DYN.pedGroups[0];}
 function buildPedGroup(N,fem){const L=duskLayout(),peds=[];
@@ -924,8 +945,8 @@ function buildPedGroup(N,fem){const L=duskLayout(),peds=[];
     :mk(torsoItems(0xffffff,0x3a332e,0x2a2a2a),N);
   const head=fem?mk([...headItems(0xffffff,W_HAIR,0x0e0e0e,[{geo:USPH,col:W_HAIR,m:_ps(0,1.83,-.02,.22,.18,.24)},{geo:rboxL(.36,.46,.12,.05),col:W_HAIR,m:_pm(0,1.6,-.13)},{geo:rboxL(.08,.36,.08,.03),col:W_HAIR,m:_pm(.17,1.62,-.02)},{geo:rboxL(.08,.36,.08,.03),col:W_HAIR,m:_pm(-.17,1.62,-.02)}]),{geo:UBOX,col:0xa02840,m:_ps(0,1.705,.104,.055,.014,.01)}],N)
     :mk(headItems(0xffffff,0x2a1e16,0x0e0e0e),N);
-  const legs=fem?mk([{geo:rboxL(.13,.47,.15,.05),col:0xffffff,m:_pm(0,-.23,0)},{geo:USPH,col:0xffffff,m:_ps(0,-.46,0,.065,.07,.075)}],N*2):mk(thighItems(0xffffff),N*2);
-  const shins=fem?mk([{geo:rboxL(.11,.43,.13,.045),col:0xffffff,m:_pm(0,-.2,.01)},{geo:rboxL(.12,.09,.24,.03),col:0x1a1214,m:_pm(0,-.42,.04)},{geo:UBOX,col:0x1a1214,m:_ps(0,-.4,-.08,.04,.12,.04)}],N*2):mk(shinItems(0xffffff,0x1a1a1a),N*2);
+  const legs=fem?mk([{geo:limbG(.47,.078,.058,.01,1,1.1),col:0xffffff,m:_pm(0,-.23,0)},{geo:USPH,col:0xffffff,m:_ps(0,-.46,0,.065,.07,.075)}],N*2):mk(thighItems(0xffffff),N*2);
+  const shins=fem?mk([{geo:limbG(.43,.058,.044,.014,1,1.08),col:0xffffff,m:_pm(0,-.2,.01)},...shoeItems(0x1a1214,-.455,.05,.82),{geo:UBOX,col:0x1a1214,m:_ps(0,-.44,-.06,.04,.07,.04)}],N*2):mk(shinItems(0xffffff,0x1a1a1a),N*2);
   const arms=fem?mk(upperItems(0xffffff,.1),N*2):mk(upperItems(0xffffff),N*2),fores=fem?mk(foreItems(0xffffff,.09),N*2):mk(foreItems(0xffffff),N*2);
   const hands=mk([{geo:USPH,col:0xffffff,m:_ps(0,-.35,.02,.065,.09,.06)}],N*2);
   const SH_=[0xb83a3a,0x2f5d9a,0xd9cfa8,0x3a7a4a,0x2a2b2f,0x7a4fa0,0xe0a030,0xdedede,0x8a5a3a,0x4a8a9a],PA=[0x23262c,0x3b4a66,0x5a4a3a,0x1a1a1a,0x6a6a70],SK=[0xf0c8a0,0xc89870,0x8a5a3a,0x5a3a26,0xe0b088];const c=new THREE.Color();
