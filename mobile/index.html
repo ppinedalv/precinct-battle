@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2324</div>
+<div id="buildTag">BUILD 1126-2328</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -395,13 +395,27 @@ function buildSpots(){const F=SPOTS;
     tCyl('metal',0xd8d8d2,.08,9,x0-9,4.5,z1-1);tBox('matte',0xc41f1f,.04,1.2,2,x0-9,8.3,z1-.0);
     litSign('FIRE DEPT','#ffffff','#9c1a14',9,1.3,x0-.2,7.1,cz,-Math.PI/2,0xff5a40);litSign('STATION 7','#f2b51d','#1b1b1e',4,.8,x0-.2,5.2,z0+4.5+7.2,-Math.PI/2,0);
     tFireTruck(x0-6,z0+4.5+7.2,-Math.PI/2);addBlock(x0-6,z0+11.7,9.4,2.8,3.2);}
+  /* detailed fuel pump (user 2026-11-26): plinth, white body with red side panels, open frame under a branded header, screen + price readouts + keypad on both faces, holstered nozzles with looping hoses */
+  function tPump(px,pz){const y0=.3,R=0xd61f26,WH=0xe9e9e4,DK=0x1a1b1e;
+    tBox('matte',0x55595f,1.1,.16,1.9,px,y0+.08,pz);tBox('matte',0xd9a21b,1.12,.04,1.92,px,y0+.17,pz);
+    tBox('metal',WH,.7,1.3,1.16,px,y0+.81,pz);for(const sz of[-1,1]){tBox('metal',R,.74,2.25,.14,px,y0+1.27,pz+sz*.64);tBox('metal',0xbfc3c8,.75,.06,.15,px,y0+.2,pz+sz*.64);}
+    tBox('metal',WH,.82,.5,1.48,px,y0+2.62,pz);tBox('glow',R,.84,.1,1.5,px,y0+2.74,pz);tBox('metal',R,.84,.14,1.5,px,y0+2.42,pz);
+    for(const sx of[-1,1]){const fx=px+sx*.36;
+      tBox('metal',0xc8ccd2,.04,.7,.9,fx,y0+1.75,pz);tBox('matte',DK,.03,.42,.6,fx+sx*.02,y0+1.85,pz);tBox('glow',0x6fd0ff,.02,.26,.42,fx+sx*.035,y0+1.88,pz);tBox('glow',0xffffff,.02,.04,.3,fx+sx*.036,y0+1.98,pz);
+      for(const dz of[-.24,0,.24])tBox('glow',0x3dff6a,.02,.1,.18,fx+sx*.03,y0+1.48,pz+dz);
+      tBox('matte',0x3a3d42,.03,.16,.18,fx+sx*.02,y0+1.25,pz+.28);for(let k=0;k<3;k++)tBox('metal',0x9aa0a6,.02,.03,.14,fx+sx*.035,y0+1.2+k*.05,pz+.28);
+      tBox('matte',0xd8dde2,.02,.5,.6,fx+sx*.01,y0+.65,pz);tBox('glow',R,.02,.08,.5,fx+sx*.015,y0+.92,pz);}
+    for(const sz of[-1,1]){const hz=pz+sz*.74;tBox('matte',DK,.3,.36,.1,px,y0+1.45,hz);tBox('metal',R,.1,.26,.12,px,y0+1.47,hz+sz*.08,0,.3*sz,0);tBox('metal',0x2a2c30,.05,.05,.24,px,y0+1.36,hz+sz*.16);
+      const c=new THREE.CatmullRomCurve3([new THREE.Vector3(0,y0+1.35,sz*.8),new THREE.Vector3(.25,y0+.6,sz*1.0),new THREE.Vector3(.1,y0+.25,sz*.95),new THREE.Vector3(-.05,y0+.5,sz*.8),new THREE.Vector3(0,y0+.95,sz*.72)]);
+      tAdd('matte',new THREE.TubeGeometry(c,18,.035,6),0x0e0e10,px,0,pz);}
+    tBox('metal',R,.4,.55,.4,px+.42,y0+.44,pz-.55);tBox('glow',0xffffff,.02,.08,.3,px+.63,y0+.62,pz-.55);}   /* washer bin */
   /* GAS STATION: canopy with pumps, mini-mart, price sign */
   {const cx=-27,cz=95,cw=16,cd=26,ch=7;tBox('matte',0xeeeeea,cw,1,cd,cx,ch,cz);tBox('glow',0xd61f26,cw+.06,.35,cd+.06,cx,ch-.1,cz);
     for(let i=0;i<4;i++)tBox('glow',0xf4f7ff,cw*.8,.06,1.2,cx,ch-.53,cz-9+i*6);
     for(const sx of[-1,1])for(const sz of[-1,1]){tBox('matte',0xd8d8d2,.6,ch,.6,cx+sx*5,ch/2,cz+sz*9);addBlock(cx+sx*5,cz+sz*9,.8,.8,ch);}
     addBlock(cx,cz,cw,cd,ch+.5);buildings[buildings.length-1].y0=ch-.5;   /* solid canopy roof: jump on it, walk under it (user 2026-11-26) */
     for(const sx of[-1,1]){tBox('matte',0x8a8a84,2,.3,14,cx+sx*3,.15,cz);addBlock(cx+sx*3,cz,1.6,14,1.4);
-      for(const pz of[-4,4]){tBox('metal',0xd61f26,.9,1.8,1.4,cx+sx*3,1.2,cz+pz);tBox('metal',0xeeeeea,.92,.5,1.42,cx+sx*3,1.9,cz+pz);tBox('glow',0x9fe6ff,.94,.35,.6,cx+sx*3,1.5,cz+pz);tBox('metal',0x111,.08,.9,.08,cx+sx*3.5,1.2,cz+pz+.6);}}
+      for(const pz of[-4,4])tPump(cx+sx*3,cz+pz);}
     const mx0=-49,mx1=-38;tBox('matte',0xd9d2c0,mx1-mx0,5,22,(mx0+mx1)/2,2.5,cz);addBlock((mx0+mx1)/2,cz,mx1-mx0,22,5.4);tBox('matte',0xd61f26,mx1-mx0+.3,.8,22.3,(mx0+mx1)/2,5.1,cz);
     tBox('glow',0xe6f0ff,.06,2.4,12,mx1+.04,1.7,cz);for(let i=-3;i<=3;i++)tBox('metal',0x222,.1,2.5,.1,mx1+.08,1.7,cz+i*2);
     litSign('MART','#ffffff','#d61f26',5,1,mx1+.1,4.2,cz,Math.PI/2,0xff6a5a);
@@ -4101,7 +4115,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2324'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2328'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
