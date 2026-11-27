@@ -1321,7 +1321,18 @@ function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowi
   can.push({geo:UCYL,col:0x111215,m:m(0,0,3.2,Math.PI/2,0,0,1.3,.35,1.3)});
   canG.push({geo:torusG(.55,.07),col:0xff6ad8,m:m(0,0,3.36)},{geo:torusG(.36,.05),col:0xffb3ee,m:m(0,0,3.37)},{geo:new THREE.CircleGeometry(.5,28),col:0xff3fc0,m:m(0,0,3.34)},{geo:new THREE.CircleGeometry(.16,20),col:0xffffff,m:m(0,0,3.39)});
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;canG.push({geo:UBOX,col:0xff8ae6,m:m(Math.cos(a)*.8,Math.sin(a)*.8,3.36,0,0,a,.18,.03,.02)});}
-  return {seg:mergeColored(seg),segG:mergeColored(segG),can:mergeColored(can),canG:mergeColored(canG)};}
+  /* thruster cone tip (user 2026-11-27, styled on the user's reference art): flared bell with stepped bands, glowing rings, gold mouth rim, pink core */
+  const canH=[],bell=(z)=>.82+(z-3.4)*.34;
+  can.push({geo:cylG(1.16,.82,1.0,32),col:0x8a9099,m:m(0,0,3.9,Math.PI/2)},{geo:cylG(.84,.84,.12,32),col:0x2a2d33,m:m(0,0,3.42,Math.PI/2)});
+  for(const [z,c] of[[3.62,0x39d6ff],[3.9,0xffb02e],[4.18,0x2aa8ff]]){const r=bell(z);can.push({geo:torusG(r+.02,.07),col:0x2a2d33,m:m(0,0,z-.06)});canG.push({geo:torusG(r+.05,.04),col:c,m:m(0,0,z)});canH.push({geo:torusG(r+.06,.16),col:c,m:m(0,0,z)});}
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,z=3.9;can.push({geo:UBOX,col:0x3d424a,m:m(Math.cos(a)*(bell(z)+.04),Math.sin(a)*(bell(z)+.04),z,-Math.sin(a)*.33,Math.cos(a)*.33,a,.1,.08,.95)});}   /* ribs along the bell */
+  can.push({geo:torusG(1.17,.13),col:0xd9a21b,m:m(0,0,4.4)},{geo:new THREE.CircleGeometry(1.1,32),col:0x0c0d10,m:m(0,0,4.38)});   /* gold mouth rim + dark throat */
+  canG.push({geo:torusG(1.02,.05),col:0x7fe6ff,m:m(0,0,4.45)},{geo:torusG(.62,.07),col:0xff6ad8,m:m(0,0,4.42)},{geo:torusG(.38,.05),col:0xffb3ee,m:m(0,0,4.43)},{geo:new THREE.CircleGeometry(.55,28),col:0xff3fc0,m:m(0,0,4.4)},{geo:new THREE.CircleGeometry(.18,20),col:0xffffff,m:m(0,0,4.44)});
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;canG.push({geo:UBOX,col:0xff8ae6,m:m(Math.cos(a)*.82,Math.sin(a)*.82,4.42,0,0,a,.2,.03,.02)});}
+  canH.push({geo:torusG(1.02,.2),col:0x7fe6ff,m:m(0,0,4.45)},{geo:torusG(.62,.2),col:0xff6ad8,m:m(0,0,4.42)});
+  for(let i=0;i<4;i++)canH.push({geo:torusG(1.02,.14),col:i%2?0x7fe6ff:0x2aa8ff,m:m(0,0,3.06+i*.12)});   /* soft glow around the coil rings too */
+  canH.push({geo:torusG(1.0,.2),col:0xd9a21b,m:m(0,0,.6)},{geo:torusG(1.0,.2),col:0xd9a21b,m:m(0,0,1.15)});
+  return {seg:mergeColored(seg),segG:mergeColored(segG),can:mergeColored(can),canG:mergeColored(canG),canH:mergeColored(canH)};}
 const BRAIN_FS=.75,BRAIN_O=.04,BRAIN_CUT=-.3,BRAIN_YS=.95,BRAIN_Y=9.0,BRAIN_S=3.4;   /* tall brain dome: lots of brain above the eyes, face low on the front, flat underside */
 function brainShape(x,y,z,k,out=new THREE.Vector3()){   /* slightly top-heavy, less round: narrow base, wide upper lobes, flatter crown, longer front-to-back */
   const u=clamp((y-BRAIN_CUT)/(1-BRAIN_CUT),0,1),r=Math.sqrt(Math.max(0,1-Math.pow(u,2.2))),sc=r/Math.max(Math.sqrt(Math.max(0,1-y*y)),.001);   /* mound like the reference: widest at the base, narrowing to a rounded top */
@@ -1516,11 +1527,11 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     const bub=new THREE.Points(bg,new THREE.PointsMaterial({color:0xffd0ea,size:.22,transparent:true,opacity:.8,depthWrite:false}));T.add(bub);BOSS_RIG.bubbles=bub;
     const sh=new THREE.Mesh(new THREE.SphereGeometry(13,40,24),new THREE.MeshBasicMaterial({color:0x5fe0ff,transparent:true,opacity:.05,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     sh.position.set(0,12,BOSS_Z);sh.userData.noAir=true;scene.add(sh);BOSS_RIG.shield=sh;}
-  { const G=makeArmGeos(),AM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.7}),GM=new THREE.MeshBasicMaterial({vertexColors:true});BOSS_RIG.edgeMat=GM;
+  { const G=makeArmGeos(),ARM_HALO=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false}),AM=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.7}),GM=new THREE.MeshBasicMaterial({vertexColors:true});BOSS_RIG.edgeMat=GM;
     for(const s of[-1,1])for(let k=0;k<3;k++){const root=new THREE.Group();root.position.set(s*4.95,.7+k*1.45,(1-k)*.6);root.rotation.y=s*Math.PI/2;T.add(root);
       const segs=[];let par=root;for(let j=0;j<11;j++){const g=new THREE.Group();if(j)g.position.z=1.7*(1-(j-1)*.025);const sc=1-j*.028;const m=new THREE.Mesh(G.seg,AM);m.castShadow=true;m.scale.setScalar(sc);g.add(m);const eg=new THREE.Mesh(G.segG,GM);eg.scale.setScalar(sc);g.add(eg);par.add(g);segs.push(g);par=g;}
-      const can=new THREE.Group();can.position.z=1.7;par.add(can);const cm=new THREE.Mesh(G.can,AM);cm.castShadow=true;can.add(cm,new THREE.Mesh(G.canG,GM));
-      const muzzle=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff4fd2,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));muzzle.position.z=3.45;muzzle.scale.set(2.8,2.8,1);can.add(muzzle);
+      const can=new THREE.Group();can.position.z=1.7;par.add(can);const cm=new THREE.Mesh(G.can,AM);cm.castShadow=true;can.add(cm,new THREE.Mesh(G.canG,GM));{const hm=new THREE.Mesh(G.canH,ARM_HALO);hm.userData.noAir=true;can.add(hm);}   /* additive glow halo around the coloured rings */
+      const muzzle=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff4fd2,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));muzzle.position.z=4.5;muzzle.scale.set(2.8,2.8,1);can.add(muzzle);
       const arm={s,k,segs,can,muzzle,cd:rand(1,3),aimT:0,ph:Math.random()*6,aim:new THREE.Vector3(),dead:false};
       arm.ent={kind:'bossarm',team:RED,pos:new THREE.Vector3(s*15,12,BOSS_Z),hp:100,maxHp:100,hits:0,hitsMax:7,r:2.4,hy:0,alive:true,air:true,arm};ents.push(arm.ent);   /* each arm is its own target (user 2026-11-26) */
       arm.tag=makeHealthTag(.11,.03);arm.tag.sp.position.set(s*15,15,BOSS_Z);scene.add(arm.tag.sp);arm.tag.sp.visible=false;   /* laser arm health bars hidden (user 2026-11-27) */BOSS_RIG.arms.push(arm);}}
@@ -1571,8 +1582,8 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
     if(a.dead){if(Math.random()<.3){a.segs[Math.min(7,a.segs.length-1)].localToWorld(_bt.set(0,0,1.6));puff(_bt,Math.random()<.3?0xff8a2a:0x2c2c30,.8,2.6,1,0,2.5,0);}continue;}
     if(a.ent.frozen>0){a.muzzle.material.opacity=.15+.1*Math.random();if(Math.random()<dt*6){a.can.localToWorld(_bt.set(rand(-1,1),rand(-1,1),rand(0,2)));puff(_bt,0x7fe8ff,.25,.6,.2);}continue;}   /* frozen: muzzle dark, cold blue sparks */
     a.cd-=dt;a.aimT=Math.max(0,a.aimT-dt);
-    if(tg&&a.cd<=0){center(tg,_bt);a.can.localToWorld(_bt2.set(0,0,3.4));
-      if(losClear(_bt2,_bt,tg.r)){a.can.lookAt(_bt);a.can.updateMatrixWorld(true);a.can.localToWorld(_bt2.set(0,0,3.4));
+    if(tg&&a.cd<=0){center(tg,_bt);a.can.localToWorld(_bt2.set(0,0,4.5));
+      if(losClear(_bt2,_bt,tg.r)){a.can.lookAt(_bt);a.can.updateMatrixWorld(true);a.can.localToWorld(_bt2.set(0,0,4.5));
         bossBeam(_bt2,_bt);laserZap(_bt2);damage(tg,dmg,RED,false,true);a.aimT=.6;a.aim.copy(_bt);a.cd=rate*rand(.8,1.25);}else a.cd=.5;}
     if(a.aimT>0)a.can.lookAt(a.aim);else{a.can.getWorldPosition(_bt);_bt2.set(0,0,1).applyQuaternion(R.top.getWorldQuaternion(new THREE.Quaternion()));
       a.can.lookAt(_bt.addScaledVector(_bt2,30).add(new THREE.Vector3(a.s*6,(a.k-1)*4+Math.sin(t+a.ph)*2,0)));}
