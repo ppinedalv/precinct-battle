@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0929</div>
+<div id="buildTag">BUILD 1127-0931</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1495,15 +1495,17 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
   if(b.hits/b.hitsMax>.5&&Math.random()<.25)puff(_bt.set(rand(-4,4),rand(9,14),BOSS_Z+rand(-4,4)),0x2c2c30,1.5,4,1.2,0,3,0);
   b.think=(b.think||0)-dt;if(b.think<=0){b.think=.4;b.target=bossTarget();}
   const tg=b.target&&b.target.alive?b.target:null;
-  if(tg){const want=Math.atan2(tg.pos.x,tg.pos.z-BOSS_Z);let d=want-R.top.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));R.top.rotation.y+=clamp(d,-.7*dt,.7*dt);}
+  const armsIced=R.arms.some(a=>!a.dead&&a.ent.frozen>0);   /* EMP (H) freezes the tentacle arms (user 2026-11-27): they stop dead, the turret stops turning, no laser fire */
+  if(armsIced);else if(tg){const want=Math.atan2(tg.pos.x,tg.pos.z-BOSS_Z);let d=want-R.top.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));R.top.rotation.y+=clamp(d,-.7*dt,.7*dt);}
   else R.top.rotation.y+=Math.sin(t*.25)*.08*dt;
-  for(const [i,a] of R.arms.entries()){const up=a.k-1;
+  for(const [i,a] of R.arms.entries()){const up=a.k-1;if(!a.dead&&a.ent.frozen>0){a.ent.frozen=Math.max(0,a.ent.frozen-dt);continue;}
     a.segs.forEach((g,j)=>{const w=Math.sin(t*3.1+j*.75+a.ph)*.2+(j===0?Math.sin(t*1.7+a.ph*2.3)*.38:0);g.rotation.y=-a.s*(j<7?.15:j<9?-.06:0)+w*.6;   /* faster whipping + whole-arm sweep: harder to hit (user 2026-11-26) */   /* longer tentacles: 11 segments, wider S-curve (user 2026-11-26) */
       g.rotation.x=(j<4?-.12*up-.06:j<8?.08*up+.03:-.05)+Math.sin(t*2.6+j*.6+a.ph*1.7)*.14+(j===0?Math.sin(t*1.3+a.ph)*.22:0);if(a.dead){g.rotation.x=.3;g.rotation.y*=.5;}});}
   R.top.parent.updateMatrixWorld(true);
   const rate=[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][lvl-1],dmg=[6,7,8,9,10,13,16,20,26,32][lvl-1];   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
   for(const a of R.arms){a.can.localToWorld(a.ent.pos.set(0,0,1.7));
     if(a.dead){if(Math.random()<.3){a.segs[Math.min(7,a.segs.length-1)].localToWorld(_bt.set(0,0,1.6));puff(_bt,Math.random()<.3?0xff8a2a:0x2c2c30,.8,2.6,1,0,2.5,0);}continue;}
+    if(a.ent.frozen>0){a.muzzle.material.opacity=.15+.1*Math.random();if(Math.random()<dt*6){a.can.localToWorld(_bt.set(rand(-1,1),rand(-1,1),rand(0,2)));puff(_bt,0x7fe8ff,.25,.6,.2);}continue;}   /* frozen: muzzle dark, cold blue sparks */
     a.cd-=dt;a.aimT=Math.max(0,a.aimT-dt);
     if(tg&&a.cd<=0){center(tg,_bt);a.can.localToWorld(_bt2.set(0,0,3.4));
       if(losClear(_bt2,_bt,tg.r)){a.can.lookAt(_bt);a.can.updateMatrixWorld(true);a.can.localToWorld(_bt2.set(0,0,3.4));
@@ -3457,8 +3459,8 @@ function triggerEMP(){
   P.shieldT=EMP_FREEZE;   // invisible shield: no damage for as long as the freeze lasts (user 2026-11-22)
   empVisual(o);
   empSound();
-  let n=0;for(const e of ents){if(!e.alive||e.team!==RED||(e.kind!=='tank'&&e.kind!=='roller'&&e.kind!=='hoverbot'&&e.kind!=='thug'&&e.kind!=='van'))continue;   // H also freezes enemy laser hover robots (user 2026-11-22)
-    if(Math.hypot(e.pos.x-P.pos.x,e.pos.z-P.pos.z)<=EMP_RADIUS){e.frozen=EMP_FREEZE;e.vel.set(0,0,0);n++;}}
+  let n=0;for(const e of ents){if(!e.alive||e.team!==RED||(e.kind!=='tank'&&e.kind!=='roller'&&e.kind!=='hoverbot'&&e.kind!=='thug'&&e.kind!=='van'&&!(e.kind==='bossarm'&&!e.arm.dead)))continue;   // H also freezes enemy laser hover robots (user 2026-11-22)
+    if(Math.hypot(e.pos.x-P.pos.x,e.pos.z-P.pos.z)<=EMP_RADIUS){e.frozen=EMP_FREEZE;if(e.vel)e.vel.set(0,0,0);n++;}}   /* boss arms have no vel */
   feed(n?`EMP! ${n} enemy unit${n>1?'s':''} frozen for ${EMP_FREEZE}s`:'EMP fired: no enemy tanks, rollers or hover robots in range','b');}
 // enemy mech EMP: EMP_MAX (5) charges per match, only on HARD / VETERAN / BRUTAL (levels 5-10); freezes BLUE tanks and rollers
 function rivalEMP(R){
@@ -4272,7 +4274,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0929'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0931'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
