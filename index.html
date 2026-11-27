@@ -640,8 +640,8 @@ function tTree(x,z,s,kind){const TR=0x3e2c1f,TR2=0x4a3626,rnd=drand;
             for(const sd of[-1,1])tBox('matte',dead?0x8a6a3a:col,w/2,.03*s,l*1.02,sd*w/4,cy+.04*s,cz,0,e,sd*.38);   /* folded leaflet blade either side of the rib */
             tBox('matte',dead?0x6a4a2a:0x5a6a2a,.05*s,.05*s,l,0,cy,cz,0,e,0);fy+=dy;fz+=dz;}});}
       for(let k=0;k<3;k++){const a=rnd()*6.283;tFrame(px,ty-.4*s,pz,a,()=>{tBox('matte',0x7a5a32,.5*s,.03*s,1.6*s,0,-.75*s,.32*s,0,1.25+rnd()*.2,rnd()*.3);});}}   /* dry fronds */
-    else if(pick<.72){   /* SPREADING SHADE TREE: short thick trunk splitting into crooked limbs, wide flat layered canopy (some in purple bloom) */
-      const bloom=rnd()<.35,TRK=0x4a3828;tAdd('matte',cylG(.26,.38,1,9),TRK,x,1.1*s,z,0,0,0,s,2.2*s,s);
+    else if(pick<.72){   /* SPREADING SHADE TREE: short thick trunk splitting into crooked limbs, wide flat layered canopy (green only) */
+      const bloom=(rnd(),false),TRK=0x4a3828;   /* purple bloom removed (user 2026-11-27): leaves are green only; the rnd() call keeps the layout the same */tAdd('matte',cylG(.26,.38,1,9),TRK,x,1.1*s,z,0,0,0,s,2.2*s,s);
       for(let k=0;k<3;k++)tAdd('matte',cylG(.08,.18,1,6),TRK,x+Math.cos(k*2.1)*.35*s,.15*s,z+Math.sin(k*2.1)*.35*s,Math.sin(k*2.1)*1.2,0,-Math.cos(k*2.1)*1.2,s,.6*s,s);   /* root flare */
       const nl=4+Math.floor(rnd()*2);for(let k=0;k<nl;k++){const a=k/nl*6.283+rnd()*.5,l=(2+rnd()*1.2)*s,tl=.75+rnd()*.25;
         tAdd('matte',cylG(.09,.17,1,7),TRK,x+Math.cos(a)*l*.32,2.2*s+l*.3,z+Math.sin(a)*l*.32,Math.sin(a)*tl,0,-Math.cos(a)*tl,s,l,s);}

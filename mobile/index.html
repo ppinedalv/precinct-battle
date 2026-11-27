@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1409</div>
+<div id="buildTag">BUILD 1127-1412</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -724,8 +724,8 @@ function tTree(x,z,s,kind){const TR=0x3e2c1f,TR2=0x4a3626,rnd=drand;
             for(const sd of[-1,1])tBox('matte',dead?0x8a6a3a:col,w/2,.03*s,l*1.02,sd*w/4,cy+.04*s,cz,0,e,sd*.38);   /* folded leaflet blade either side of the rib */
             tBox('matte',dead?0x6a4a2a:0x5a6a2a,.05*s,.05*s,l,0,cy,cz,0,e,0);fy+=dy;fz+=dz;}});}
       for(let k=0;k<3;k++){const a=rnd()*6.283;tFrame(px,ty-.4*s,pz,a,()=>{tBox('matte',0x7a5a32,.5*s,.03*s,1.6*s,0,-.75*s,.32*s,0,1.25+rnd()*.2,rnd()*.3);});}}   /* dry fronds */
-    else if(pick<.72){   /* SPREADING SHADE TREE: short thick trunk splitting into crooked limbs, wide flat layered canopy (some in purple bloom) */
-      const bloom=rnd()<.35,TRK=0x4a3828;tAdd('matte',cylG(.26,.38,1,9),TRK,x,1.1*s,z,0,0,0,s,2.2*s,s);
+    else if(pick<.72){   /* SPREADING SHADE TREE: short thick trunk splitting into crooked limbs, wide flat layered canopy (green only) */
+      const bloom=(rnd(),false),TRK=0x4a3828;   /* purple bloom removed (user 2026-11-27): leaves are green only; the rnd() call keeps the layout the same */tAdd('matte',cylG(.26,.38,1,9),TRK,x,1.1*s,z,0,0,0,s,2.2*s,s);
       for(let k=0;k<3;k++)tAdd('matte',cylG(.08,.18,1,6),TRK,x+Math.cos(k*2.1)*.35*s,.15*s,z+Math.sin(k*2.1)*.35*s,Math.sin(k*2.1)*1.2,0,-Math.cos(k*2.1)*1.2,s,.6*s,s);   /* root flare */
       const nl=4+Math.floor(rnd()*2);for(let k=0;k<nl;k++){const a=k/nl*6.283+rnd()*.5,l=(2+rnd()*1.2)*s,tl=.75+rnd()*.25;
         tAdd('matte',cylG(.09,.17,1,7),TRK,x+Math.cos(a)*l*.32,2.2*s+l*.3,z+Math.sin(a)*l*.32,Math.sin(a)*tl,0,-Math.cos(a)*tl,s,l,s);}
@@ -4636,7 +4636,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1409'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1412'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>

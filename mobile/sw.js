@@ -1,5 +1,5 @@
 // Precinct Battle offline cache. VERSION is rewritten by tools/build_mobile.py on every build.
-const VERSION='4f52b6f8f8';
+const VERSION='7d4ebb09ba';
 const CACHE='pb-'+VERSION;
 const FILES=['./','index.html','manifest.json','vendor/three.module.js','vendor/addons/geometries/RoundedBoxGeometry.js',
   'vendor/addons/environments/RoomEnvironment.js','icons/icon-180.png','icons/icon-192.png','icons/icon-512.png','music/dusk_dishonor.mp3'];
