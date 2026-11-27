@@ -1632,7 +1632,7 @@ function lightningPath(a,b,jag){const L=a.distanceTo(b),n=Math.max(6,Math.min(18
   pts.push(b.clone());return pts;}
 function lightningMesh(pts,r,mat){const path=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)path.add(new THREE.LineCurve3(pts[i],pts[i+1]));
   return new THREE.Mesh(new THREE.TubeGeometry(path,pts.length*2,r,5,false),mat);}
-function lightningStrike(from,to,life=.38,thin=1,nf=-1){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning: white-blue core, deep blue glow, a web of fine branching forks (user 2026-11-27 reference) */
+function lightningStrike(from,to,life=.76,thin=1,nf=-1){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning: white-blue core, deep blue glow, a web of fine branching forks (user 2026-11-27 reference) */
   const core=softBeamMat(0xdcefff,1),glow=softBeamMat(0x2a6bff,.85),haze=softBeamMat(0x0b2cff,.26);core.fog=glow.fog=haze.fog=false;
   const main=thin>=1,pts=lightningPath(from,to,main?.55:1);g.add(lightningMesh(pts,(main?.16:.2)*thin,core),lightningMesh(pts,(main?.42:.6)*thin,glow));if(main)g.add(lightningMesh(pts,1.15,haze));
   const fork=(o,dir,len,r,depth)=>{const end=o.clone().addScaledVector(dir,len).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(len*.35));
@@ -1657,7 +1657,7 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
     const sp=(c,s,o)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,transparent:true,opacity:o,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));m.position.set(0,2.1,6.1);m.scale.setScalar(s);m.userData.noAir=true;T.add(m);return m;};
     LORB={core:sp(0xdcefff,2.4,0),halo:sp(0x2f6cff,8,0),age:0,cd:1.6,arc:0,flash:0};
     feed('The boss dial is charged! Lightning incoming. Destroy the brain!','r');thunderSnd(R.dialGlow.getWorldPosition(_bt));}
-  const O=LORB,T=R.top,dg=R.dialGlow;O.age+=dt;O.flash=Math.max(0,O.flash-dt*3);const on=Math.min(1,O.age/1.2);
+  const O=LORB,T=R.top,dg=R.dialGlow;O.age+=dt;O.flash=Math.max(0,O.flash-dt*1.5);const on=Math.min(1,O.age/1.2);
   const p=.85+.15*Math.sin(t*11)+rand(-.1,.1);dg.material.color.setHex(0x3f86ff);dg.material.opacity=Math.min(1,(.7+.3*p)*on+O.flash);dg.scale.setScalar(6.5+3*on*p+O.flash*4);
   O.core.material.opacity=on*(.75+.25*p)+O.flash;O.core.scale.setScalar(2.4*p+O.flash*3);O.halo.material.opacity=on*.7*p+O.flash*.5;O.halo.scale.setScalar(8*p+O.flash*6);
   O.arc-=dt;if(on>.3&&O.arc<=0){O.arc=rand(.07,.14);const c=T.localToWorld(_bt2.set(0,2.1,6.15)).clone();   /* small arcs crackling across the dial face */
@@ -1665,20 +1665,20 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
   O.cd-=dt;if(O.age<1.2||O.cd>0||!tg)return;
   const from=T.localToWorld(new THREE.Vector3(0,2.1,8.6));center(tg,_bt);if(!losClear(from,_bt,tg.r)){O.cd=.5;return;}
   /* bolt leaves the dial centre (user 2026-11-27): straight discharge out of the middle of the dial, a flash at the centre, sparks across the face; the main bolt bends toward the target from there */
-  const dialShot=()=>{const c=T.localToWorld(new THREE.Vector3(0,2.1,5.42));lightningStrike(c,from.clone(),.4,.75,4);
-    for(let k=0;k<6;k++){const a=k/6*Math.PI*2+rand(-.3,.3);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*1.55,2.1+Math.sin(a)*1.55,5.45)).clone(),.14,.22);}
-    for(let k=0;k<10;k++){const e=from.clone().add(new THREE.Vector3(rand(-2.4,2.4),rand(-2,2),rand(-2.4,2.4)));lightningStrike(c,e,rand(.2,.38),rand(.38,.55),3);}   /* extra strands fanning out of the centre (user 2026-11-27) */
-    const tgt=_bt.clone();for(let k=0;k<5;k++){const e=from.clone().lerp(tgt,rand(.25,.6)).add(new THREE.Vector3(rand(-3.5,3.5),rand(-2.2,2.2),rand(-3.5,3.5)));lightningStrike(c,e,rand(.22,.34),rand(.4,.55),4);}   /* longer strands reaching part-way toward the target */
+  const dialShot=()=>{const c=T.localToWorld(new THREE.Vector3(0,2.1,5.42));lightningStrike(c,from.clone(),.8,.75,4);
+    for(let k=0;k<6;k++){const a=k/6*Math.PI*2+rand(-.3,.3);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*1.55,2.1+Math.sin(a)*1.55,5.45)).clone(),.28,.22);}
+    for(let k=0;k<10;k++){const e=from.clone().add(new THREE.Vector3(rand(-2.4,2.4),rand(-2,2),rand(-2.4,2.4)));lightningStrike(c,e,rand(.4,.76),rand(.38,.55),3);}   /* extra strands fanning out of the centre (user 2026-11-27) */
+    const tgt=_bt.clone();for(let k=0;k<5;k++){const e=from.clone().lerp(tgt,rand(.25,.6)).add(new THREE.Vector3(rand(-3.5,3.5),rand(-2.2,2.2),rand(-3.5,3.5)));lightningStrike(c,e,rand(.44,.68),rand(.4,.55),4);}   /* longer strands reaching part-way toward the target */
     puff(c,0xffffff,1.4,4.5,.18);puff(c,0x6fb4ff,2.2,6,.3);};
   if(tg.onGround===false){_bt.set(tg.pos.x+rand(-2,2),groundAt(tg.pos.x,tg.pos.z,.5,tg.pos.y),tg.pos.z+rand(-2,2));   /* mech in the air from a jump = safe: the bolt misses into the ground below it, no damage (user 2026-11-27) */
     dialShot();lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
-  dialShot();lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,5.42)).clone(),BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),.22,.75);lightningStrike(BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),_bt,.22,1,5);}},90);   /* quick re-strike flicker */
+  dialShot();lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,5.42)).clone(),BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),.44,.75);lightningStrike(BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),_bt,.44,1,5);   /* every bolt lasts twice as long (user 2026-11-27) */}},90);   /* quick re-strike flicker */
   damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);if(tg.isPlayer&&!(player.shieldT>0))elecCrackle();   /* mech hit by the lightning: electric crackle */puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
   for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
   O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
 function updateLightningBolts(dt){for(let i=LBOLTS.length-1;i>=0;i--){const L=LBOLTS[i];L.life-=dt;
   if(L.life<=0){scene.remove(L.g);L.g.traverse(o=>{if(o.geometry&&!o.isSprite)o.geometry.dispose();if(o.isSprite)o.material.dispose();});for(const m of L.mats)m.dispose();LBOLTS.splice(i,1);continue;}
-  const k=L.life/L.max,fl=Math.random()<.3?.35:1;L.mats.forEach((m,j)=>m.uniforms.op.value=L.ops[j]*k*fl);L.g.traverse(o=>{if(o.isSprite)o.material.opacity=k*fl;});}}
+  const k=Math.min(1,L.life/L.max*1.8),fl=Math.random()<.3?.35:1;   /* holds full charge ~45% of its life, then fades */L.mats.forEach((m,j)=>m.uniforms.op.value=L.ops[j]*k*fl);L.g.traverse(o=>{if(o.isSprite)o.material.opacity=k*fl;});}}
 function bossDeath(b){const R=BOSS_RIG;R.dead=1;if(LORB){for(const sp of[LORB.core,LORB.halo]){sp.removeFromParent();sp.material.dispose();}LORB=null;}R.glass.visible=false;R.liquid.visible=false;if(R.cap)R.cap.visible=false;for(const e of R.eyeGlow)e.visible=false;if(R.dialGlow)R.dialGlow.visible=false;if(R.mouth)R.mouth.material.color.setHex(0x220000);if(R.edgeMat)R.edgeMat.color.setScalar(.12);R.shield.visible=false;R.bubbles.visible=false;b.tag.sp.visible=false;
   R.brainMat.emissiveIntensity=0;R.brainMat.color.setHex(0x6a3a44);for(const tb of R.tubes){tb.core.visible=false;if(tb.halos)for(const h of tb.halos)h.visible=false;}for(const a of R.arms)a.muzzle.visible=false;
   for(let i=0;i<10;i++)setTimeout(()=>{puff(_bt.set(rand(-5,5),rand(14,20),BOSS_Z+rand(-5,5)),0xff7ae0,rand(2,4),rand(6,10),.6);explosion(_bt,rand(4,7));},i*220);
