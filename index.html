@@ -1087,13 +1087,14 @@ let SEAMON=null;
 function seaBus(){const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.8;const dl=actx.createDelay(1),fb=actx.createGain(),wet=actx.createGain(),out=actx.createGain();
   dl.delayTime.value=.23;fb.gain.value=.38;wet.gain.value=.45;out.gain.value=1;lp.connect(out);lp.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);out.connect(actx.destination);return {in:lp,out};}
 function seaRoar(B){const t=actx.currentTime+.05,D=3.3;
-  const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const nl=actx.createBiquadFilter();nl.type='lowpass';nl.frequency.setValueAtTime(1300,t);nl.frequency.exponentialRampToValueAtTime(140,t+D);const ng=actx.createGain();
+  const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const nl=actx.createBiquadFilter();nl.type='lowpass';nl.frequency.setValueAtTime(650,t);nl.frequency.exponentialRampToValueAtTime(80,t+D);const ng=actx.createGain();
   ng.gain.setValueAtTime(.0001,t);ng.gain.exponentialRampToValueAtTime(.55,t+.18);ng.gain.exponentialRampToValueAtTime(.0005,t+D);n.connect(nl).connect(ng).connect(B.in);n.start(t);n.stop(t+D+.1);
-  const g=actx.createOscillator();g.type='sawtooth';g.frequency.setValueAtTime(290,t);g.frequency.exponentialRampToValueAtTime(160,t+1.2);g.frequency.exponentialRampToValueAtTime(70,t+D);   /* falling roar 290 -> 70 Hz */
-  const rough=actx.createGain(),am=actx.createOscillator(),amg=actx.createGain();am.frequency.value=31;amg.gain.value=.45;am.connect(amg).connect(rough.gain);rough.gain.value=.55;   /* throaty growl */
-  const gl=actx.createBiquadFilter();gl.type='lowpass';gl.frequency.value=900;const gg=actx.createGain();gg.gain.setValueAtTime(.0001,t);gg.gain.exponentialRampToValueAtTime(.5,t+.25);gg.gain.setValueAtTime(.5,t+1.4);gg.gain.exponentialRampToValueAtTime(.0005,t+D);
+  const g=actx.createOscillator();g.type='sawtooth';g.frequency.setValueAtTime(165,t);g.frequency.exponentialRampToValueAtTime(90,t+1.2);g.frequency.exponentialRampToValueAtTime(38,t+D);   /* deeper falling roar 165 -> 38 Hz (user 2026-11-27, was 290 -> 70) */
+  const rough=actx.createGain(),am=actx.createOscillator(),amg=actx.createGain();am.frequency.value=21;amg.gain.value=.5;am.connect(amg).connect(rough.gain);rough.gain.value=.55;   /* throaty growl */
+  const gl=actx.createBiquadFilter();gl.type='lowpass';gl.frequency.value=480;const gg=actx.createGain();gg.gain.setValueAtTime(.0001,t);gg.gain.exponentialRampToValueAtTime(.5,t+.25);gg.gain.setValueAtTime(.5,t+1.4);gg.gain.exponentialRampToValueAtTime(.0005,t+D);
   g.connect(rough).connect(gl).connect(gg).connect(B.in);g.start(t);am.start(t);g.stop(t+D+.1);am.stop(t+D+.1);
-  const sub=actx.createOscillator();sub.type='sine';sub.frequency.setValueAtTime(44,t);sub.frequency.exponentialRampToValueAtTime(28,t+D);const sg=actx.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.9,t+.1);sg.gain.exponentialRampToValueAtTime(.0005,t+D+.4);
+  {const g2=actx.createOscillator();g2.type='sawtooth';g2.frequency.setValueAtTime(82,t);g2.frequency.exponentialRampToValueAtTime(45,t+1.2);g2.frequency.exponentialRampToValueAtTime(19,t+D);const g2g=actx.createGain();g2g.gain.value=.6;g2.connect(g2g).connect(rough);g2.start(t);g2.stop(t+D+.1);}   /* octave-down growl for weight */
+  const sub=actx.createOscillator();sub.type='sine';sub.frequency.setValueAtTime(34,t);sub.frequency.exponentialRampToValueAtTime(22,t+D);const sg=actx.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.9,t+.1);sg.gain.exponentialRampToValueAtTime(.0005,t+D+.4);
   sub.connect(sg).connect(B.out);sub.start(t);sub.stop(t+D+.5);}
 function seaMoan(B){const t=actx.currentTime+.05,D=rand(1.4,2.9),f0=rand(295,345),f1=rand(210,258);
   const o=actx.createOscillator(),o2=actx.createOscillator(),vib=actx.createOscillator(),vg=actx.createGain();o.type='sawtooth';o2.type='triangle';
