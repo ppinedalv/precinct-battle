@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1003</div>
+<div id="buildTag">BUILD 1127-1011</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1162,6 +1162,44 @@ function throwMolotov(u,P){const hand=u.fore.localToWorld(_th.set(0,-.49,0)).clo
 
 /* Molotov sounds (user 2026-11-26), made in code: breaking glass, flame whoosh, crackling fire */
 const _sv=pos=>clamp(1.1-pos.distanceTo(player.pos)/90,0,1);
+/* SEA MONSTER sound (user 2026-11-27): starts once the mech is inside the boss compound (gate breached). Made in code, modelled on
+   the user's YouTube reference tCzrwSpEJWA (no licence info, so no audio copied): a huge falling roar on entry, then a churning
+   underwater drone with bubbles, and long moaning calls (~320 Hz gliding to ~230 Hz with harmonics) every 6-12 s, all through
+   a muffled underwater filter with a watery echo. Fades out when the mech leaves the compound or the boss dies. */
+let SEAMON=null;
+function seaBus(){const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.8;const dl=actx.createDelay(1),fb=actx.createGain(),wet=actx.createGain(),out=actx.createGain();
+  dl.delayTime.value=.23;fb.gain.value=.38;wet.gain.value=.45;out.gain.value=1;lp.connect(out);lp.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);out.connect(actx.destination);return {in:lp,out};}
+function seaRoar(B){const t=actx.currentTime+.05,D=3.3;
+  const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const nl=actx.createBiquadFilter();nl.type='lowpass';nl.frequency.setValueAtTime(1300,t);nl.frequency.exponentialRampToValueAtTime(140,t+D);const ng=actx.createGain();
+  ng.gain.setValueAtTime(.0001,t);ng.gain.exponentialRampToValueAtTime(.55,t+.18);ng.gain.exponentialRampToValueAtTime(.0005,t+D);n.connect(nl).connect(ng).connect(B.in);n.start(t);n.stop(t+D+.1);
+  const g=actx.createOscillator();g.type='sawtooth';g.frequency.setValueAtTime(290,t);g.frequency.exponentialRampToValueAtTime(160,t+1.2);g.frequency.exponentialRampToValueAtTime(70,t+D);   /* falling roar 290 -> 70 Hz */
+  const rough=actx.createGain(),am=actx.createOscillator(),amg=actx.createGain();am.frequency.value=31;amg.gain.value=.45;am.connect(amg).connect(rough.gain);rough.gain.value=.55;   /* throaty growl */
+  const gl=actx.createBiquadFilter();gl.type='lowpass';gl.frequency.value=900;const gg=actx.createGain();gg.gain.setValueAtTime(.0001,t);gg.gain.exponentialRampToValueAtTime(.5,t+.25);gg.gain.setValueAtTime(.5,t+1.4);gg.gain.exponentialRampToValueAtTime(.0005,t+D);
+  g.connect(rough).connect(gl).connect(gg).connect(B.in);g.start(t);am.start(t);g.stop(t+D+.1);am.stop(t+D+.1);
+  const sub=actx.createOscillator();sub.type='sine';sub.frequency.setValueAtTime(44,t);sub.frequency.exponentialRampToValueAtTime(28,t+D);const sg=actx.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.9,t+.1);sg.gain.exponentialRampToValueAtTime(.0005,t+D+.4);
+  sub.connect(sg).connect(B.out);sub.start(t);sub.stop(t+D+.5);}
+function seaMoan(B){const t=actx.currentTime+.05,D=rand(1.4,2.9),f0=rand(295,345),f1=rand(210,258);
+  const o=actx.createOscillator(),o2=actx.createOscillator(),vib=actx.createOscillator(),vg=actx.createGain();o.type='sawtooth';o2.type='triangle';
+  o.frequency.setValueAtTime(f0*.92,t);o.frequency.exponentialRampToValueAtTime(f0,t+.3);o.frequency.exponentialRampToValueAtTime(f1,t+D);o2.frequency.setValueAtTime(f0*1.84,t);o2.frequency.exponentialRampToValueAtTime(f0*2,t+.3);o2.frequency.exponentialRampToValueAtTime(f1*2,t+D);
+  vib.frequency.value=rand(4,6);vg.gain.value=rand(4,9);vib.connect(vg);vg.connect(o.frequency);vg.connect(o2.frequency);
+  const mix=actx.createGain();mix.gain.value=1;const h2=actx.createGain();h2.gain.value=.35;o.connect(mix);o2.connect(h2).connect(mix);
+  const env=actx.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(.2,t+.35);env.gain.setValueAtTime(.2,t+D*.65);env.gain.exponentialRampToValueAtTime(.0005,t+D);
+  for(const [fq,q,gv] of[[640,5,.9],[1150,6,.55],[300,2,.6]]){const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fq;bp.Q.value=q;const bg=actx.createGain();bg.gain.value=gv;mix.connect(bp).connect(bg).connect(env);}   /* throat formants */
+  env.connect(B.in);for(const x of[o,o2,vib]){x.start(t);x.stop(t+D+.1);}}
+function seaBubble(B){const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain(),f=rand(280,800);o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*rand(1.6,2.6),t+.06);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(rand(.03,.08),t+.008);g.gain.exponentialRampToValueAtTime(.0003,t+.09);o.connect(g).connect(B.in);o.start(t);o.stop(t+.1);}
+function updateSeaMonster(dt){if(!DUSK||!actx||!noise)return;const P=player,inside=P.alive&&P.pos.z<WALL_Z-1&&GATE&&!GATE.alive&&!(BOSS_RIG.dead>0);
+  if(!SEAMON){if(!inside)return;const B=seaBus(),amb=actx.createGain();amb.gain.value=0;amb.connect(B.out);
+    const n=actx.createBufferSource();n.buffer=noise;n.loop=true;n.playbackRate.value=.5;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=170;lp.Q.value=.9;const ng=actx.createGain();ng.gain.value=.9;n.connect(lp).connect(ng).connect(amb);n.start();   /* churning water */
+    const s1=actx.createOscillator(),s2=actx.createOscillator(),sg=actx.createGain();s1.frequency.value=36;s2.frequency.value=47;sg.gain.value=.35;s1.connect(sg);s2.connect(sg);sg.connect(amb);s1.start();s2.start();   /* deep rumble */
+    const lfo=actx.createOscillator(),lg=actx.createGain();lfo.frequency.value=.13;lg.gain.value=.3;lfo.connect(lg).connect(sg.gain);lfo.start();   /* slow swell */
+    SEAMON={B,amb,inside:false,moanT:2.5,bubT:.5,roarCD:0};}
+  const S=SEAMON,t=actx.currentTime;S.roarCD=Math.max(0,S.roarCD-dt);
+  if(inside&&!S.inside&&S.roarCD<=0&&!muted){seaRoar(S.B);S.roarCD=20;S.moanT=rand(4,6);}   /* entering: the big roar */
+  S.inside=inside;S.amb.gain.setTargetAtTime(inside&&!muted?.55:0,t,inside?.8:1.2);
+  if(!inside||muted)return;
+  S.moanT-=dt;if(S.moanT<=0){seaMoan(S.B);if(Math.random()<.35)setTimeout(()=>{if(SEAMON&&SEAMON.inside&&!muted)seaMoan(SEAMON.B);},rand(600,1400));S.moanT=rand(6,12);}   /* long moaning calls, sometimes a quick answer */
+  S.bubT-=dt;if(S.bubT<=0){seaBubble(S.B);S.bubT=Math.random()<.3?rand(.05,.15):rand(.4,1.6);}}
 function glassBreak(pos){if(muted||!actx||!noise)return;const v=_sv(pos);if(v<.04)return;const t=actx.currentTime,out=actx.destination;
   for(let i=0;i<7;i++){const t0=t+i*rand(.008,.03)+(i?rand(0,.05):0),n=actx.createBufferSource();n.buffer=noise;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=rand(2500,5500);
     const g=actx.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime((i?.22:.5)*v,t0+.003);g.gain.exponentialRampToValueAtTime(.0005,t0+rand(.05,.16));n.connect(hp).connect(g).connect(out);n.start(t0,Math.random()*.7,.2);n.stop(t0+.2);}
@@ -1768,7 +1806,7 @@ function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStar
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
     v.next=t+dur+rand(.15,1.6-CROWD.lvl);}}
-function updateDusk(dt,t){if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
+function updateDusk(dt,t){updateSeaMonster(dt);if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
   updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
   for(const p of['A','B'])for(const c of['r','y','g'])st(p,c);
@@ -4378,7 +4416,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1003'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1011'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
