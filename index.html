@@ -2216,7 +2216,7 @@ function bakeStatic(root,key){const groups=[];root.traverse(o=>{if(o.isGroup)gro
 function makeDiff(d){const k=(d-1)/9,L=(a,b)=>a+(b-a)*k;const D={level:d,
   tankT:L(22,5),droneT:L(45,12),rollers:Math.round(L(3,14)),rollerT:L(14,5),rollerSpeed:L(11,20),rollerSight:L(35,75),rollerRange:L(26,40),rollerDmg:L(5,9),   /* side-lane rollers scale with level (user 2026-11-24; was 2-9 rollers, 12 s respawn, speed 13, sight 45, range 30, dmg 6) */
   cap:Math.round(L(10,40)),startTanks:Math.round(L(1,7)),
-  redFire:L(1.9,.55),redDmg:L(.55,1.5),turretMul:L(1.7,.65),
+  redFire:L(1.9,.55),redDmg:L(.55,1.5),enemyMul:L(1,1.5),turretMul:L(1.7,.65),
   mechSpeed:L(8.5,17),sight:L(55,110),burst:Math.round(L(7,28)),burstPause:L(1.8,.5),ms:[L(5.5,1.4),L(7,2)],salvo:L(0,.65),sh:[L(6,1.6),L(8,2.4)],mechHp:d>=10?1000:d>=9?900:d>=8?600:400,jump:[L(7,2.5),L(10,4.5)],baseAttack:L(0,.8),startDrones:d>=3?1:0,
   rush:L(1,1.45),detour:L(40,12),dmgMul:d>=10?2:d>=9?1.5:1,
   modeRate:d>=9?12:4,rivalMul:d>=10?2.55:d>=9?2.1:d>=8?1.5:1,rivalArmorW:d>=10?.35:d>=9?.4:d>=8?.5:d>=7?.6:.7,rivalArmorH:d>=10?.55:d>=9?.6:d>=8?.75:d>=7?.85:1,rivalSplashMis:d>=9?8:4.5,rivalBoomMis:d>=9?16:12,rivalBoomSh:d>=9?11:7,rivalGunMul:d>=9?2.1:d>=8?1.5:1,modeHold:d>=9?.6:2.5};   // 2026-11-22 user: RX-13 weapons ~15% weaker on levels 9-10 (rivalMul 2.5/3 -> 2.1/2.55, rivalGunMul 2.5 -> 2.1)   // rivalMul: RX-13 missiles/mortars 1.5x on levels 9-10; rivalGunMul: RX-13 gatling 2.5x with 1.6 splash + impact blasts (both on top of dmgMul). RX-13 walker<->hover: transform speed and minimum time between switches (levels 9-10 switch almost instantly)   // levels 9-10: every hit does more damage, for BOTH teams (1.5x / 2x)   // red tanks/drones push to Blue HQ: faster, and only stop for fights closer than 'detour'
@@ -3041,6 +3041,7 @@ function damage(e,amt,team,byPlayer,heavy,gun){
   if(!e.alive)return;
   // red and blue deal the same damage at every difficulty (redDmg multiplier removed 2026-11-21 at user request)
   amt*=DIFF.dmgMul;   // levels 9-10 hit harder (both teams equally)
+  if(team===RED&&!PVP)amt*=DIFF.enemyMul;   /* every enemy attack gets stronger level by level: 1x on level 1 up to 1.5x on level 10, on top of the other level boosts (user 2026-11-27); not in 2-player VS mode */
   if((e.boss||e.kind==='bossarm')&&GATE&&GATE.alive){bossShielded();return;}
   if(e.boss&&BOSS_RIG.arms.some(a=>!a.dead)){bossArmsFirst();return;}   /* the brain can't be hurt until every arm is destroyed */
   if(e.kind==='gate'&&!heavy)return;   /* gate: only missiles + cannon shells, rotary gun does nothing (user 2026-11-26) */   /* dusk: boss can't be hurt until the gate is breached */
