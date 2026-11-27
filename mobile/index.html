@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1012</div>
+<div id="buildTag">BUILD 1127-1016</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1170,15 +1170,16 @@ const _sv=pos=>clamp(1.1-pos.distanceTo(player.pos)/90,0,1);
 let SEAMON=null;
 function seaBus(){const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.8;const dl=actx.createDelay(1),fb=actx.createGain(),wet=actx.createGain(),out=actx.createGain();
   dl.delayTime.value=.23;fb.gain.value=.38;wet.gain.value=.45;out.gain.value=1;lp.connect(out);lp.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);out.connect(actx.destination);return {in:lp,out};}
-function seaRoar(B){const t=actx.currentTime+.05,D=3.3;
+function seaRoar(B,v={}){const t=actx.currentTime+.05+(v.delay||0),D=v.D||3.3,f0=v.f0||165,fm=v.fm||90,f1=v.f1||38,vol=v.vol||1,rise=!!v.rise;   /* variants: long fall, short bark, rising bellow (user 2026-11-27) */
+  const OG=actx.createGain(),PN=actx.createStereoPanner();OG.gain.value=vol;PN.pan.value=v.pan||0;OG.connect(PN).connect(B.in);
   const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const nl=actx.createBiquadFilter();nl.type='lowpass';nl.frequency.setValueAtTime(650,t);nl.frequency.exponentialRampToValueAtTime(80,t+D);const ng=actx.createGain();
-  ng.gain.setValueAtTime(.0001,t);ng.gain.exponentialRampToValueAtTime(.55,t+.18);ng.gain.exponentialRampToValueAtTime(.0005,t+D);n.connect(nl).connect(ng).connect(B.in);n.start(t);n.stop(t+D+.1);
-  const g=actx.createOscillator();g.type='sawtooth';g.frequency.setValueAtTime(165,t);g.frequency.exponentialRampToValueAtTime(90,t+1.2);g.frequency.exponentialRampToValueAtTime(38,t+D);   /* deeper falling roar 165 -> 38 Hz (user 2026-11-27, was 290 -> 70) */
-  const rough=actx.createGain(),am=actx.createOscillator(),amg=actx.createGain();am.frequency.value=21;amg.gain.value=.5;am.connect(amg).connect(rough.gain);rough.gain.value=.55;   /* throaty growl */
-  const gl=actx.createBiquadFilter();gl.type='lowpass';gl.frequency.value=480;const gg=actx.createGain();gg.gain.setValueAtTime(.0001,t);gg.gain.exponentialRampToValueAtTime(.5,t+.25);gg.gain.setValueAtTime(.5,t+1.4);gg.gain.exponentialRampToValueAtTime(.0005,t+D);
-  g.connect(rough).connect(gl).connect(gg).connect(B.in);g.start(t);am.start(t);g.stop(t+D+.1);am.stop(t+D+.1);
-  {const g2=actx.createOscillator();g2.type='sawtooth';g2.frequency.setValueAtTime(82,t);g2.frequency.exponentialRampToValueAtTime(45,t+1.2);g2.frequency.exponentialRampToValueAtTime(19,t+D);const g2g=actx.createGain();g2g.gain.value=.6;g2.connect(g2g).connect(rough);g2.start(t);g2.stop(t+D+.1);}   /* octave-down growl for weight */
-  const sub=actx.createOscillator();sub.type='sine';sub.frequency.setValueAtTime(34,t);sub.frequency.exponentialRampToValueAtTime(22,t+D);const sg=actx.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.9,t+.1);sg.gain.exponentialRampToValueAtTime(.0005,t+D+.4);
+  ng.gain.setValueAtTime(.0001,t);ng.gain.exponentialRampToValueAtTime(.55,t+.18);ng.gain.exponentialRampToValueAtTime(.0005,t+D);n.connect(nl).connect(ng).connect(OG);n.start(t);n.stop(t+D+.1);
+  const g=actx.createOscillator();g.type='sawtooth';g.frequency.setValueAtTime(rise?f0*.7:f0,t);if(rise)g.frequency.exponentialRampToValueAtTime(f0,t+D*.32);g.frequency.exponentialRampToValueAtTime(fm,t+D*(rise?.62:.36));g.frequency.exponentialRampToValueAtTime(f1,t+D);   /* deeper falling roar 165 -> 38 Hz (user 2026-11-27, was 290 -> 70) */
+  const rough=actx.createGain(),am=actx.createOscillator(),amg=actx.createGain();am.frequency.value=v.am||21;amg.gain.value=.5;am.connect(amg).connect(rough.gain);rough.gain.value=.55;   /* throaty growl */
+  const gl=actx.createBiquadFilter();gl.type='lowpass';gl.frequency.value=480;const gg=actx.createGain();gg.gain.setValueAtTime(.0001,t);gg.gain.exponentialRampToValueAtTime(.5,t+.25);gg.gain.setValueAtTime(.5,t+D*.42);gg.gain.exponentialRampToValueAtTime(.0005,t+D);
+  g.connect(rough).connect(gl).connect(gg).connect(OG);g.start(t);am.start(t);g.stop(t+D+.1);am.stop(t+D+.1);
+  {const g2=actx.createOscillator();g2.type='sawtooth';g2.frequency.setValueAtTime(rise?f0*.35:f0/2,t);if(rise)g2.frequency.exponentialRampToValueAtTime(f0/2,t+D*.32);g2.frequency.exponentialRampToValueAtTime(fm/2,t+D*(rise?.62:.36));g2.frequency.exponentialRampToValueAtTime(f1/2,t+D);const g2g=actx.createGain();g2g.gain.value=.6;g2.connect(g2g).connect(rough);g2.start(t);g2.stop(t+D+.1);}   /* octave-down growl for weight */
+  const sub=actx.createOscillator();sub.type='sine';sub.frequency.setValueAtTime(Math.max(26,f1*.9),t);sub.frequency.exponentialRampToValueAtTime(Math.max(18,f1*.58),t+D);const sg=actx.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.9*vol,t+.1);sg.gain.exponentialRampToValueAtTime(.0005,t+D+.4);
   sub.connect(sg).connect(B.out);sub.start(t);sub.stop(t+D+.5);}
 function seaMoan(B){const t=actx.currentTime+.05,D=rand(1.4,2.9),f0=rand(295,345),f1=rand(210,258);
   const o=actx.createOscillator(),o2=actx.createOscillator(),vib=actx.createOscillator(),vg=actx.createGain();o.type='sawtooth';o2.type='triangle';
@@ -1195,12 +1196,18 @@ function updateSeaMonster(dt){if(!DUSK||!actx||!noise)return;const P=player,insi
     const n=actx.createBufferSource();n.buffer=noise;n.loop=true;n.playbackRate.value=.5;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=170;lp.Q.value=.9;const ng=actx.createGain();ng.gain.value=.9;n.connect(lp).connect(ng).connect(amb);n.start();   /* churning water */
     const s1=actx.createOscillator(),s2=actx.createOscillator(),sg=actx.createGain();s1.frequency.value=36;s2.frequency.value=47;sg.gain.value=.35;s1.connect(sg);s2.connect(sg);sg.connect(amb);s1.start();s2.start();   /* deep rumble */
     const lfo=actx.createOscillator(),lg=actx.createGain();lfo.frequency.value=.13;lg.gain.value=.3;lfo.connect(lg).connect(sg.gain);lfo.start();   /* slow swell */
-    SEAMON={B,amb,inside:false,moanT:2.5,bubT:.5,roarCD:0};}
+    SEAMON={B,amb,inside:false,moanT:2.5,bubT:.5,roarCD:0,roarT:9,side:1,vi:0};}
   const S=SEAMON,t=actx.currentTime;S.roarCD=Math.max(0,S.roarCD-dt);
   if(inside&&!S.inside&&S.roarCD<=0&&!muted){seaRoar(S.B);S.roarCD=20;S.moanT=rand(4,6);}   /* entering: the big roar */
   S.inside=inside;S.amb.gain.setTargetAtTime(inside&&!muted?.55:0,t,inside?.8:1.2);
   if(!inside||muted)return;
   S.moanT-=dt;if(S.moanT<=0){seaMoan(S.B);if(Math.random()<.35)setTimeout(()=>{if(SEAMON&&SEAMON.inside&&!muted)seaMoan(SEAMON.B);},rand(600,1400));S.moanT=rand(6,12);}   /* long moaning calls, sometimes a quick answer */
+  S.roarT-=dt;if(S.roarT<=0){S.side=-S.side;const pan=S.side*rand(.35,.8),k=S.vi++%4;   /* random roars that alternate left/right and between 4 kinds (user 2026-11-27) */
+    if(k===0)seaRoar(S.B,{D:rand(2.8,3.8),f0:rand(150,180),fm:rand(80,100),f1:rand(32,42),pan,vol:rand(.8,1)});                       /* long falling roar */
+    else if(k===1)seaRoar(S.B,{D:rand(1.1,1.6),f0:rand(120,150),fm:rand(75,95),f1:rand(45,60),am:rand(26,34),pan,vol:rand(.7,.9)});   /* short barking roar */
+    else if(k===2)seaRoar(S.B,{D:rand(3.8,4.8),f0:rand(110,135),fm:rand(60,75),f1:rand(24,32),rise:true,am:rand(15,19),pan,vol:1});   /* slow rising bellow */
+    else{const f=rand(125,150);seaRoar(S.B,{D:1.3,f0:f,fm:f*.6,f1:f*.33,pan,vol:.8});seaRoar(S.B,{D:2.4,f0:f*.88,fm:f*.5,f1:f*.24,pan:-pan*.5,vol:.95,delay:rand(.9,1.3)});}   /* double roar, the answer from the other side */
+    S.roarT=rand(6,13);S.moanT=Math.max(S.moanT,2.5);}
   S.bubT-=dt;if(S.bubT<=0){seaBubble(S.B);S.bubT=Math.random()<.3?rand(.05,.15):rand(.4,1.6);}}
 function glassBreak(pos){if(muted||!actx||!noise)return;const v=_sv(pos);if(v<.04)return;const t=actx.currentTime,out=actx.destination;
   for(let i=0;i<7;i++){const t0=t+i*rand(.008,.03)+(i?rand(0,.05):0),n=actx.createBufferSource();n.buffer=noise;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=rand(2500,5500);
@@ -4418,7 +4425,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1012'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1016'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
