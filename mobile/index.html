@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1432</div>
+<div id="buildTag">BUILD 1127-1440</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -356,10 +356,21 @@ let dsd=777;const drand=()=>(dsd=(dsd*16807)%2147483647)/2147483647;const dr=(a,
 const BIGTEX=!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
 /* ---- DUSK landmark lots along the avenue (user 2026-11-26): fire department, gas station, chapel, grocery + parking lot, donut shop, coffee shop with patio */
 const SPOTS={fire:{x0:13,x1:42,z0:73,z1:105},gas:{x0:-50,x1:-13,z0:73,z1:117},chapel:{x0:15,x1:46,z0:-57,z1:-21},grocery:{x0:-82,x1:-13,z0:-61,z1:-15},donut:{x0:13,x1:34,z0:-118,z1:-96},coffee:{x0:13,x1:38,z0:145,z1:173},hospital:{x0:-150,x1:-119,z0:72,z1:118}};   /* hospital replaces the 4 west houses of the Mission Ave / East 15th St block (user 2026-11-27) */
+/* lit signs (optimised 2026-11-27): every sign is painted into ONE shared atlas canvas and all sign planes are merged into ONE mesh
+   right after the town is built (was one mesh + one texture per sign) */
+const SIGN_Q=[],SIGN_AW=1024,SIGN_AH=2048;let SIGN_C=null,signX=0,signY=0,signRowH=0;
 function litSign(text,fg,bg,w,h,x,y,z,ry,glow){const W=512,H=Math.max(64,Math.round(512*h/w));
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:signTex((g)=>{g.fillStyle=bg;g.fillRect(0,0,W,H);const fs=Math.min(H*.66,W*.9/(text.length*.66));
-    g.font='900 '+Math.round(fs)+'px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.shadowColor=fg;g.shadowBlur=14;g.fillStyle=fg;g.fillText(text,W/2,H/2+fs*.05);},W,H)}));
-  m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);if(glow)DUSK_GLOWS.push([x+Math.sin(ry)*.6,y,z+Math.cos(ry)*.6,glow,w*.8]);return m;}
+  if(!SIGN_C){SIGN_C=document.createElement('canvas');SIGN_C.width=SIGN_AW;SIGN_C.height=SIGN_AH;setTimeout(flushSigns,0);}
+  if(signX+W>SIGN_AW){signX=0;signY+=signRowH+4;signRowH=0;}const ax=signX,ay=signY;signX+=W+4;signRowH=Math.max(signRowH,H);
+  const g=SIGN_C.getContext('2d');g.save();g.beginPath();g.rect(ax,ay,W,H);g.clip();g.translate(ax,ay);g.fillStyle=bg;g.fillRect(0,0,W,H);const fs=Math.min(H*.66,W*.9/(text.length*.66));
+  g.font='900 '+Math.round(fs)+'px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.shadowColor=fg;g.shadowBlur=14;g.fillStyle=fg;g.fillText(text,W/2,H/2+fs*.05);g.restore();
+  SIGN_Q.push({w,h,x,y,z,ry,u0:(ax+1)/SIGN_AW,u1:(ax+W-1)/SIGN_AW,v0:1-(ay+H-1)/SIGN_AH,v1:1-(ay+1)/SIGN_AH});
+  if(glow)DUSK_GLOWS.push([x+Math.sin(ry)*.6,y,z+Math.cos(ry)*.6,glow,w*.8]);return null;}
+function flushSigns(){if(!SIGN_Q.length)return;const P=[],U=[],M=new THREE.Matrix4(),Q=new THREE.Quaternion(),A=new THREE.Vector3(0,1,0),v=new THREE.Vector3();
+  for(const q of SIGN_Q){M.compose(new THREE.Vector3(q.x,q.y,q.z),Q.setFromAxisAngle(A,q.ry),new THREE.Vector3(q.w,q.h,1));
+    for(const [px,py,u,vv] of[[-.5,-.5,q.u0,q.v0],[.5,-.5,q.u1,q.v0],[.5,.5,q.u1,q.v1],[-.5,-.5,q.u0,q.v0],[.5,.5,q.u1,q.v1],[-.5,.5,q.u0,q.v1]]){v.set(px,py,0).applyMatrix4(M);P.push(v.x,v.y,v.z);U.push(u,vv);}}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));
+  const t=new THREE.CanvasTexture(SIGN_C);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:t}));m.userData.noAir=true;scene.add(m);SIGN_Q.length=0;}
 function paintSpots(R,g,X,Z,S){   /* ground: aprons, lots, patio */
   const F=SPOTS;{const AS='#2f2f33',CU='#9a968e';   /* hospital U driveway: two legs from East 15th St joined in front of the emergency doors */
     R(-147,96.6,-121.5,104.4,CU);R(-146.6,97,-121.9,104,AS);R(-147,104,-139.6,118,CU);R(-146.6,104,-140,118,AS);R(-129.4,104,-121.5,118,CU);R(-129,104,-121.9,118,AS);
@@ -470,7 +481,7 @@ function buildSpots(){const F=SPOTS;
     for(const y of[1.9,5.4])for(let z=cz-D/2+1.8;z<cz+D/2-1;z+=2.5){win(cx-W/2-.04,y,z,-Math.PI/2);win(cx+W/2+.04,y,z,Math.PI/2);}
     tDoor('glass',cx,0,FZ+.07,0,1.35,2.7,2);   /* emergency doors */
     /* red cross + EMERGENCY on the facade */
-    tBox('glow',RD,1.25,.38,.05,cx-4.9,5.45,FZ+.08);tBox('glow',RD,.38,1.25,.05,cx-4.9,5.45,FZ+.08);
+    tBox('glow',RD,1.25,.38,.05,cx-3.65,5.45,FZ+.08);tBox('glow',RD,.38,1.25,.05,cx-3.65,5.45,FZ+.08);   /* cross right next to EMERGENCY, clear of the window (user 2026-11-27) */
     litSign('EMERGENCY','#e3141c','#ffffff',7.6,1.25,cx+.9,5.45,FZ+.09,0,0xff3a3a);
     /* canopy over the ambulance / drop-off lane */
     const CZ=FZ+4.6;tBox('matte',0xf4f4f0,12,.45,9.2,cx,3.95,CZ);tBox('glow',RD,12.04,.16,.05,cx,3.8,CZ+4.62);tBox('matte',0xd6d9de,12.1,.12,9.3,cx,4.2,CZ);
@@ -1010,8 +1021,8 @@ const _ps=(x,y,z,sx,sy,sz)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z)
 let GOG_G=null;
 /* goggles v2 (user 2026-11-27, styled on the user's reference photo, no logo): big round mirrored yellow lenses (orange lower crescent,
    bright yellow upper highlight), thick glossy black rims, deep vented cups with 3 slots each side, folding rubber bridge, side mounts */
-function goggleItems(ex,y,zf,k){if(!GOG_G)GOG_G={cup:new THREE.CylinderGeometry(.056,.05,.052,22).rotateX(Math.PI/2),rim:new THREE.TorusGeometry(.05,.012,10,28),lens:new THREE.CylinderGeometry(.045,.045,.01,26).rotateX(Math.PI/2),
-    disc:new THREE.CylinderGeometry(1,1,.01,22).rotateX(Math.PI/2)};
+function goggleItems(ex,y,zf,k){if(!GOG_G)GOG_G={cup:new THREE.CylinderGeometry(.056,.05,.052,12).rotateX(Math.PI/2),rim:new THREE.TorusGeometry(.05,.012,5,14),lens:new THREE.CylinderGeometry(.045,.045,.01,14).rotateX(Math.PI/2),
+    disc:new THREE.CylinderGeometry(1,1,.01,12).rotateX(Math.PI/2)};
   const it=[],G=GOG_G,P=(x,yy,z,sx=k,sy=k,sz=k)=>_ps(x*k,y+yy*k,zf+z*k,sx,sy,sz);
   for(const sd of[-1,1]){const x=sd*ex/k;
     it.push({geo:G.cup,col:0x0b0b0c,m:P(x,0,0)});                                       /* glossy black eye cup */
@@ -1032,22 +1043,22 @@ function headItems(skin,hair,eyes,cap){const it=[{geo:cylG(.06,.065,.14,10),col:
   if(cap)it.push(...cap);else it.push({geo:USPH,col:hair,m:_ps(0,1.83,-.015,.212,.17,.232)});return it;}
 function thighItems(pants){return [{geo:limbG(.47,.096,.074,.01,1,1.1),col:pants,m:_pm(0,-.23,0)},{geo:foldG(.08,1,1.1),col:pants,m:_pm(0,-.38,0)},{geo:USPH,col:pants,m:_ps(0,-.46,0,.08,.08,.09)}];}   /* knees (user 2026-11-26) */
 let _TG=null;function TORSO_G(){if(_TG)return _TG;const pts=[[0,.3],[.12,.3],[.235,.27],[.245,.2],[.235,.08],[.215,-.05],[.2,-.17],[.205,-.26],[.15,-.29],[0,-.29]].map(([r,y])=>new THREE.Vector2(r,y));   /* chest -> waist taper, rounded shoulders */
-  pts.reverse();_TG=new THREE.LatheGeometry(pts,16);_TG.scale(1,1,.58);_TG.computeVertexNormals();return _TG;}
+  pts.reverse();_TG=new THREE.LatheGeometry(pts,10);_TG.scale(1,1,.58);_TG.computeVertexNormals();return _TG;}
 /* natural people shapes (user 2026-11-27): rounded tapered limbs + torso (lathe profiles), cuffs and fabric folds, real shoe shape
    (sole outline: round heel, narrow waist, wide ball, round toe; white sole layer, upper sloping down to the toe) */
 const _limbC=new Map();
-function limbG(h,r0,r1,bulge=0,sx=1,sz=1){const k=[h,r0,r1,bulge,sx,sz].join('|');let g=_limbC.get(k);if(g)return g;const pts=[],N=9;
+function limbG(h,r0,r1,bulge=0,sx=1,sz=1){const k=[h,r0,r1,bulge,sx,sz].join('|');let g=_limbC.get(k);if(g)return g;const pts=[],N=h<.05?1:5;   /* lighter (optimised 2026-11-27) */
   pts.push(new THREE.Vector2(0,h/2));pts.push(new THREE.Vector2(r0*.55,h/2));
   for(let i=0;i<=N;i++){const u=i/N,r=r0+(r1-r0)*u+bulge*Math.sin(Math.PI*u),y=h/2-.02-u*(h-.04);pts.push(new THREE.Vector2(r,y));}
   pts.push(new THREE.Vector2(r1*.55,-h/2));pts.push(new THREE.Vector2(0,-h/2));
-  pts.reverse();g=new THREE.LatheGeometry(pts,12);g.scale(sx,1,sz);   /* lathe wants bottom -> top so faces point outward */g.computeVertexNormals();_limbC.set(k,g);return g;}
+  pts.reverse();g=new THREE.LatheGeometry(pts,8);g.scale(sx,1,sz);   /* lathe wants bottom -> top so faces point outward */g.computeVertexNormals();_limbC.set(k,g);return g;}
 function foldG(r,sx=1,sz=1){return limbG(.018,r,r,0,sx,sz);}   /* thin fabric fold ring */
 let SHOE_G=null;
 function shoeGeos(){if(SHOE_G)return SHOE_G;const L=.3,outline=[];
   const w=t=>{const ball=Math.exp(-Math.pow((t-.7)/.17,2)),waist=Math.exp(-Math.pow((t-.42)/.12,2));return (.05+.028*ball-.007*waist)*Math.pow(Math.max(0,1-Math.pow(2*t-1,8)),.5);};
-  for(let i=0;i<=30;i++){const t=i/30;outline.push([w(t),-L/2+L*t]);}for(let i=30;i>=0;i--){const t=i/30;outline.push([-w(t)*(t>.55?.92:1),-L/2+L*t]);}   /* inner edge a little straighter at the toe */
+  for(let i=0;i<=11;i++){const t=i/11;outline.push([w(t),-L/2+L*t]);}for(let i=11;i>=0;i--){const t=i/11;outline.push([-w(t)*(t>.55?.92:1),-L/2+L*t]);}   /* inner edge a little straighter at the toe */
   const mk=(depth,ins,bev)=>{const sh=new THREE.Shape();outline.forEach(([x,z],i)=>{const X=x*ins,Z=z*(.97+.03*ins);i?sh.lineTo(X,Z):sh.moveTo(X,Z);});
-    const g=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:bev>0,bevelThickness:bev,bevelSize:bev*.6,bevelSegments:2,curveSegments:4});g.rotateX(Math.PI/2);return g;};   /* shape in x/z, extruded downward */
+    const g=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:bev>0,bevelThickness:bev,bevelSize:bev*.6,bevelSegments:1,curveSegments:2});g.rotateX(Math.PI/2);return g;};   /* shape in x/z, extruded downward */
   const sole=mk(.028,1,0);sole.translate(0,.028,0);
   const up=mk(.07,.9,.025);up.translate(0,.098+.025,0);const p=up.attributes.position;
   for(let i=0;i<p.count;i++){const z=p.getZ(i),t=(z+L/2)/L,y=p.getY(i);if(y>.04){const drop=t>.55?Math.pow((t-.55)/.45,1.6)*.07:0;p.setY(i,y-drop);}}   /* upper slopes down to a low rounded toe */
@@ -1484,8 +1495,8 @@ function labLogoTex(){return signTex((g,W,H)=>{g.clearRect(0,0,W,H);const C=W/2;
    closed front seam + 4 buttons, notched lapels in a V showing shirt + tie, collar, chest pocket, two lower pockets */
 let _COAT=null;
 function coatGeos(){if(_COAT)return _COAT;const sk=[[.214,.26],[.222,.18],[.236,.06],[.25,-.06],[.264,-.17],[.278,-.25],[.282,-.27]].map(([r,y])=>new THREE.Vector2(r,y)).reverse();
-  const skirt=new THREE.LatheGeometry(sk,20);const p=skirt.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),a=Math.atan2(z,x),u=(.26-y)/.53;const f=1+.045*u*Math.sin(a*7+.6)+.02*u*Math.sin(a*13);p.setXYZ(i,x*f,y,z*f*.72);}   /* drape folds growing toward the hem */
-  skirt.computeVertexNormals();const hem=new THREE.TorusGeometry(1,.06,6,28);hem.rotateX(Math.PI/2);_COAT={skirt,hem};return _COAT;}
+  const skirt=new THREE.LatheGeometry(sk,14);const p=skirt.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),a=Math.atan2(z,x),u=(.26-y)/.53;const f=1+.045*u*Math.sin(a*7+.6)+.02*u*Math.sin(a*13);p.setXYZ(i,x*f,y,z*f*.72);}   /* drape folds growing toward the hem */
+  skirt.computeVertexNormals();const hem=new THREE.TorusGeometry(1,.06,4,16);hem.rotateX(Math.PI/2);_COAT={skirt,hem};return _COAT;}
 function coatItems(CO=0xf2f4f6,TIE=0x1e3a2a){const G=coatGeos(),SH=0xdfe7ef,LP=0xe6eaee,PK=0xdfe3e8,BT=0xcfd5db;
   const it=[{geo:G.skirt,col:CO,m:_pm(0,.76,0)},{geo:G.hem,col:LP,m:_pm(0,.495,0).multiply(_ps(0,0,0,.282,.06,.203))},
     {geo:UBOX,col:SH,m:_ps(0,1.42,.122,.09,.2,.01)},{geo:UBOX,col:TIE,m:_ps(0,1.36,.13,.05,.26,.008)},                       /* shirt V + tie */
@@ -4679,7 +4690,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1432'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1440'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
