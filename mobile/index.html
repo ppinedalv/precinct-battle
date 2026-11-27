@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2103</div>
+<div id="buildTag">BUILD 1126-2122</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -551,7 +551,7 @@ function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=HALF_X+40,H=H
 /* ---- static town: every plain part is collected and merged into 3 meshes (matte, metal, glow) by vertex colour = very few draw calls */
 const UBOX=new THREE.BoxGeometry(1,1,1),UCYL=new THREE.CylinderGeometry(.5,.5,1,12),UCYL6=new THREE.CylinderGeometry(.5,.5,1,6),USPH=new THREE.SphereGeometry(.5,10,8),UICO=new THREE.IcosahedronGeometry(.5,1),UCONE=new THREE.ConeGeometry(.5,1,8);
 const UPRISM=(()=>{const s=new THREE.Shape();s.moveTo(-.5,0);s.lineTo(.5,0);s.lineTo(0,1);s.lineTo(-.5,0);const g=new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false});g.translate(0,0,-.5);g.rotateY(Math.PI/2);return g;})();   /* gable roof: ridge along x */
-let TB={matte:[],metal:[],glow:[],stop:[],lab:[]};
+let TB={matte:[],metal:[],glow:[],stop:[],lab:[],roof:[]};
 let TF=new THREE.Matrix4();
 const _tm=new THREE.Matrix4(),_tq=new THREE.Quaternion(),_te=new THREE.Euler(),_tp=new THREE.Vector3(),_ts=new THREE.Vector3();
 function tAdd(bin,geo,col,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1){_te.set(rx,ry,rz);_tq.setFromEuler(_te);_tm.compose(_tp.set(x,y,z),_tq,_ts.set(sx,sy,sz));TB[bin].push({geo,col,m:TF.clone().multiply(_tm)});}
@@ -566,11 +566,22 @@ function mergeColored(items){if(!items.length)return null;let n=0;const parts=[]
     for(let i=0;i<k;i++){col[(o+i)*3]=c.r;col[(o+i)*3+1]=c.g;col[(o+i)*3+2]=c.b;}o+=k;g.dispose();}
   const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.BufferAttribute(pos,3));out.setAttribute('normal',new THREE.BufferAttribute(nor,3));out.setAttribute('color',new THREE.BufferAttribute(col,3));out.setAttribute('uv',new THREE.BufferAttribute(uv,2));out.computeBoundingSphere();return out;}
 const STOP_TEX=signTex((g,W,H)=>{g.fillStyle='#b5161b';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.font='900 150px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('STOP',W/2,H/2+8);},512,512);
-const DMAT={stop:new THREE.MeshStandardMaterial({map:STOP_TEX,roughness:.5,metalness:.1}),matte:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85,metalness:.05}),metal:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.35,metalness:.6}),glow:new THREE.MeshBasicMaterial({vertexColors:true})};
-function flushBins(parent,shadow=true,tile=0){const out=[];for(const k of['matte','metal','glow','stop']){const items=TB[k];TB[k]=[];if(!items.length)continue;
+/* house roofs (user 2026-11-26): shingle texture drawn in code (no image file) on a gable roof with eave-to-ridge UVs */
+const SHINGLE_TEX=(()=>{const S=256,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),rows=12,rh=S/rows;let sd=11;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  g.fillStyle='#3a3a3a';g.fillRect(0,0,S,S);
+  for(let j=0;j<rows;j++){const tw=S/8,off=(j%2)*tw/2;for(let i=-1;i<9;i++){const x=i*tw+off,v=Math.round(200+r()*55);g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(x+1.5,j*rh+1,tw-3,rh-1);
+      g.fillStyle='rgba(0,0,0,.28)';g.fillRect(x+1.5,j*rh+rh-4,tw-3,3);for(let k=0;k<6;k++){g.fillStyle=`rgba(0,0,0,${.08+r()*.1})`;g.fillRect(x+2+r()*(tw-6),j*rh+2+r()*(rh-6),2,2);}}}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,1);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;return t;})();
+const ROOF_G=(()=>{const A=[-.5,0,-.5],B=[.5,0,-.5],C=[.5,1,0],D=[-.5,1,0],E=[-.5,0,.5],F=[.5,0,.5],P=[],U=[];
+  const tri=(a,b,c,ua,ub,uc)=>{P.push(...a,...b,...c);U.push(...ua,...ub,...uc);};
+  tri(A,C,B,[0,0],[1,1],[1,0]);tri(A,D,C,[0,0],[0,1],[1,1]);tri(E,F,C,[0,0],[1,0],[1,1]);tri(E,C,D,[0,0],[1,1],[0,1]);tri(A,B,F,[0,0],[0,0],[0,0]);tri(A,F,E,[0,0],[0,0],[0,0]);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(U,2));g.computeVertexNormals();return g;})();
+const GABLE_G=(()=>{const P=[-.5,0,-.5,-.5,0,.5,-.5,1,0, .5,0,-.5,.5,1,0,.5,0,.5];const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(new Array(12).fill(0),2));g.computeVertexNormals();return g;})();
+const DMAT={roof:new THREE.MeshStandardMaterial({vertexColors:true,map:SHINGLE_TEX,roughness:.9,metalness:0}),stop:new THREE.MeshStandardMaterial({map:STOP_TEX,roughness:.5,metalness:.1}),matte:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85,metalness:.05}),metal:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.35,metalness:.6}),glow:new THREE.MeshBasicMaterial({vertexColors:true})};
+function flushBins(parent,shadow=true,tile=0){const out=[];for(const k of['matte','metal','glow','stop','roof']){const items=TB[k];TB[k]=[];if(!items.length)continue;
   const groups=new Map();if(tile)for(const it of items){const key=Math.floor(it.m.elements[12]/tile)+','+Math.floor(it.m.elements[14]/tile);let l=groups.get(key);if(!l)groups.set(key,l=[]);l.push(it);}else groups.set('all',items);   /* map tiles: off-screen / out-of-shadow tiles are skipped (lag fix 2026-11-26) */
   for(const list of groups.values()){const g=mergeColored(list);if(!g)continue;const m=new THREE.Mesh(g,DMAT[k]);m.castShadow=shadow&&k!=='glow';m.receiveShadow=k!=='glow';m.userData.noAir=true;parent.add(m);out.push(m);}}return out;}
-function withBins(fn){const old=TB;TB={matte:[],metal:[],glow:[],stop:[],lab:[]};fn();const g=new THREE.Group();flushBins(g);TB=old;return g;}
+function withBins(fn){const old=TB;TB={matte:[],metal:[],glow:[],stop:[],lab:[],roof:[]};fn();const g=new THREE.Group();flushBins(g);TB=old;return g;}
 
 /* vehicles: kind 0 sedan, 1 pickup, 2 van. Local +z = front. */
 
@@ -642,15 +653,21 @@ function tFigure(shirt,pants,skin,lean=0){   /* small standing person (static de
 
 function tHouse(h){tFrame(h.x,0,h.z,h.face,()=>{const {w,d,h1,rh}=h,TR=0xe9e4da,lit=h.lit;
   tBox('matte',0x5a5550,w+.3,.5,d+.3,0,.25,0);tBox('matte',h.wall,w,h1,d,0,.5+h1/2,0);
-  tAdd('matte',UPRISM,h.roof,0,.5+h1,0,0,0,0,w+.9,rh,d+1.1);
+  tAdd('roof',ROOF_G,h.roof,0,.5+h1,0,0,0,0,w+.9,rh,d+1.1);tAdd('matte',GABLE_G,h.wall,0,.5+h1,0,0,0,0,w-.02,rh*(d-.02)/(d+1.1),d-.02);   /* shingled roof + siding-colored gables */
   tBox('matte',TR,w+.06,.18,d+.06,0,.5+h1-.05,0);
+  {const RC=new THREE.Color(h.roof).multiplyScalar(.6).getHex(),top=.5+h1+rh,ang=Math.atan2(rh,(d+1.1)/2);tBox('matte',RC,w+1,.16,.36,0,top+.02,0);   /* ridge cap */
+   for(const sz of[-1,1])tBox('matte',TR,w+1,.24,.08,0,.5+h1-.02,sz*(d+1.1)/2);   /* fascia boards */
+   tCyl('metal',0x3a3d42,.18,.5,-w*.3,.5+h1+rh*.55,-(d+1.1)/4*.9);   /* roof vent */
+   tBox('metal',0xd8d8d2,.12,h1,.12,w/2+.05,.5+h1/2,-d/2+.12);}   /* downspout */
+  {const sc=[0x2d4a3a,0x2a3550,0x5a2a2a,0x1e1e22][Math.floor(Math.abs(h.x*3.1+h.z*1.7))%4];h._sh=sc;}
+  tBox('matte',0x8a857b,1.6,.22,.7,-w*.12,.6,-d/2-.35);   /* front step */
   if(h.chim)tBox('matte',0x6b4a3a,.9,rh+1.4,.9,w*.28,.5+h1+rh*.45,d*.18);
   const fz=-d/2-.04;   /* front wall plane (front faces -z local) */
   tBox('matte',0x3a2a20,1.05,2.1,.1,-w*.12,1.55,fz);
   if(h.porch){tBox('matte',0x6a6560,2.6,.25,1.6,-w*.12,.62,fz-.8);tBox('matte',h.roof,2.8,.15,1.8,-w*.12,2.95,fz-.8);for(const s of[-1,1])tBox('matte',TR,.14,2.3,.14,-w*.12+s*1.2,1.8,fz-1.5);}
   tBox('glow',0xffd9a0,.25,.25,.08,-w*.12+.9,2.45,fz-.05);
   const bars=((Math.floor(Math.abs(h.x*7.31+h.z*13.7))%10)<3);   /* ~30% of houses have black security bars on the windows (user 2026-11-26) */
-  const win=(x,y,on)=>{tBox(on?'glow':'matte',on?(lit<.5?0xffc777:0xffe2a8):0x1c232c,1.3,1.1,.06,x,y,fz-.02);tBox('matte',TR,1.5,.12,.1,x,y-.6,fz-.05);tBox('matte',0x8a6a3a,1.42,.08,.08,x,y+.58,fz-.05);
+  const win=(x,y,on)=>{tBox(on?'glow':'matte',on?(lit<.5?0xffc777:0xffe2a8):0x1c232c,1.3,1.1,.06,x,y,fz-.02);if(!bars)for(const sx of[-1,1])tBox('matte',h._sh,.36,1.25,.06,x+sx*.88,y,fz-.04);tBox('matte',TR,1.5,.12,.1,x,y-.6,fz-.05);tBox('matte',0x8a6a3a,1.42,.08,.08,x,y+.58,fz-.05);
     if(bars){for(let i=0;i<8;i++)tBox('metal',0x15161a,.035,1.45,.035,x-.7+i*.2,y+.02,fz-.2);for(const yy of[-.7,.74])tBox('metal',0x15161a,1.6,.06,.06,x,y+yy,fz-.2);for(const sx of[-.78,.78])for(const yy of[-.7,.74])tBox('metal',0x15161a,.08,.08,.18,x+sx,y+yy,fz-.12);}};
   if(h.garage)tBox('matte',0xc8c4bb,w*.36,2.1,.08,w*.28,1.55,fz-.02);else win(w*.28,1.9,lit<.55);
   win(-w*.36,1.9,lit<.35);
@@ -793,7 +810,10 @@ function buildDuskTown(){const L=duskLayout(),root=new THREE.Group();scene.add(r
     const gm=(seed,st,W,Hh,x,y,z,ry)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(W,Hh),new THREE.MeshStandardMaterial({map:graffitiTex(seed,st),roughness:.85,metalness:0,polygonOffset:true,polygonOffsetFactor:-2}));m.position.set(x,y,z);m.rotation.y=ry;m.receiveShadow=true;m.userData.noAir=true;scene.add(m);};
     gm(1234,0,dp,6.2,(SMOKE.x0+SMOKE.x1)/2,3.15,SMOKE.z0-.04,Math.PI);gm(98765,3,dp,6.2,(SMOKE.x0+SMOKE.x1)/2,3.15,SMOKE.z1+.04,0);gm(55555,1,wl,6.2,SMOKE.x0-.04,3.15,(SMOKE.z0+SMOKE.z1)/2,-Math.PI/2);
     gm(4321,2,(LIQUOR.x1-LIQUOR.x0)*.95,5.6,(LIQUOR.x0+LIQUOR.x1)/2,2.9,LIQUOR.z0-.06,Math.PI);gm(777,0,(LIQUOR.x1-LIQUOR.x0)*.95,5.6,(LIQUOR.x0+LIQUOR.x1)/2,2.9,LIQUOR.z1+.06,0);
-    for(const [sx,st,sd] of[[-1,1,2468],[1,3,1357],[-2.6,2,8642],[2.6,0,9753]])gm(sd,st,34,11,sx*42,6,WALL_Z+2.5,0);}   /* murals on the compound wall too */
+    /* graffiti moved off the compound wall onto the grocery, donut shop and gas station mini-mart (user 2026-11-26) */
+    {const G=SPOTS.grocery,gz0=G.z0+1,gz1=G.z1-1;gm(2468,1,18,6.4,-72,3.4,gz1+.05,0);gm(1357,3,18,6.4,-72,3.4,gz0-.05,Math.PI);gm(8642,2,30,6.4,-82.05,3.4,(gz0+gz1)/2,-Math.PI/2);}
+    {const D=SPOTS.donut,dz0=D.z0+2,dz1=D.z1-2;gm(9753,0,10.4,3.9,27.5,2.05,dz1+.05,0);gm(3141,2,10.4,3.9,27.5,2.05,dz0-.05,Math.PI);gm(2718,1,17,3.9,33.05,2.05,(dz0+dz1)/2,Math.PI/2);}
+    {gm(6060,3,10.4,4.3,-43.5,2.3,106.05,0);gm(4242,0,10.4,4.3,-43.5,2.3,83.95,Math.PI);gm(8181,2,21,4.3,-49.05,2.3,95,-Math.PI/2);}}
   buildSpots();buildCars();
   flushBins(root,true,60);
   /* glow points (lamps, porch lights, neon): one draw call */
@@ -3943,7 +3963,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2103'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2122'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
