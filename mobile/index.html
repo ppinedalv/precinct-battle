@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1415</div>
+<div id="buildTag">BUILD 1127-1419</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -808,7 +808,7 @@ function tTrafficLight(x,z,hw,hz){   /* poles on 2 corners, mast arm over the ro
     tBox('metal',0xd2a21c,.6,1.7,.5,-hw*.75,6.2,.0);tBox('metal',0xd2a21c,.5,1.7,.6,0,5.7,-hz*.75);
     /* more detail (user 2026-11-26): base, braces, backplates with yellow borders, lens visors, street-name blades, walk signals, push buttons, caps */
     const PC=0x2c2f33,VZ=0x15161a,YB=0xf2c21a,ax=-hw*.75,bz=-hz*.75;
-    tCyl('metal',0x3a3d42,.34,.5,0,.25,0);tCyl('metal',0x3a3d42,.24,.25,0,.62,0);tCyl('metal',0x3a3d42,.22,.12,0,7.4,0);tAdd('metal',USPH,0x3a3d42,0,7.5,0,0,0,0,.36,.2,.36);
+    tCyl('metal',0x3a3d42,.34,.5,0,.25,0);tCyl('metal',0x3a3d42,.24,.25,0,.62,0);tCyl('metal',0x3a3d42,.22,.12,0,7.4,0);tCyl('metal',0x2c2f33,.09,.42,0,7.6,0);tCyl('metal',0x3a3d42,.13,.05,0,7.8,0);   /* pole extended up to the street-name blades (user 2026-11-27) */
     {const dx=-hw*.42,dy=1.2,L=Math.hypot(dx,dy);tBox('metal',PC,L,.08,.08,dx/2,5.9+dy/2,0,0,0,Math.atan2(dy,dx));const dz=-hz*.42,L2=Math.hypot(dz,dy);tBox('metal',PC,.08,.08,L2,0,5.45+dy/2,dz/2,Math.atan2(dy,-dz),0,0);}
     tBox('metal',PC,.24,.24,.24,-hw*1.2,7.1,0);tBox('metal',PC,.24,.24,.24,0,6.6,-hz*1.2);
     tBox('metal',VZ,1.15,2.25,.05,ax,6.2,.29);for(const [w,h,ox,oy] of[[1.15,.08,0,1.09],[1.15,.08,0,-1.09],[.08,2.25,.54,0],[.08,2.25,-.54,0]])tBox('metal',YB,w,h,.03,ax+ox,6.2+oy,.32);
@@ -4636,7 +4636,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1415'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1419'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
