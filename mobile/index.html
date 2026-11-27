@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0902</div>
+<div id="buildTag">BUILD 1127-0929</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -582,7 +582,7 @@ function mergeColored(items){if(!items.length)return null;let n=0;const parts=[]
   for(const [g,hex] of parts){const k=g.attributes.position.count;pos.set(g.attributes.position.array,o*3);nor.set(g.attributes.normal.array,o*3);if(g.attributes.uv)uv.set(g.attributes.uv.array,o*2);c.setHex(hex);
     for(let i=0;i<k;i++){col[(o+i)*3]=c.r;col[(o+i)*3+1]=c.g;col[(o+i)*3+2]=c.b;}o+=k;g.dispose();}
   const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.BufferAttribute(pos,3));out.setAttribute('normal',new THREE.BufferAttribute(nor,3));out.setAttribute('color',new THREE.BufferAttribute(col,3));out.setAttribute('uv',new THREE.BufferAttribute(uv,2));out.computeBoundingSphere();return out;}
-const STOP_TEX=signTex((g,W,H)=>{g.fillStyle='#fff';g.fillRect(0,0,W,H);const oct=r=>{g.beginPath();for(let i=0;i<8;i++){const a=Math.PI/8+i*Math.PI/4;g.lineTo(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);}g.closePath();};oct(W*.46);g.fillStyle='#b5161b';g.fill();   /* red octagon with a white rim */
+const STOP_TEX=signTex((g,W,H)=>{g.fillStyle='#fff';g.fillRect(0,0,W,H);const oct=r=>{g.beginPath();for(let i=0;i<8;i++){const a=Math.PI/8+i*Math.PI/4;g.lineTo(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r);}g.closePath();};oct(W*.485);   /* thinner white rim (user 2026-11-27, was .46) */g.fillStyle='#b5161b';g.fill();   /* red octagon with a white rim */
   g.fillStyle='#fff';g.font='900 118px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('STOP',W/2,H/2+6,W*.74);},512,512);
 /* house roofs (user 2026-11-26): shingle texture drawn in code (no image file) on a gable roof with eave-to-ridge UVs */
 const SHINGLE_TEX=(()=>{const S=256,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),rows=12,rh=S/rows;let sd=11;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
@@ -672,14 +672,25 @@ const LEAF_G=[0,1,2,3].map(sd=>{const g=new THREE.IcosahedronGeometry(1,1),p=g.a
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),k=1+.2*Math.sin(7*x+sd*1.7)*Math.sin(6*y+sd)+.14*Math.sin(9*z+3*x+sd*2.3);p.setXYZ(i,x*k,y*k*.85,z*k);}g.computeVertexNormals();return g;});
 const PINE_G=[0,1].map(sd=>{const g=new THREE.ConeGeometry(1,1,11,1),p=g.attributes.position;
   for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),a=Math.atan2(z,x),k=p.getY(i)<0?1+.22*Math.sin(11*a+sd*2)+.08*Math.sin(5*a+sd):1;p.setX(i,x*k);p.setZ(i,z*k);}g.computeVertexNormals();return g;});
+/* more leaf shapes (user 2026-11-27: "more random shapes in trees"): lumpy dodecahedra, flattened pads and tall drooping clumps */
+for(let sd=4;sd<10;sd++){const g=sd<7?new THREE.DodecahedronGeometry(1,1):new THREE.IcosahedronGeometry(1,1),p=g.attributes.position,fl=sd===5||sd===8?.6:sd===6||sd===9?1.35:1;
+  for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),k=1+.28*Math.sin(5*x+sd*2.1)*Math.cos(7*z+sd)+.18*Math.sin(11*y+4*z+sd*1.3)+.1*Math.sin(17*x-13*y+sd);p.setXYZ(i,x*k*(1+.15*Math.sin(sd*3.7)),y*k*fl*(y<0?.8:1),z*k);}
+  g.computeVertexNormals();LEAF_G.push(g);}
+const LEAF_N=LEAF_G.length;
 const LEAF_SH=[0x27421f,0x2f4f26,0x38602c,0x426d33,0x2a4a2a,0x4d7a3a,0x33572a],PINE_SH=[0x1e3a26,0x24442c,0x2b4f33,0x1a3322];
 function tTree(x,z,s,kind){const TR=0x3e2c1f,TR2=0x4a3626,rnd=drand;
   if(kind===0){tAdd('matte',cylG(.15,.27,1,8),TR,x,1.35*s,z,0,0,0,s,2.7*s,s);
     for(let i=0;i<3;i++){const a=i*2.1+rnd(),l=1.3*s;tAdd('matte',cylG(.06,.1,1,6),TR2,x+Math.cos(a)*.45*s,2.75*s,z+Math.sin(a)*.45*s,Math.sin(a)*.7,0,-Math.cos(a)*.7,s,l,s);}
-    const n=7+Math.floor(rnd()*3);for(let i=0;i<n;i++){const a=rnd()*6.283,r=(i===0?0:rnd()*1.5+.5)*s,y=(3.4+rnd()*1.6+(i===0?.6:0))*s,sz=(i===0?1.7:1+rnd()*.7)*s;
-      tAdd('matte',LEAF_G[Math.floor(rnd()*4)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*r,y,z+Math.sin(a)*r,rnd()*3,rnd()*3,0,sz,sz*.9,sz);}}
+    const n=8+Math.floor(rnd()*5),lean=rnd()*6.283,lo=rnd()*.5*s;for(let i=0;i<n;i++){const a=rnd()*6.283,r=(i===0?0:rnd()*1.6+.4)*s,y=(3.3+rnd()*1.9+(i===0?.6:0))*s,sz=(i===0?1.7:.8+rnd()*.9)*s;
+      tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*r+Math.cos(lean)*lo,y,z+Math.sin(a)*r+Math.sin(lean)*lo,rnd()*3,rnd()*3,rnd()*.6,sz*(.75+rnd()*.5),sz*(.6+rnd()*.5),sz*(.75+rnd()*.5));}   /* uneven clumps, each squashed differently, crown leans a little */
+    for(let i=0;i<2+Math.floor(rnd()*3);i++){const a=rnd()*6.283,l=(.7+rnd()*.8)*s,ty=(2.4+rnd()*1.1)*s;tAdd('matte',cylG(.03,.07,1,5),TR2,x+Math.cos(a)*(.3+l*.35),ty+l*.3,z+Math.sin(a)*(.3+l*.35),Math.sin(a)*1.1,0,-Math.cos(a)*1.1,s,l,s);   /* extra side branches with a leaf tuft on the end */
+      const tz=(.55+rnd()*.4)*s;tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*(.3+l*.75),ty+l*.62,z+Math.sin(a)*(.3+l*.75),rnd()*3,rnd()*3,0,tz,tz*.8,tz);}
+    const m=6+Math.floor(rnd()*6);for(let i=0;i<m;i++){const a=rnd()*6.283,r=(1.4+rnd()*1.1)*s,y=(3.1+rnd()*2.4)*s,sz=(.3+rnd()*.35)*s;   /* small loose tufts poking out of the outline */
+      tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*r,y,z+Math.sin(a)*r,rnd()*3,rnd()*3,rnd()*3,sz*(.7+rnd()*.6),sz,sz*(.7+rnd()*.6));}}
   else{tAdd('matte',cylG(.12,.22,1,8),TR,x,.9*s,z,0,0,0,s,1.8*s,s);
-    for(let i=0;i<4;i++){const w=(2.9-i*.6)*s,h=(1.9-i*.15)*s;tAdd('matte',PINE_G[i%2],PINE_SH[Math.floor(rnd()*PINE_SH.length)],x,(2.2+i*1.15)*s,z,0,rnd()*3,0,w,h,w);}}}
+    const tiers=4+Math.floor(rnd()*2);for(let i=0;i<tiers;i++){const w=(2.9-i*(2.4/tiers))*s*(.85+rnd()*.3),h=(1.9-i*.15)*s*(.85+rnd()*.3);tAdd('matte',PINE_G[i%2],PINE_SH[Math.floor(rnd()*PINE_SH.length)],x+(rnd()-.5)*.25*s,(2.2+i*(4.6/tiers))*s,z+(rnd()-.5)*.25*s,(rnd()-.5)*.15,rnd()*3,(rnd()-.5)*.15,w,h,w);
+      if(i<tiers-1)for(let k=0;k<2+Math.floor(rnd()*2);k++){const a=rnd()*6.283,o=w*(.55+rnd()*.25),c=(.35+rnd()*.3)*s;tAdd('matte',PINE_G[(i+k)%2],PINE_SH[Math.floor(rnd()*PINE_SH.length)],x+Math.cos(a)*o,(2.0+i*(4.6/tiers))*s,z+Math.sin(a)*o,Math.sin(a)*.5,rnd()*3,-Math.cos(a)*.5,c,c*1.3,c);}}   /* uneven tiers + small jagged side sprigs */
+    tAdd('matte',PINE_G[0],PINE_SH[0],x,(2.2+4.6)*s,z,0,rnd()*3,0,.35*s,.9*s,.35*s);}}   /* top spike */
 
 function tFigure(shirt,pants,skin,lean=0){   /* small standing person (static decoration), feet at y 0 */
   tBox('matte',pants,.42,.85,.24,0,.43,0);tBox('matte',shirt,.55,.72,.32,0,1.22,0,0,lean);tAdd('matte',USPH,skin,0,1.78,0,0,0,0,.34,.36,.34);}
@@ -706,7 +717,7 @@ function tHouse(h){tFrame(h.x,0,h.z,h.face,()=>{const {w,d,h1,rh}=h,TR=0xe9e4da,
   win(-w*.36,1.9,lit<.35);
   if(h1>4){win(-w*.25,4.7,lit<.6);win(w*.2,4.7,lit>.75);}
   for(const s of[-1,1]){tBox(lit<.5?'glow':'matte',lit<.5?0xffcf8a:0x1c232c,.06,1,1.2,s*(w/2+.03),1.9,d*.1);if(bars){for(let i=0;i<7;i++)tBox('metal',0x15161a,.035,1.3,.035,s*(w/2+.18),1.92,d*.1-.6+i*.2);for(const yy of[-.62,.66])tBox('metal',0x15161a,.06,.06,1.4,s*(w/2+.18),1.92+yy,d*.1);}}});}
-function tStopSign(x,z,ry){tFrame(x,0,z,ry,()=>{tCyl('metal',0x8c9096,.06,2.16,0,1.08,0);   /* pole stops at the sign's bottom edge (user 2026-11-26) */tAdd('matte',STOP_OCT,0xf4f4f0,0,2.6,0,Math.PI/2,Math.PI/8,0,.95,.05,.95);for(const s of[-1,1])tAdd('stop',STOP_FACE,0xffffff,0,2.6,s*.035,0,s>0?0:Math.PI,0,.86,.86,1);});}
+function tStopSign(x,z,ry){tFrame(x,0,z,ry,()=>{tCyl('metal',0x8c9096,.06,2.16,0,1.08,0);   /* pole stops at the sign's bottom edge (user 2026-11-26) */tAdd('matte',STOP_OCT,0xf4f4f0,0,2.6,0,Math.PI/2,Math.PI/8,0,.895,.05,.895);   /* white backing just past the face: thinner outline (user 2026-11-27, was .95) */for(const s of[-1,1])tAdd('stop',STOP_FACE,0xffffff,0,2.6,s*.035,0,s>0?0:Math.PI,0,.86,.86,1);});}
 const STOP_OCT=new THREE.CylinderGeometry(.5,.5,1,8),STOP_FACE=(()=>{const g=new THREE.CircleGeometry(.5,8).rotateZ(Math.PI/8),p=g.attributes.position,uv=g.attributes.uv;for(let i=0;i<p.count;i++)uv.setXY(i,p.getX(i)+.5,p.getY(i)+.5);return g;})();   /* flat-top octagon, upright text (fixed 2026-11-26) */
 function tHydrant(x,z){tCyl('metal',0xc21d1d,.2,.75,x,.38,z);tAdd('metal',USPH,0xc21d1d,x,.78,z,0,0,0,.4,.3,.4);tCyl('metal',0xd9d9d2,.08,.5,x,.5,z,0,0,Math.PI/2);tCyl('metal',0xc21d1d,.28,.08,x,.05,z);}
 function tLamp(x,z,ry){tFrame(x,0,z,ry,()=>{tCyl('metal',0x3a3d42,.13,7.6,0,3.8,0);tBox('metal',0x3a3d42,.14,.14,2.2,0,7.55,1.05);tBox('metal',0x2a2c30,.5,.18,.9,0,7.45,2.05);tBox('glow',0xffc98a,.42,.05,.72,0,7.34,2.05);});
@@ -912,9 +923,43 @@ function buildPedGroup(N,fem){const L=duskLayout(),peds=[];
   DUSK_DYN.pedGroups.push({peds,torso,head,legs,shins,arms,fores,hands});}
 const _pR=new THREE.Matrix4(),_pL=new THREE.Matrix4(),_pO=new THREE.Matrix4(),_pq=new THREE.Quaternion(),_pe=new THREE.Euler(0,0,0,'YXZ'),_pp=new THREE.Vector3(),_p1=new THREE.Vector3(1,1,1),_pc=new THREE.Vector3();
 
+/* side stairs of the data building (user 2026-11-27): two small flights (10 steps of .3 each) with stringers, nosed treads, handrails,
+   balusters, a mid landing at 3 and a top landing at 6, then a railed walkway through the scaffold to a lit side door. Scientists climb them. */
+const LS_X=58.6,LS_RISE=.3,LS_RUN=.5,LS_N=10,LS_Z1=-185,LS_LAND=1.6,LS_DOOR_Z=-197.3;
+const LS_Z2=LS_Z1-LS_N*LS_RUN,LS_Z3=LS_Z2-LS_LAND,LS_Z4=LS_Z3-LS_N*LS_RUN;   /* -190, -191.6, -196.6 */
+function labStairPath(s){return[[s*52,0,-182.5],[s*LS_X,0,-182.5],[s*LS_X,0,LS_Z1],[s*LS_X,3,LS_Z2],[s*LS_X,3,LS_Z3],[s*LS_X,6,LS_Z4],[s*LS_X,6,LS_DOOR_Z],[s*55.5,6,LS_DOOR_Z]];}
+function labStairs(s){const X=s*LS_X,W=1.6,ST=0x2a2d33,TR=0x4a4f57,YL=0xd9a21b,RL=0xc9ced6,th=Math.atan2(LS_RISE,LS_RUN),HL=LS_N*Math.hypot(LS_RISE,LS_RUN);
+  const flight=(z0,y0)=>{
+    for(let i=0;i<LS_N;i++){const zc=z0-(i+.5)*LS_RUN,y=y0+(i+1)*LS_RISE;
+      tBox('metal',TR,W-.12,.06,LS_RUN+.04,X,y-.03,zc);tBox('metal',YL,W-.12,.07,.07,X,y-.02,zc+LS_RUN/2-.02);   /* tread + yellow nosing */
+      tBox('metal',0x34383f,W-.12,.02,LS_RUN-.08,X,y+.005,zc);}                                                    /* grip plate */
+    const zm=z0-LS_N*LS_RUN/2,ym=y0+LS_N*LS_RISE/2;
+    for(const e of[-1,1]){const ex=X+e*W/2;
+      tBox('metal',ST,.1,.32,HL+.2,ex,ym-.05,zm,0,th);                       /* stringer (sloped side beam) */
+      tBox('metal',RL,.06,.06,HL,ex,ym+1,zm,0,th);tBox('metal',RL,.04,.04,HL,ex,ym+.5,zm,0,th);   /* handrail + mid rail */
+      for(let i=0;i<=LS_N;i+=2){const z=z0-i*LS_RUN,y=y0+i*LS_RISE;tBox('metal',RL,.05,1,.05,ex,y+.5,z);}}   /* balusters */
+    tBox('metal',ST,.18,ym-.2,.18,X,(ym-.2)/2,zm);};   /* centre support post */
+  const landing=(z0,z1,y,sides)=>{const zc=(z0+z1)/2,D=Math.abs(z0-z1);
+    tBox('metal',TR,W+.1,.12,D,X,y-.06,zc);tBox('metal',YL,W+.1,.14,.08,X,y-.05,z0);
+    for(const e of[-1,1])for(const dz of[z0,z1])tBox('metal',ST,.16,y,.16,X+e*(W/2-.05),y/2,dz);   /* legs to the ground */
+    for(const e of sides){tBox('metal',RL,.06,.06,D,X+e*W/2,y+1,zc);tBox('metal',RL,.04,.04,D,X+e*W/2,y+.5,zc);tBox('metal',YL,.04,.14,D,X+e*W/2,y+.07,zc);}};
+  flight(LS_Z1,0);landing(LS_Z2,LS_Z3,3,[-1,1]);flight(LS_Z3,3);landing(LS_Z4,LS_Z4-1.6,6,[s]);
+  tBox('metal',RL,W,.06,.06,X,7,LS_Z4-1.6);tBox('metal',RL,W,.04,.04,X,6.5,LS_Z4-1.6);
+  /* walkway from the top landing through the scaffold to the side door */
+  const wx0=s*55,wx1=X-s*W/2,wc=(wx0+wx1)/2,WL=Math.abs(wx1-wx0);
+  tBox('metal',TR,WL,.12,1.5,wc,5.94,LS_DOOR_Z);for(const e of[-1,1]){tBox('metal',RL,WL,.06,.06,wc,7,LS_DOOR_Z+e*.75);tBox('metal',RL,WL,.04,.04,wc,6.5,LS_DOOR_Z+e*.75);tBox('metal',YL,WL,.14,.04,wc,6.07,LS_DOOR_Z+e*.75);}
+  for(let k=0;k<3;k++){const x=wx0+(wx1-wx0)*k/2;for(const e of[-1,1])tBox('metal',RL,.05,1,.05,x,6.5,LS_DOOR_Z+e*.75);}
+  tBox('metal',ST,WL,.1,.1,wc,5.5,LS_DOOR_Z,0,0,s*.0);tBox('metal',ST,.12,.9,.12,wx0+s*.1,5.5,LS_DOOR_Z,0,0,s*.6);   /* wall bracket */
+  /* side door: steel frame, dark door with a lit window, push bar, light + hazard stripes above */
+  const fx=s*55.06;tBox('metal',0x6a6f77,.14,2.7,1.8,fx,7.35,LS_DOOR_Z);tBox('matte',0x1c1f24,.1,2.4,1.4,fx+s*.05,7.2,LS_DOOR_Z);
+  tBox('glow',0xbfe4ff,.04,.55,.4,fx+s*.11,7.85,LS_DOOR_Z+.3);tBox('metal',RL,.08,.08,.9,fx+s*.13,7.1,LS_DOOR_Z);
+  tBox('metal',0x2a2c30,.5,.25,.5,fx+s*.25,8.95,LS_DOOR_Z);tBox('glow',0xffe3a8,.3,.08,.3,fx+s*.3,8.82,LS_DOOR_Z);DUSK_GLOWS.push([fx+s*1.2,8.6,LS_DOOR_Z,0xffe3a8,3.5]);
+  for(let k=0;k<5;k++)tBox('matte',k%2?0x17181b:0xf2b51d,.04,.18,.36,fx+s*.08,8.7,LS_DOOR_Z-.72+k*.36);
+  /* small sign plate at the stair foot */
+  tBox('metal',RL,.06,1.2,.06,X+s*.95,.6,-183.4);tBox('matte',0xf2b51d,.04,.4,.6,X+s*.95,1.25,-183.4);}
 /* lab scientists (user 2026-11-26): bald, white lab coats, goggles; run around the compound and in and out of the lab doors. Instanced (5 draw calls). */
 const LAB_DOORS=[-45,-25,25,45];
-function buildLabCrew(){const N=34,crew=[];
+function buildLabCrew(){const N=38,crew=[];
   const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;scene.add(m);return m;};
   const torso=mk([...torsoItems(0xf2f4f6,0x2b2f36,0xb8c0c8),{geo:rboxL(.47,.52,.29,.07),col:0xeef0f2,m:_pm(0,.78,0)},{geo:UBOX,col:0x1e3a2a,m:_ps(0,1.32,.136,.07,.3,.01)},{geo:UBOX,col:0xd8dde2,m:_ps(.13,1.38,.137,.09,.12,.01)}],N);
   const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),{geo:UBOX,col:0x123a22,m:_ps(.052,1.8,.1,.085,.06,.04)},{geo:UBOX,col:0x123a22,m:_ps(-.052,1.8,.1,.085,.06,.04)},{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.206,.226,.22))}],N);
@@ -922,7 +967,8 @@ function buildLabCrew(){const N=34,crew=[];
   const SK=[0xf0c8a0,0xe0b088,0xc89870,0xf4d2b4];const c=new THREE.Color();
   for(let i=0;i<N;i++){c.setHex(SK[i%4]);head.setColorAt(i,c);hands.setColorAt(i*2,c);hands.setColorAt(i*2+1,c);
     const s={x:rand(-40,40),z:rand(-178,-134),tx:0,tz:0,hide:0,ph:Math.random()*6,sp:rand(3,4.2),dead:false,fall:0,yaw:0,still:false,y:0};labTarget(s);
-    if(i>=24){s.indoor=true;const cw=i>=31;s.y=cw?13.75:14.3;s.z=cw?DC_FRONT+1.25:DC_FRONT-3.1;s.x=rand(-42,42);s.tx=rand(-42,42);s.sp=rand(1.2,1.9);s.wait=0;}   /* walking inside the control room / along the catwalk */
+    if(i>=34){const sd=i%2?1:-1;s.stair={path:labStairPath(sd),seg:0,t:0,dir:1,wait:rand(0,6)};const q=s.stair.path[0];s.x=q[0];s.y=q[1];s.z=q[2];s.sp=rand(1.6,2.2);}   /* stair climbers, 2 per side (user 2026-11-27) */
+    else if(i>=24){s.indoor=true;const cw=i>=31;s.y=cw?13.75:14.3;s.z=cw?DC_FRONT+1.25:DC_FRONT-3.1;s.x=rand(-42,42);s.tx=rand(-42,42);s.sp=rand(1.2,1.9);s.wait=0;}   /* walking inside the control room / along the catwalk */
     crew.push(s);}
   DUSK_DYN.lab={crew,torso,head,legs,shins,arms,fores,hands};}
 function labOk(x,z){return Math.hypot(x,z-BOSS_Z)>12.5&&z<TOWN_Z0-3&&z>DC_FRONT+1.2&&Math.abs(x)<52;}
@@ -943,10 +989,17 @@ const _bm=new THREE.Matrix4(),_bq=new THREE.Quaternion(),_bv=new THREE.Vector3()
 function updateBlood(dt){if(!BLOOD)return;let any=false;for(const b of BLOODS){if(b.t>=2.6)continue;b.t=Math.min(2.6,b.t+dt);const k=Math.sqrt(b.t/2.6),sz=b.size*(.15+.85*k);
     _bm.compose(_bv.set(b.x,b.y,b.z),_bq.setFromAxisAngle(_by,b.rot),_bs.set(sz*b.sx,1,sz));BLOOD.setMatrixAt(b.i,_bm);any=true;}if(any)BLOOD.instanceMatrix.needsUpdate=true;}
 function bloodUnder(x,y,z,yaw,size){bloodAt(x-Math.sin(yaw)*1.0,y,z-Math.cos(yaw)*1.0,size);}   /* bodies fall onto their backs: torso ends up ~1 unit behind the feet */
-function labHit(p){if(p.dead)return;p.dead=true;p.fall=0;puff(_pc.set(p.x,1,p.z),0x3a2a22,.6,1.4,.5);if(DUSK)bloodUnder(p.x,0,p.z,p.yaw,rand(1.7,2.4));}
+function labHit(p){if(p.dead)return;p.dead=true;p.fall=0;puff(_pc.set(p.x,1,p.z),0x3a2a22,.6,1.4,.5);if(DUSK)bloodUnder(p.x,p.y||0,p.z,p.yaw,rand(1.7,2.4));}
 function updateLabCrew(dt){const D=DUSK_DYN.lab;if(!D)return;const {crew,torso,head,legs,shins,arms,fores,hands}=D,P=player;
   crew.forEach((s,i)=>{let lie=0,y0=0,sw=0,bob=0,spread=0;
     if(s.indoor){if(s.wait>0){s.wait-=dt;}else{const dx=s.tx-s.x;if(Math.abs(dx)<.3){s.wait=rand(1,4);s.tx=clamp(s.x+rand(-25,25),-44,44);s.yaw=Math.PI*.0;}else{s.x+=Math.sign(dx)*s.sp*dt;s.yaw=Math.sign(dx)*Math.PI/2;s.ph+=dt*s.sp*3.4;sw=Math.sin(s.ph)*.6;bob=Math.abs(Math.cos(s.ph))*.05;}}}
+    else if(s.stair&&!s.dead){const S=s.stair,P2=S.path;
+      if(S.wait>0){S.wait-=dt;if(S.hidden){for(const m of[torso,head])m.setMatrixAt(i,_Z0);for(const m of[legs,shins,arms,fores,hands]){m.setMatrixAt(i*2,_Z0);m.setMatrixAt(i*2+1,_Z0);}return;}}
+      else{S.hidden=false;const a=P2[S.seg],b=P2[S.seg+S.dir],L=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);S.t+=s.sp*dt/Math.max(.01,L);
+        if(S.t>=1){S.t=0;S.seg+=S.dir;if(S.seg+S.dir<0||S.seg+S.dir>=P2.length){S.dir=-S.dir;if(S.seg>0){S.hidden=true;S.wait=rand(4,10);}else S.wait=rand(1,5);}}   /* in through the side door, later back down */
+        const A=P2[S.seg],B=P2[S.seg+S.dir]||A,k=S.t;s.x=A[0]+(B[0]-A[0])*k;s.y=A[1]+(B[1]-A[1])*k;s.z=A[2]+(B[2]-A[2])*k;
+        if(B!==A&&(Math.abs(B[0]-A[0])+Math.abs(B[2]-A[2]))>.01)s.yaw=Math.atan2(B[0]-A[0],B[2]-A[2]);s.ph+=dt*s.sp*4;sw=Math.sin(s.ph)*.6;bob=Math.abs(Math.cos(s.ph))*.05;}
+      if(!S.hidden){const P=player;if(P.alive&&Math.abs(P.pos.y-s.y)<2&&Math.hypot(P.pos.x-s.x,P.pos.z-s.z)<1.9)labHit(s);else{_pc.set(s.x,s.y+1.1,s.z);for(const q of projs)if(q.team===BLUE&&segHit(q.prev,q.pos,_pc,.85)){labHit(s);break;}}}}
     else if(!s.dead){if(s.hide>0){s.hide-=dt;if(s.hide<=0){s.z=DC_FRONT+1.3;labTarget(s);}else{for(const m of[torso,head])m.setMatrixAt(i,_Z0);for(const m of[legs,shins,arms,fores,hands]){m.setMatrixAt(i*2,_Z0);m.setMatrixAt(i*2+1,_Z0);}return;}}
       const dp=P.alive?Math.hypot(P.pos.x-s.x,P.pos.z-s.z):1e9;if(dp<20&&Math.random()<dt*.45)screamAt(s.x,s.z);if(dp<16&&!s.door&&Math.random()<.05){s.tx=s.x+(s.x-P.pos.x)*2;s.tz=s.z+(s.z-P.pos.z)*2;if(!labOk(s.tx,s.tz)){s.tx=LAB_DOORS[Math.floor(Math.random()*4)];s.tz=DC_FRONT+1.3;s.door=true;}}
       const dx=s.tx-s.x,dz=s.tz-s.z,d=Math.hypot(dx,dz),sp=s.sp*(dp<20?1.5:1);
@@ -962,7 +1015,7 @@ function updateLabCrew(dt){const D=DUSK_DYN.lab;if(!D)return;const {crew,torso,h
         elbowSet(fores,hands,j,_pO,s.dead?-.12*spread:(s.indoor&&s.wait>0)?-.25:-((s.indoor?.4:1.1)+.45*Math.max(0,-a-.4)));}}});
   for(const m of[torso,head,legs,shins,arms,fores,hands])m.instanceMatrix.needsUpdate=true;}
 function pedDie(p){if(p.dead)return;p.dead=true;p.fall=0;puff(_pc.set(p.x,1,p.z),0x3a2a22,.6,1.4,.5);if(DUSK)bloodUnder(p.x,0,p.z,p.yaw,rand(1.6,2.3));}
-function pedBlast(pos,r){const L=DUSK_DYN.lab;if(L)for(const s of L.crew)if(!s.indoor&&!s.dead&&s.hide<=0&&Math.hypot(s.x-pos.x,s.z-pos.z)<r+.6&&pos.y<4)labHit(s);for(const D of DUSK_DYN.pedGroups||[])for(const p of D.peds)if(!p.dead&&Math.hypot(p.x-pos.x,p.z-pos.z)<r+.6&&pos.y<4)pedDie(p);}
+function pedBlast(pos,r){const L=DUSK_DYN.lab;if(L)for(const s of L.crew)if(!s.indoor&&!s.dead&&s.hide<=0&&!(s.stair&&s.stair.hidden)&&Math.hypot(s.x-pos.x,s.z-pos.z)<r+.6&&pos.y<4)labHit(s);for(const D of DUSK_DYN.pedGroups||[])for(const p of D.peds)if(!p.dead&&Math.hypot(p.x-pos.x,p.z-pos.z)<r+.6&&pos.y<4)pedDie(p);}
 function updatePeds(dt){for(const D of DUSK_DYN.pedGroups||[])updatePedGroup(D,dt);}
 const _pK=new THREE.Matrix4(),_pK2=new THREE.Matrix4();
 function updatePedGroup(D,dt){const {peds,torso,head,legs,shins,arms,fores,hands}=D;
@@ -1317,7 +1370,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   for(const s of[-1,1]){   /* side scaffolds with stairs */
     for(const dz of[-7,7])tBox('metal',0x3a3d42,.4,DH,.4,s*57,DH/2,DC_Z+dz);
     for(let y=4;y<DH;y+=5.5){tBox('metal',0xd9a21b,.3,.3,14.4,s*57,y,DC_Z);tBox('metal',0x3a3d42,1.6,.25,14,s*56.3,y-.2,DC_Z);}
-    for(let i=0;i<8;i++)tBox('metal',0xd9a21b,1.4,.12,.9,s*58.2,1+i*1.6,DC_FRONT+1-i*1.3);}
+    labStairs(s);}
   for(let x=-52;x<=52;x+=8)tBox('glow',0xffe3a8,.6,.25,.2,x,DH-.6,DC_FRONT+.12);
   for(let x=-52;x<=52;x+=26)DUSK_GLOWS.push([x,DH-.7,DC_FRONT+.8,0xffe3a8,5]);
   { const gl=new THREE.Mesh(new THREE.PlaneGeometry(96,5.6),new THREE.MeshStandardMaterial({color:0x3f9be8,transparent:true,opacity:.24,metalness:.9,roughness:.04,envMap:envTex(),depthWrite:false}));
@@ -4219,7 +4272,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0902'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0929'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
