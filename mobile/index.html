@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1419</div>
+<div id="buildTag">BUILD 1127-1428</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -355,13 +355,15 @@ const LIQUOR={x0:12,x1:30,z0:6,z1:28},SMOKE={x0:-30,x1:-12,z0:30,z1:52};
 let dsd=777;const drand=()=>(dsd=(dsd*16807)%2147483647)/2147483647;const dr=(a,b)=>a+drand()*(b-a);
 const BIGTEX=!(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
 /* ---- DUSK landmark lots along the avenue (user 2026-11-26): fire department, gas station, chapel, grocery + parking lot, donut shop, coffee shop with patio */
-const SPOTS={fire:{x0:13,x1:42,z0:73,z1:105},gas:{x0:-50,x1:-13,z0:73,z1:117},chapel:{x0:15,x1:46,z0:-57,z1:-21},grocery:{x0:-82,x1:-13,z0:-61,z1:-15},donut:{x0:13,x1:34,z0:-118,z1:-96},coffee:{x0:13,x1:38,z0:145,z1:173}};
+const SPOTS={fire:{x0:13,x1:42,z0:73,z1:105},gas:{x0:-50,x1:-13,z0:73,z1:117},chapel:{x0:15,x1:46,z0:-57,z1:-21},grocery:{x0:-82,x1:-13,z0:-61,z1:-15},donut:{x0:13,x1:34,z0:-118,z1:-96},coffee:{x0:13,x1:38,z0:145,z1:173},hospital:{x0:-150,x1:-119,z0:72,z1:118}};   /* hospital replaces the 4 west houses of the Mission Ave / East 15th St block (user 2026-11-27) */
 function litSign(text,fg,bg,w,h,x,y,z,ry,glow){const W=512,H=Math.max(64,Math.round(512*h/w));
   const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:signTex((g)=>{g.fillStyle=bg;g.fillRect(0,0,W,H);const fs=Math.min(H*.66,W*.9/(text.length*.66));
     g.font='900 '+Math.round(fs)+'px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.shadowColor=fg;g.shadowBlur=14;g.fillStyle=fg;g.fillText(text,W/2,H/2+fs*.05);},W,H)}));
   m.position.set(x,y,z);m.rotation.y=ry;scene.add(m);if(glow)DUSK_GLOWS.push([x+Math.sin(ry)*.6,y,z+Math.cos(ry)*.6,glow,w*.8]);return m;}
 function paintSpots(R,g,X,Z,S){   /* ground: aprons, lots, patio */
-  const F=SPOTS;R(F.fire.x0,F.fire.z0,F.fire.x1,F.fire.z1,'#6e6a63');
+  const F=SPOTS;{const AS='#2f2f33',CU='#9a968e';   /* hospital U driveway: two legs from East 15th St joined in front of the emergency doors */
+    R(-147,96.6,-121.5,104.4,CU);R(-146.6,97,-121.9,104,AS);R(-147,104,-139.6,118,CU);R(-146.6,104,-140,118,AS);R(-129.4,104,-121.5,118,CU);R(-129,104,-121.9,118,AS);
+    R(-141,95,-128,96.8,'#8a857b');g.fillStyle='#d8d8d0';for(let x=-145;x<-123;x+=2.4)g.fillRect(X(x),Z(100.2),1.2*S,.14*S);g.fillStyle='#e8c21a';g.fillRect(X(-139.5),Z(96.9),10*S,.18*S);}R(F.fire.x0,F.fire.z0,F.fire.x1,F.fire.z1,'#6e6a63');
   R(F.gas.x0,F.gas.z0,F.gas.x1,F.gas.z1,'#5f5d58');
   R(F.chapel.x0,(F.chapel.z0+F.chapel.z1)/2-1.2,F.chapel.x0+12,(F.chapel.z0+F.chapel.z1)/2+1.2,'#8a857b');
   R(F.grocery.x0,F.grocery.z0,F.grocery.x1,F.grocery.z1,'#2c2d31');
@@ -442,6 +444,32 @@ function buildSpots(){const F=SPOTS;
     for(const sd of[-1,1])litSign('GAS  3.89','#ffdf6a','#141416',3.4,1.4,-15.5+sd*.22,8.9,115,sd*Math.PI/2,0);
     for(const sd of[-1,1])litSign('DIESEL 4.29','#9fe6ff','#141416',3.4,1,-15.5+sd*.22,7.4,115,sd*Math.PI/2,0);
     DUSK_GLOWS.push([cx,ch-1,cz,0xf4f7ff,14],[cx,ch-1,cz-9,0xf4f7ff,10],[cx,ch-1,cz+9,0xf4f7ff,10]);}
+  /* HOSPITAL / CLINIC (user 2026-11-27): white 2-storey building, flat roof you can jump onto, red cross + EMERGENCY in red,
+     emergency entrance under a canopy facing the U-shaped driveway, car parked at the doors */
+  {const cx=-134.5,cz=85,W=25,D=20,h=7.4,FZ=cz+D/2,WH=0xf2f2ee,TR=0xd6d9de,RD=0xe3141c;
+    addBlock(cx,cz,W,D,h+.6);tBox('matte',WH,W,h,D,cx,h/2,cz);
+    tBox('matte',TR,W+.2,.32,D+.2,cx,3.7,cz);tBox('matte',0x5a5d62,W-.5,.06,D-.5,cx,h+.03,cz);   /* floor band, roof deck */
+    for(const [w,d,x,z] of[[W+.3,.3,cx,cz-D/2],[W+.3,.3,cx,FZ],[.3,D+.3,cx-W/2,cz],[.3,D+.3,cx+W/2,cz]])tBox('matte',0xe6e8ea,w,.7,d,x,h+.35,z);   /* parapet */
+    tBox('glow',RD,W+.32,.12,.04,cx,h-.25,FZ+.17);   /* red accent line */
+    const win=(x,y,z,ry)=>{tBox('glow',0xd2e6f6,1.5,1.25,.06,x,y,z,ry);tBox('matte',0xaab0b8,1.7,.12,.12,x+Math.sin(ry)*.04,y-.7,z+Math.cos(ry)*.04,ry);};
+    for(const y of[1.9,5.4])for(let x=cx-W/2+1.6;x<cx+W/2-1;x+=2.5){if(y<3&&Math.abs(x-cx)<3.6)continue;if(y>3&&Math.abs(x-cx)<5.5)continue;win(x,y,FZ+.04,0);win(x,y,cz-D/2-.04,Math.PI);}
+    for(const y of[1.9,5.4])for(let z=cz-D/2+1.8;z<cz+D/2-1;z+=2.5){win(cx-W/2-.04,y,z,-Math.PI/2);win(cx+W/2+.04,y,z,Math.PI/2);}
+    tDoor('glass',cx,0,FZ+.07,0,1.35,2.7,2);   /* emergency doors */
+    /* red cross + EMERGENCY on the facade */
+    tBox('glow',RD,1.25,.38,.05,cx-4.9,5.45,FZ+.08);tBox('glow',RD,.38,1.25,.05,cx-4.9,5.45,FZ+.08);
+    litSign('EMERGENCY','#e3141c','#ffffff',7.6,1.25,cx+.9,5.45,FZ+.09,0,0xff3a3a);
+    /* canopy over the ambulance / drop-off lane */
+    const CZ=FZ+4.6;tBox('matte',0xf4f4f0,12,.45,9.2,cx,3.95,CZ);tBox('glow',RD,12.04,.16,.05,cx,3.8,CZ+4.62);tBox('matte',0xd6d9de,12.1,.12,9.3,cx,4.2,CZ);
+    for(const sx of[-1,1]){tCyl('metal',0xe8eaec,.2,3.75,cx+sx*5.6,1.88,CZ+4.1);addBlock(cx+sx*5.6,CZ+4.1,.5,.5,3.8);}
+    addBlock(cx,CZ,12,9.2,4.2);buildings[buildings.length-1].y0=3.7;   /* walk under it, land on top */
+    for(let i=0;i<3;i++)tBox('glow',0xfff4dc,2.2,.04,.5,cx-4+i*4,3.71,CZ);DUSK_GLOWS.push([cx,3.4,CZ,0xfff4dc,7]);
+    litSign('EMERGENCY','#e3141c','#ffffff',5.2,.55,cx+.7,3.98,CZ+4.67,0,0);tBox('glow',RD,.5,.16,.04,cx-2.6,3.98,CZ+4.69);tBox('glow',RD,.16,.5,.04,cx-2.6,3.98,CZ+4.69);
+    /* roof units */
+    for(const [x,z] of[[cx-7,cz-3],[cx+6,cz+2]]){tBox('metal',0x9aa0a6,3,1.4,2.4,x,h+.7,z);for(const dx of[-.7,.7])tCyl('metal',0x5a5f66,.5,.12,x+dx,h+1.46,z);}
+    tCyl('metal',0xb0b5bb,.18,1.6,cx+9,h+.8,cz-6);
+    /* monument sign at the driveway entrance */
+    tBox('matte',0xeeeeea,3.4,1.3,.5,cx,.65,116);tBox('matte',0x8a857b,3.7,.2,.7,cx,.1,116);tBox('glow',RD,.55,.17,.04,cx-1.2,.85,116.27);tBox('glow',RD,.17,.55,.04,cx-1.2,.85,116.27);
+    litSign('HOSPITAL','#e3141c','#ffffff',2.1,.42,cx+.35,.85,116.27,0,0);addBlock(cx,116,3.4,.5,1.3);}
   /* CHAPEL: white walls, steep roof, steeple with cross, stained glass */
   {const cz=(F.chapel.z0+F.chapel.z1)/2,x0=26,x1=44,w=11,h=6,tx=x0-1.6,TW=4.6,tf=tx-TW/2;addBlock((x0+x1)/2,cz,x1-x0,w,h+5);
     tBox('matte',0xe8e4da,x1-x0,h,w,(x0+x1)/2,h/2,cz);tAdd('matte',UPRISM,0x3a3438,(x0+x1)/2,h,cz,0,0,0,x1-x0+.8,5,w+1);
@@ -519,8 +547,8 @@ function duskLayout(){if(DL)return DL;DL={houses:[],trees:[],fences:[],dumpsters
         DL.fences.push({x0:lx0+.2,x1:lx1-.2,z:back-row*-.25});
         if(drand()<.7)DL.fences.push({side:1,x:lx1-.1,z0:Math.min(back,cz-row*d/2),z1:Math.max(back,cz-row*d/2)});
         alleyUsed=true;}}
-    if(alleyUsed){DL.alleys.push({x0:bx0,x1:bx1,z:az,w:ah*2});
-      for(let x=bx0+8;x<bx1-6;x+=dr(18,30))if(!duskReserved(x-2,az-3,x+2,az+3))DL.dumpsters.push({x,z:az+(drand()<.5?-1.25:1.25),ry:drand()<.5?0:Math.PI,col:drand()<.6?0x2f5a3a:0x34465a});}}
+    if(alleyUsed){const HS=SPOTS.hospital,ax0=(bx0<HS.x1&&bx1>HS.x0&&bz0<HS.z1&&bz1>HS.z0)?Math.max(bx0,HS.x1):bx0;DL.alleys.push({x0:ax0,x1:bx1,z:az,w:ah*2});   /* alley stops at the hospital lot */
+      for(let x=ax0+8;x<bx1-6;x+=dr(18,30))if(!duskReserved(x-2,az-3,x+2,az+3))DL.dumpsters.push({x,z:az+(drand()<.5?-1.25:1.25),ry:drand()<.5?0:Math.PI,col:drand()<.6?0x2f5a3a:0x34465a});}}
   const nearNS=(x,m)=>DUSK_NS.some(s=>Math.abs(x-s.x)<s.w/2+m),nearEW=(z,m)=>DUSK_EW.some(s=>Math.abs(z-s.z)<s.w/2+m);
   const carOK=(x,z,hx,hz)=>!duskReserved(x-hx,z-hz,x+hx,z+hz);
   const vkind=()=>{const r=drand();return r<.55?0:r<.8?1:2;},VCOL=[0x8a1c1c,0x1d3a66,0xd8d8d2,0x1b1b1e,0x6b6f75,0x2e5a3a,0xb8862a,0x5b2a5e];
@@ -528,6 +556,7 @@ function duskLayout(){if(DL)return DL;DL={houses:[],trees:[],fences:[],dumpsters
     for(let z=TOWN_Z0+8;z<194;z+=dr(10,15)){if(nearEW(z,8)||drand()<.55||!carOK(x,z,1.5,3.2))continue;DL.cars.push({x,z,ry:side>0?Math.PI:0,kind:vkind(),col:VCOL[Math.floor(drand()*VCOL.length)]});}}
   for(const s of DUSK_EW)for(const side of[-1,1]){const z=s.z+side*(s.w/2-1.6);
     for(let x=-192;x<192;x+=dr(10,15)){if(nearNS(x,8)||drand()<.55||!carOK(x,z,3.2,1.5))continue;DL.cars.push({x,z,ry:side>0?-Math.PI/2:Math.PI/2,kind:vkind(),col:VCOL[Math.floor(drand()*VCOL.length)]});}}
+  DL.cars.push({x:-133,z:100.4,ry:Math.PI/2,kind:0,col:0xd8d8d2});   /* car parked at the hospital emergency doors */
   for(const s of DUSK_NS){for(let z=TOWN_Z0+14;z<192;z+=dr(34,46)){const side=drand()<.5?-1:1,x=s.x+side*(s.w/2+1.1);if(!nearEW(z,5)&&!duskReserved(x-.5,z-.5,x+.5,z+.5))DL.hydrants.push({x,z});}
     for(let z=TOWN_Z0+20;z<192;z+=dr(30,42)){const x=s.x+(drand()<.5?-2.6:2.6);if(!nearEW(z,6))DL.manholes.push({x,z});}}
   for(const s of DUSK_EW){for(let x=-190;x<190;x+=dr(34,46)){const side=drand()<.5?-1:1,z=s.z+side*(s.w/2+1.1);if(!nearNS(x,5)&&!duskReserved(x-.5,z-.5,x+.5,z+.5))DL.hydrants.push({x,z});}
@@ -4636,7 +4665,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1419'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1428'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
