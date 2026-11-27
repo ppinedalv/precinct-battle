@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1440</div>
+<div id="buildTag">BUILD 1127-1529</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1777,7 +1777,7 @@ function bossBeam(from,to){   /* soft, blurry-edged laser (user 2026-11-26): thi
   if(!BOSS_HAZE)BOSS_HAZE=softBeamMat(0xff2fb8,.32);
   const L=from.distanceTo(to),core=new THREE.Mesh(BEAM_GEO,new THREE.MeshBasicMaterial({color:0xffe6f8,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
   const hm=softBeamMat(0xff4fd2,.95),halo=new THREE.Mesh(BEAM_GEO,hm),haze=new THREE.Mesh(BEAM_GEO,BOSS_HAZE);
-  {const w=1+Math.max(0,DIFF.level-5)*.12;core.scale.set(.1*w,.1*w,L);halo.scale.set(4.2,4.2,1);haze.scale.set(11,11,1);}core.add(halo);core.add(haze);core.position.copy(from);core.lookAt(to);scene.add(core);
+  {const w=1+(DIFF.level-1)*.09;   /* beam gets thicker every level, so the stronger lasers read as stronger (user 2026-11-27) */core.scale.set(.1*w,.1*w,L);halo.scale.set(4.2,4.2,1);haze.scale.set(11,11,1);}core.add(halo);core.add(haze);core.position.copy(from);core.lookAt(to);scene.add(core);
   laserBeams.push({m:core,life:.32,max:.32,soft:hm,softOp:.95});puff(from,0xffb3ee,2,3.6,.16);puff(from,0xff3fc0,1.5,2.8,.22);for(let k=0;k<7;k++)dustP(to.x+rand(-.6,.6),to.y+rand(-.4,.6),to.z+rand(-.6,.6),{color:k<2?0x050505:0x141312,life:rand(1.1,1.9),a:rand(.9,1.6),b:rand(3,5.5),drag:.9,rot:rand(-.8,.8),alpha:rand(.55,.8),vx:rand(-2.5,2.5),vy:rand(1,3.2),vz:rand(-2.5,2.5)});   /* black smoke impact (user 2026-11-27, was a pink puff) */
   for(let k=0;k<4;k++)dustP(to.x,to.y,to.z,{tex:DEBRIS_TEX,color:0x0c0b0a,life:rand(.5,.9),a:rand(.12,.22),b:rand(.12,.22),drag:.3,rot:rand(-6,6),alpha:.9,vx:rand(-6,6),vy:rand(2,7),vz:rand(-6,6),grav:18,floor:0});}
 const _bt=new THREE.Vector3(),_bt2=new THREE.Vector3();
@@ -1796,11 +1796,12 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
   const armsIced=R.arms.some(a=>!a.dead&&a.ent.frozen>0);   /* EMP (H) freezes the tentacle arms (user 2026-11-27): they stop dead, the turret stops turning, no laser fire */
   if(armsIced);else if(tg){const want=Math.atan2(tg.pos.x,tg.pos.z-BOSS_Z);let d=want-R.top.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));R.top.rotation.y+=clamp(d,-.7*dt,.7*dt);}
   else R.top.rotation.y+=Math.sin(t*.25)*.08*dt;
+  if(!armsIced)R.armT=(R.armT||t)+dt*(1.35+(lvl-1)*.07);const at=R.armT||t;   /* arms whip faster (user 2026-11-27): 1.35x at level 1 up to ~2x at level 10 */
   for(const [i,a] of R.arms.entries()){const up=a.k-1;if(!a.dead&&a.ent.frozen>0){a.ent.frozen=Math.max(0,a.ent.frozen-dt);continue;}
-    a.segs.forEach((g,j)=>{const w=Math.sin(t*3.1+j*.75+a.ph)*.2+(j===0?Math.sin(t*1.7+a.ph*2.3)*.38:0);g.rotation.y=-a.s*(j<7?.15:j<9?-.06:0)+w*.6;   /* faster whipping + whole-arm sweep: harder to hit (user 2026-11-26) */   /* longer tentacles: 11 segments, wider S-curve (user 2026-11-26) */
-      g.rotation.x=(j<4?-.12*up-.06:j<8?.08*up+.03:-.05)+Math.sin(t*2.6+j*.6+a.ph*1.7)*.14+(j===0?Math.sin(t*1.3+a.ph)*.22:0);if(a.dead){g.rotation.x=.3;g.rotation.y*=.5;}});}
+    a.segs.forEach((g,j)=>{const w=Math.sin(at*3.1+j*.75+a.ph)*.2+(j===0?Math.sin(at*1.7+a.ph*2.3)*.38:0);g.rotation.y=-a.s*(j<7?.15:j<9?-.06:0)+w*.6;   /* faster whipping + whole-arm sweep: harder to hit (user 2026-11-26) */   /* longer tentacles: 11 segments, wider S-curve (user 2026-11-26) */
+      g.rotation.x=(j<4?-.12*up-.06:j<8?.08*up+.03:-.05)+Math.sin(at*2.6+j*.6+a.ph*1.7)*.14+(j===0?Math.sin(at*1.3+a.ph)*.22:0);if(a.dead){g.rotation.x=.3;g.rotation.y*=.5;}});}
   R.top.parent.updateMatrixWorld(true);
-  const rate=[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][lvl-1],dmg=[6,7,8,9,10,13,16,20,26,32][lvl-1];   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
+  const rate=[2.9,2.75,2.6,2.45,2.3,2.1,1.9,1.7,1.5,1.3][lvl-1],dmg=[6,7,9,11,13,16,20,24,30,36][lvl-1];   /* lasers fire more often + hit harder each level (user 2026-11-27; was every 4.2-1.8 s for 6-32) */   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
   for(const a of R.arms){a.can.localToWorld(a.ent.pos.set(0,0,1.7));
     if(a.dead){if(Math.random()<.3){a.segs[Math.min(7,a.segs.length-1)].localToWorld(_bt.set(0,0,1.6));puff(_bt,Math.random()<.3?0xff8a2a:0x2c2c30,.8,2.6,1,0,2.5,0);}continue;}
     if(a.ent.frozen>0){a.muzzle.material.opacity=.15+.1*Math.random();if(Math.random()<dt*6){a.can.localToWorld(_bt.set(rand(-1,1),rand(-1,1),rand(0,2)));puff(_bt,0x7fe8ff,.25,.6,.2);}continue;}   /* frozen: muzzle dark, cold blue sparks */
@@ -1812,7 +1813,7 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
       a.can.lookAt(_bt.addScaledVector(_bt2,30).add(new THREE.Vector3(a.s*6,(a.k-1)*4+Math.sin(t+a.ph)*2,0)));}
     a.muzzle.material.opacity=.55+.45*Math.sin(t*6+a.ph)+(a.aimT>.4?1:0);}
   const bp=R.bubbles.geometry.attributes.position;for(let i=0;i<bp.count;i++){let y=bp.getY(i)+dt*rand(.8,1.8);if(y>13.6)y=5.6;bp.setY(i,y);}bp.needsUpdate=true;
-  updateLightningOrb(b,tg,dt,t,dmg);}
+  updateLightningOrb(b,tg,dt,t,[6,7,8,9,10,13,16,20,26,32][lvl-1]);}   /* lightning keeps its old strength; only the arm lasers were boosted (user 2026-11-27) */
 function bossArmDown(e){const a=e.arm;a.dead=true;a.tag.sp.visible=false;a.muzzle.visible=false;const p=e.pos.clone();
   for(let i=0;i<6;i++)setTimeout(()=>{explosion(_bt.copy(p).add(new THREE.Vector3(rand(-1.5,1.5),rand(-1,1.5),rand(-1.5,1.5))),rand(2.5,4.5));},i*130);
   setTimeout(()=>{explosion(p,6);camShake=Math.max(camShake,.6);a.can.visible=false;for(let j=8;j<a.segs.length;j++)a.segs[j].visible=false;},700);
@@ -1884,7 +1885,7 @@ function gateBreach(e){const T=GATE_BLOCK;let i=buildings.indexOf(T);if(i>=0)bui
   for(let k=0;k<8;k++)setTimeout(()=>{explosion(_bt.set(rand(-9,9),rand(1,14),WALL_Z+rand(-1,3)),rand(4,8));},k*130);
   setTimeout(()=>{explosion(_bt.set(0,7,WALL_Z+2),12);camShake=Math.max(camShake,1.2);},1000);
   feed('GATE BREACHED! Get in there and destroy the boss!','b');}
-function duskBegin(){const l=diffLevel;for(const a of BOSS_RIG.arms)a.ent.hitsMax=10+l;   /* stronger arms (user 2026-11-26): 15 hits at level 5 */GATE.hitsMax=12+l;   /* stronger gate (user 2026-11-26): 17 missile / cannon hits at level 5, 22 at level 10 */BOSS.hitsMax=Math.round(40+l*4);
+function duskBegin(){const l=diffLevel;for(const a of BOSS_RIG.arms)a.ent.hitsMax=10+l;   /* stronger arms (user 2026-11-26): 15 hits at level 5 */GATE.hitsMax=12+l;   /* stronger gate (user 2026-11-26): 17 missile / cannon hits at level 5, 22 at level 10 */BOSS.hitsMax=Math.round(60+l*6);   /* boss takes more hits (user 2026-11-27): 66 at level 1, 90 at 5, 120 at 10 (was 44 / 60 / 80) */
   const n=2+Math.floor(l/3);for(let i=0;i<n;i++)spawnVan(i);DUSK_DYN.vanN=n;
   rival.alive=false;rival.lives=0;rival.respawn=Infinity;rival.rig.root.visible=false;
   for(let i=0,k=Math.round(thugCap()*.5);i<k;i++)spawnThug();}
@@ -2777,7 +2778,7 @@ function makeDiff(d){const k=(d-1)/9,L=(a,b)=>a+(b-a)*k;const D={level:d,
   tankT:L(22,5),droneT:L(45,12),rollers:Math.round(L(3,14)),rollerT:L(14,5),rollerSpeed:L(11,20),rollerSight:L(35,75),rollerRange:L(26,40),rollerDmg:L(5,9),   /* side-lane rollers scale with level (user 2026-11-24; was 2-9 rollers, 12 s respawn, speed 13, sight 45, range 30, dmg 6) */
   cap:Math.round(L(10,40)),startTanks:Math.round(L(1,7)),
   redFire:L(1.9,.55),redDmg:L(.55,1.5),enemyMul:L(1,1.5),turretMul:L(1.7,.65),
-  mechSpeed:L(8.5,17),sight:L(55,110),burst:Math.round(L(7,28)),burstPause:L(1.8,.5),ms:[L(5.5,1.4),L(7,2)],salvo:L(0,.65),sh:[L(6,1.6),L(8,2.4)],mechHp:d>=10?1000:d>=9?900:d>=8?600:400,jump:[L(7,2.5),L(10,4.5)],baseAttack:L(0,.8),startDrones:d>=3?1:0,
+  mechSpeed:L(8.5,17),sight:L(55,110),burst:Math.round(L(7,28)),burstPause:L(1.8,.5),ms:[L(5.5,1.4),L(7,2)],salvo:L(0,.65),sh:[L(6,1.6),L(8,2.4)],mechHp:[400,420,440,470,500,540,580,650,900,1000][d-1],   /* RX-13 hull rises every level (user 2026-11-27: levels 1-10 gradually harder; was 400 on 1-7, then 600/900/1000) */jump:[L(7,2.5),L(10,4.5)],baseAttack:L(0,.8),startDrones:d>=3?1:0,
   rush:L(1,1.45),detour:L(40,12),dmgMul:d>=10?2:d>=9?1.5:1,
   modeRate:d>=9?12:4,rivalMul:d>=10?2.55:d>=9?2.1:d>=8?1.5:1,rivalArmorW:d>=10?.35:d>=9?.4:d>=8?.5:d>=7?.6:.7,rivalArmorH:d>=10?.55:d>=9?.6:d>=8?.75:d>=7?.85:1,rivalSplashMis:d>=9?8:4.5,rivalBoomMis:d>=9?16:12,rivalBoomSh:d>=9?11:7,rivalGunMul:d>=9?2.1:d>=8?1.5:1,modeHold:d>=9?.6:2.5};   // 2026-11-22 user: RX-13 weapons ~15% weaker on levels 9-10 (rivalMul 2.5/3 -> 2.1/2.55, rivalGunMul 2.5 -> 2.1)   // rivalMul: RX-13 missiles/mortars 1.5x on levels 9-10; rivalGunMul: RX-13 gatling 2.5x with 1.6 splash + impact blasts (both on top of dmgMul). RX-13 walker<->hover: transform speed and minimum time between switches (levels 9-10 switch almost instantly)   // levels 9-10: every hit does more damage, for BOTH teams (1.5x / 2x)   // red tanks/drones push to Blue HQ: faster, and only stop for fights closer than 'detour'
   if(d>=9){D.droneT/=2;D.startDrones*=2;D.tankT/=1.5;D.startTanks=Math.round(D.startTanks*1.5);D.cap=Math.round(D.cap*1.25);
@@ -2875,7 +2876,7 @@ if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAi
 const HBOT_HIT_EVERY=2;   // every 2nd laser in a burst = 1 HQ hit, so 2 HQ hits per 4-laser burst (was 1; user 2026-11-22)
 // hover bot HP per difficulty tier (user 2026-11-24). Rotating gun = 5 dmg x level damage multiplier (1x levels 1-8, 1.5x level 9, 2x level 10); cannon flak = 11 x same.
 // gun hits / cannon hits: Easy 15 / 7, Normal 18 / 9, Hard 21 / 10, Veteran 25 / 12, Brutal 30 / 14
-const hbotHP=()=>{const l=DIFF.level;return l>=10?300:l>=9?225:l>=7?125:l>=5?105:l>=3?90:75;};
+const hbotHP=()=>[75,82,90,97,105,115,125,150,225,300][DIFF.level-1];   /* rises every level (user 2026-11-27; was pairs 75/90/105/125 then 225/300) */
 const HQB_CD=5,HQB_R=5,HBOT_HP=150,HBOT_VOLLEY=1.2,HBOT_FIRE_R=110,HBOT_ORBIT=60,HBOT_ALT=22,HBOT_CLR_R=3.4,HBOT_CLR_Y=2;   /* hover bot body clearance vs buildings: 3.4 sideways, 2 below */   // circles + fires from farther out (user 2026-11-22: 24/15 -> 42/18 -> 60/22; fires from up to ~72)
 const hqButtons=[],hoverBots=[],laserBeams=[];
 const BTN_GLOW=0x3dff7a;   // square green button (user 2026-11-22; was round gold)
@@ -3180,7 +3181,7 @@ function spawnUnit(kind,team,pos,escort=false){
   const u={kind,team,pos:pos.clone(),vel:V(),alive:true,cd:rand(0,1),think:0,goal:null,target:null,side:Math.random()<.5?1:-1,heading:team===BLUE?Math.PI:0,id:Math.random()};
   if(kind==='roller'){const t=buildRoller(team);bakeStatic(t.g,'r'+team);u.mesh=t.g;u.tur=t.tur;u.wheels=t.wheels;u.rbody=t.body;u.roll=0;u.hp=u.maxHp=25;u.r=1.2;u.hy=.8;u.speed=DIFF.rollerSpeed;u.range=DIFF.rollerRange;u.wheelR=.6;rollerPath(u);}
   else if(kind==='tank'){const t=buildTank(team);bakeStatic(t.g,'t'+team);u.mesh=t.g;u.mesh.scale.setScalar(1.575);   // 10% smaller (was 1.75)
-  u.tur=t.tur;u.wheels=t.wheels;u.roll=0;u.hp=u.maxHp=team===RED?(DIFF.level>=9?140:DIFF.level>=8?105:70):70;u.r=3.42;u.moveR=2.61;u.hy=1.89;u.speed=7.5;u.range=40;u.wheelR=.62*1.575;}
+  u.tur=t.tur;u.wheels=t.wheels;u.roll=0;u.hp=u.maxHp=team===RED?[70,75,80,86,92,98,105,115,140,150][DIFF.level-1]:70;   /* red tank hp rises every level (user 2026-11-27; was 70 on 1-7, 105, 140, 140) */u.r=3.42;u.moveR=2.61;u.hy=1.89;u.speed=7.5;u.range=40;u.wheelR=.62*1.575;}
   else{u.mesh=bakeStatic(buildDrone(team),'d'+team);u.hp=u.maxHp=40;u.r=2.2;u.hy=0;u.speed=17;u.range=40;u.air=true;u.cruise=rand(30,36);if(u.pos.y>=0)u.pos.y=u.cruise;}
   if(escort){u.escort=true;u.speed=24;u.range=55;u.dmg=DIFF.level>=9?12:10;}   /* aggressive defense sky ships, levels 7-10 (user 2026-11-24): faster, longer range, 10/12 dmg (normal drones 6) */
   // RED tanks: level 8 = 105 hp, levels 9-10 = 140 hp (Blue stays 70); deliberate exception to Red/Blue parity (user request 2026-11-21)
@@ -3613,7 +3614,7 @@ function splashDamage(pos,r,dmg,team,byPlayer,heavy){if(DUSK&&team===BLUE)pedBla
 // ---------------- damage
 const stats={kills:0,start:0};
 let flashT=0;
-const GUN_HITS_PER=e=>e.kind==='base'?10:e.kind==='bossarm'?6:4;   /* rotary gun vs hit-count structures (user 2026-11-26): cannons + HQ turrets 4 bullets = 1 heavy hit, HQ 10 bullets (was 20 for all: far too slow) */
+const GUN_HITS_PER=e=>e.boss?14:e.kind==='base'?10:e.kind==='bossarm'?6:4;   /* rotary gun vs hit-count structures (user 2026-11-26): cannons + HQ turrets 4 bullets = 1 heavy hit, HQ 10 bullets (was 20 for all: far too slow) */
 function damage(e,amt,team,byPlayer,heavy,gun){
   if(!e.alive)return;
   // red and blue deal the same damage at every difficulty (redDmg multiplier removed 2026-11-21 at user request)
@@ -4211,7 +4212,7 @@ function updateBases(dt,t){
     if(s.tank<=0){s.tank=DIFF.tankT;spawnUnit('tank',b.team,tunnelPos());}
     if(s.drone<=0){s.drone=DIFF.droneT;spawnUnit('drone',b.team,tunnelPos());}
     // levels 7-10: each team keeps extra escort ships in the sky: 4 on levels 7-8, 6 on levels 9-10 (user 2026-11-24, was 2); respawn ~15 s after one is shot down (was 20)
-    if(DIFF.level>=7){s.sky=(s.sky??15)-dt;if(s.sky<=0){s.sky=15;let n=0;for(const e of ents)if(e.alive&&e.escort&&e.team===b.team)n++;if(n<escortCount())spawnUnit('drone',b.team,tunnelPos(),true);}}}}
+    if(escortCount()>0){s.sky=(s.sky??15)-dt;if(s.sky<=0){s.sky=15;let n=0;for(const e of ents)if(e.alive&&e.escort&&e.team===b.team)n++;if(n<escortCount())spawnUnit('drone',b.team,tunnelPos(),true);}}}}
 
 let camDistBase=12,faceOff=0,camHold=false;   // camHold: test hook, freezes the camera for screenshots
 function updateCamera(dt){if(camHold)return;
@@ -4228,15 +4229,15 @@ function updateCamera(dt){if(camHold)return;
   moon.position.set(P.pos.x+50,110,P.pos.z+35);moon.target.position.copy(P.pos);fill.position.set(camera.position.x,P.pos.y+6,camera.position.z);}
 
 // ---------------- init & loop
-function escortCount(){return DIFF.level>=9?6:DIFF.level>=7?4:0;}   /* defense sky ships per team (user 2026-11-24) */
+function escortCount(){return [0,0,0,0,1,2,4,5,6,6][DIFF.level-1];}   /* defense sky ships per team (user 2026-11-24); ramps in from level 5 (user 2026-11-27, was 0 below 7, 4 on 7-8) */   /* defense sky ships per team (user 2026-11-24) */
 function initialSpawn(){if(!DUSK){
   for(let i=0;i<DIFF.startTanks;i++)spawnUnit('tank',BLUE,new THREE.Vector3(-14+(i%4)*9,0,BASE_Z[BLUE]-26-Math.floor(i/4)*9));   // even match: same start forces as Red
   for(let i=0;i<DIFF.startTanks;i++)spawnUnit('tank',RED,new THREE.Vector3(-14+(i%4)*9,0,BASE_Z[RED]+26+Math.floor(i/4)*9));
   for(let i=0;i<DIFF.startDrones;i++)spawnUnit('drone',BLUE,new THREE.Vector3((i-(DIFF.startDrones-1)/2)*12,32,BASE_Z[BLUE]-20));for(let i=0;i<DIFF.startDrones;i++)spawnUnit('drone',RED,new THREE.Vector3((i-(DIFF.startDrones-1)/2)*12,32,BASE_Z[RED]+20));
-  if(DIFF.level>=7){const N=escortCount();for(let i=0;i<N;i++){const x=(i-(N-1)/2)*12,y=34+(i%2)*6;spawnUnit('drone',RED,new THREE.Vector3(x,y,BASE_Z[RED]+14),true);spawnUnit('drone',BLUE,new THREE.Vector3(x,y,BASE_Z[BLUE]-14),true);}}   // extra sky ships per team on levels 7-10 (4 on 7-8, 6 on 9-10)
+  if(escortCount()>0){const N=escortCount();for(let i=0;i<N;i++){const x=(i-(N-1)/2)*12,y=34+(i%2)*6;spawnUnit('drone',RED,new THREE.Vector3(x,y,BASE_Z[RED]+14),true);spawnUnit('drone',BLUE,new THREE.Vector3(x,y,BASE_Z[BLUE]-14),true);}}   // extra sky ships per team on levels 7-10 (4 on 7-8, 6 on 9-10)
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',BLUE,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[BLUE]-30-Math.floor(i/5)*6));
   for(let i=0;i<DIFF.rollers;i++)spawnUnit('roller',RED,new THREE.Vector3(-16+(i%5)*8,0,BASE_Z[RED]+30+Math.floor(i/5)*6));}
-  {const l=DIFF.level,h=l>=9?18:l>=7?14:l>=5?12:l>=3?10:8;   // HQ + podium cannon hits to destroy per tier (user 2026-11-24): Easy 8, Normal 10, Hard 12, Veteran 14, Brutal 18
+  {const l=DIFF.level,h=[8,9,10,11,12,13,14,16,18,20][l-1];   /* one more hit per level (user 2026-11-27; was 8,8,10,10,12,12,14,14,18,18) */   // HQ + podium cannon hits to destroy per tier (user 2026-11-24): Easy 8, Normal 10, Hard 12, Veteran 14, Brutal 18
    for(const e of ents)if(e.kind==='hqturret'||e.kind==='cannon')e.hitsMax=h;}
   rival.maxHp=rival.hp=DIFF.mechHp;if(DIFF.level>=9)player.maxHp=player.hp=DIFF.mechHp;   // levels 9-10: SS-07 hull = RX-13 hull (900 / 1000) (user 2026-11-22); levels 1-8 SS-07 stays 400
  rival.empCharges=EMP_MAX;rival.lives=5;rival.empCD=15;rival.mg=MG_MAX;rival.sh=SH_MAX;rival.ms=MS_MAX;rival.reloading=false;empCharges=EMP_MAX;empCD=0;}   // EMP_MAX (5) blasts per game for both mechs, no reloads
@@ -4690,7 +4691,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1440'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1529'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
