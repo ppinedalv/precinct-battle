@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2139</div>
+<div id="buildTag">BUILD 1126-2246</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -814,7 +814,7 @@ function buildDuskTown(){const L=duskLayout(),root=new THREE.Group();scene.add(r
     {const G=SPOTS.grocery,gz0=G.z0+1,gz1=G.z1-1;gm(2468,1,18,6.4,-72,3.4,gz1+.05,0);gm(1357,3,18,6.4,-72,3.4,gz0-.05,Math.PI);gm(8642,2,30,6.4,-82.05,3.4,(gz0+gz1)/2,-Math.PI/2);}
     {const D=SPOTS.donut,dz0=D.z0+2,dz1=D.z1-2;gm(9753,0,10.4,3.9,27.5,2.05,dz1+.05,0);gm(3141,2,10.4,3.9,27.5,2.05,dz0-.05,Math.PI);gm(2718,1,17,3.9,33.05,2.05,(dz0+dz1)/2,Math.PI/2);}
     {gm(6060,3,10.4,4.3,-43.5,2.3,106.05,0);gm(4242,0,10.4,4.3,-43.5,2.3,83.95,Math.PI);gm(8181,2,21,4.3,-49.05,2.3,95,-Math.PI/2);}}
-  buildSpots();buildCars();
+  buildSpots();DL.cars=DL.cars.filter(c=>Math.hypot(c.x,c.z-186)>13);buildCars();   /* keep the ammo pad clear */
   flushBins(root,true,60);
   /* glow points (lamps, porch lights, neon): one draw call */
   {const n=DUSK_GLOWS.length,pos=new Float32Array(n*3),col=new Float32Array(n*3),sz=new Float32Array(n),c=new THREE.Color();
@@ -2232,6 +2232,20 @@ for(const team of(DUSK?[]:[BLUE,RED])){
     tu.tag=makeHealthTag(.1,.028);tu.tag.sp.position.set(s*14,11.5,z);scene.add(tu.tag.sp);}
 }
 if(DUSK){bases.push(BLUE_GHOST);buildBossCompound();}   /* dusk: no Blue HQ; bases[1] = the boss */
+/* dusk ammo recharge pad at the south end of the main avenue (user 2026-11-26): reloads gun, cannon and missiles (no hull repair on this field) */
+const DUSK_PAD_POS=new THREE.Vector3(0,0,186);let DUSK_PAD=null;
+if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAir=true;scene.add(g);
+  const plate=new THREE.Mesh(new THREE.CylinderGeometry(7.4,7.7,.3,6),new THREE.MeshStandardMaterial({color:0x2a2d33,metalness:.7,roughness:.45}));plate.position.y=.15;plate.receiveShadow=true;g.add(plate);
+  const inner=new THREE.Mesh(new THREE.CylinderGeometry(6.4,6.4,.06,48),new THREE.MeshStandardMaterial({color:0x1a1c20,metalness:.6,roughness:.5}));inner.position.y=.31;g.add(inner);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(6,.2,6,48),new THREE.MeshBasicMaterial({color:0xf2b51d}));ring.rotation.x=Math.PI/2;ring.position.y=.4;g.add(ring);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(5.8,48),new THREE.MeshBasicMaterial({color:0xf2b51d,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.y=.36;g.add(disc);
+  for(let i=0;i<3;i++){const r2=new THREE.Mesh(new THREE.TorusGeometry(2+i*1.2,.05,4,48),new THREE.MeshBasicMaterial({color:0xffd86a}));r2.rotation.x=Math.PI/2;r2.position.y=.37;g.add(r2);}
+  const t=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.15),stencilLetters('AMMO','#f2b51d',800));t.rotation.x=-Math.PI/2;t.rotation.z=Math.PI;t.position.set(0,.38,-3.6);g.add(t);
+  const pm=new THREE.MeshStandardMaterial({color:0x3a3d42,metalness:.7,roughness:.4}),lm=new THREE.MeshBasicMaterial({color:0xffb02e}),cm=new THREE.MeshStandardMaterial({color:0x3d4a2a,roughness:.7});
+  for(let i=0;i<6;i++){const a=i/6*Math.PI*2+Math.PI/6,x=Math.sin(a)*7.6,z=Math.cos(a)*7.6,post=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,2.4,8),pm);post.position.set(x,1.2,z);post.castShadow=true;g.add(post);
+    const l=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),lm);l.position.set(x,2.5,z);g.add(l);DUSK_GLOWS.push([DUSK_PAD_POS.x+x,2.5,DUSK_PAD_POS.z+z,0xffb02e,3]);}
+  for(const [x,z] of[[-8.6,-2],[8.6,-2],[-8.6,2],[8.6,2]]){for(let k=0;k<2;k++){const c=new THREE.Mesh(new THREE.BoxGeometry(1.6,.8,1),cm);c.position.set(x,.4+k*.8,z);c.rotation.y=k*.2;c.castShadow=true;g.add(c);}}   /* ammo crates */
+  DUSK_PAD={ring,disc};}
 // ---------------- HQ wall buttons + laser hover bots (added 2026-11-22)
 // One glowing gold button on the outer wall of each HQ side block (2 per HQ). A mech touching its OWN HQ's button
 // deploys one laser hover bot for its team: it rises out of that team's tank tunnel, flies to the enemy HQ and
@@ -3359,16 +3373,17 @@ function updatePlayer(dt,t){
   if(fireMis&&P.ms>0&&P.cdMS<=0){P.cdMS=.55;P.ms--;P.rig.muzzleR.getWorldPosition(_c);_t.copy(aimAt).sub(_c).normalize();
     fire('missile',BLUE,_c,_t,96*(PVP?DIFF.rivalMul:1),{splash:PVP?DIFF.rivalSplashMis:4.5,boom:PVP?DIFF.rivalBoomMis:12,life:5.5,target:lockTarget,aimPt:lockTarget?null:aimAt.clone(),byPlayer:true,cluster:PVP&&DIFF.level>=9});puff(_c,0xffa040,.8,2.2,.14);if(!playSample(missileBuf,null,.9))sfx('missile',null);}
   // HQ repair pad
-  {const pad=bases[0].pad,onPad=bases[0].alive&&P.pos.y<1&&Math.hypot(P.pos.x,P.pos.z-(BASE_Z[BLUE]-16))<6.2;
-   const needs=P.hp<P.maxHp||P.mg<MG_MAX||P.sh<SH_MAX||P.ms<40,rm=$('repairMsg');
+  {const pad=DUSK?DUSK_PAD:bases[0].pad,onPad=DUSK?(P.alive&&P.pos.y<1.2&&Math.hypot(P.pos.x-DUSK_PAD_POS.x,P.pos.z-DUSK_PAD_POS.z)<6.2):(bases[0].alive&&P.pos.y<1&&Math.hypot(P.pos.x,P.pos.z-(BASE_Z[BLUE]-16))<6.2);
+   const needs=(!DUSK&&P.hp<P.maxHp)||P.mg<MG_MAX||P.sh<SH_MAX||(DUSK?P.ms<MS_MAX:P.ms<40),rm=$('repairMsg');
    if(onPad&&needs){const wasDamaged=P.hp<P.maxHp;
-     P.hp=Math.min(P.maxHp,P.hp+P.maxHp/15*dt);                      // 0 -> 100% hull in 15 seconds
+     if(!DUSK)P.hp=Math.min(P.maxHp,P.hp+P.maxHp/15*dt);                      // 0 -> 100% hull in 15 seconds (dusk pad: ammo only)
      P.mg=Math.min(MG_MAX,P.mg+MG_MAX/5*dt);P.sh=Math.min(SH_MAX,P.sh+SH_MAX/5*dt);P.ms=Math.min(MS_MAX,P.ms+MS_MAX/5*dt);
      const pulse=.5+.5*Math.sin(t*8);pad.ring.material.color.setHex(0x3dff8a);pad.disc.material.color.setHex(0x3dff8a);pad.disc.material.opacity=.18+.2*pulse;
      if(Math.random()<.5){const a=Math.random()*6.283,r=rand(1,2.6);puff(_c.set(P.pos.x+Math.cos(a)*r,P.pos.y+rand(.3,2),P.pos.z+Math.sin(a)*r),0x5dffa0,.25,.6,.7,0,rand(2.5,4),0);}
-     rm.style.display='block';rm.textContent='REPAIRING  '+Math.floor(P.hp/P.maxHp*100)+'%';
+     rm.style.display='block';rm.textContent=DUSK?'RELOADING AMMO  '+Math.floor((P.mg/MG_MAX+P.sh/SH_MAX+P.ms/MS_MAX)/3*100)+'%':'REPAIRING  '+Math.floor(P.hp/P.maxHp*100)+'%';
+     if(DUSK&&P.mg>=MG_MAX&&P.sh>=SH_MAX&&P.ms>=MS_MAX){feed('Ammo fully reloaded','b');repairChime();}
      if(wasDamaged&&P.hp>=P.maxHp){feed('Hull fully repaired','b');repairChime();}}
-   else{pad.ring.material.color.setHex(TEAMCOL[BLUE]);pad.disc.material.color.setHex(TEAMCOL[BLUE]);pad.disc.material.opacity=onPad?.25:.12;rm.style.display='none';}}
+   else{const pc=DUSK?0xf2b51d:TEAMCOL[BLUE];pad.ring.material.color.setHex(pc);pad.disc.material.color.setHex(pc);pad.disc.material.opacity=onPad?.25:.12;rm.style.display='none';}}
   // crates
   for(let i=crates.length-1;i>=0;i--){const c=crates[i];c.t-=dt;
     c.g.position.y=1.8+Math.sin(t*2.4+c.ph)*.25;c.icon.rotation.y+=dt*2.2;c.wire.rotation.y-=dt*.6;c.wire.rotation.x+=dt*.3;
@@ -4008,7 +4023,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2139'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2246'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
