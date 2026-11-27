@@ -1108,19 +1108,16 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     tCyl('metal',0x2c2f35,7,1.4,0,3.6,0,0,0,0,UCYL40);for(let i=0;i<12;i++){const a=i/12*Math.PI*2;tBox('glow',0xffb02e,1.1,.3,.1,Math.sin(a)*7.02,3.6,Math.cos(a)*7.02,a);}
     for(let i=0;i<18;i++){const a=i/18*Math.PI*2;tCyl('metal',0xd9a21b,.07,1.1,Math.sin(a)*8.4,3.45,Math.cos(a)*8.4);}
     tAdd('metal',torusG(8.4,.07,48),0xd9a21b,0,4,0,Math.PI/2);
-    for(let i=0;i<6;i++)tBox('metal',0x55595f,4,.45,1.3,0,.45+i*.45,10.6+i*1.1+.6-(5-i)*0);
     for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2;tCyl('metal',0xa0a6ae,.32,4.2,Math.sin(a)*3.3,6.3,Math.cos(a)*3.3);tCyl('metal',0x3a3e45,.5,1,Math.sin(a)*3.3,4.8,Math.cos(a)*3.3);}
     tCyl('metal',0x3d424b,2.7,4.4,0,6.4,0,0,0,0,UCYL40);
     for(let i=0;i<6;i++){const a=i/6*Math.PI*2;tCyl('matte',0x1c3a8a,.16,3.6,Math.sin(a)*2.85,6.4,Math.cos(a)*2.85);}}));
   B.add(withBins(()=>{   /* more detail to match the reference: side staircases, cables, pistons, floodlights, glowing rims */
-    for(const sx of[-1,1]){for(let i=0;i<7;i++)tBox('metal',0x55595f,2.6,.4,1.2,sx*(10.6+i*.9),.2+i*.4+.2*0,0);
-      for(const dz of[-1.4,1.4]){for(let i=0;i<7;i++)tCyl('metal',0xd9a21b,.05,1.1,sx*(10.6+i*.9),.75+i*.4,dz);tBox('metal',0xd9a21b,6.6,.08,.08,sx*13.3,2.25,dz,0,0,sx*-.42);}}
     for(let i=0;i<10;i++){const a=i/10*Math.PI*2+.15,c=new THREE.CatmullRomCurve3([new THREE.Vector3(Math.sin(a)*2.9,7.6,Math.cos(a)*2.9),new THREE.Vector3(Math.sin(a)*4.6,5.2,Math.cos(a)*4.6),new THREE.Vector3(Math.sin(a)*6.2,4.4,Math.cos(a)*6.2)]);
       tAdd('matte',new THREE.TubeGeometry(c,12,.16,6),i%2?0x1c2a5a:0x15171c,0,0,0);}
     for(let i=0;i<16;i++){const a=i/16*Math.PI*2;tCyl('metal',0xc8ccd2,.14,2.4,Math.sin(a)*5.6,5.4,Math.cos(a)*5.6);tAdd('metal',torusG(.2,.06,12),0xd9a21b,Math.sin(a)*5.6,4.7,Math.cos(a)*5.6,Math.PI/2);}
     tAdd('glow',torusG(10.62,.06,96),0x39d6ff,0,1.32,0,Math.PI/2);tAdd('glow',torusG(7.02,.05,80),0xff4fd2,0,4.32,0,Math.PI/2);tAdd('glow',torusG(8.85,.05,80),0xffb02e,0,2.92,0,Math.PI/2);
     for(let i=0;i<48;i++){const a=i/48*Math.PI*2;tBox('matte',i%2?0x17181b:0xf2b51d,1.4,.42,.06,Math.sin(a)*10.64,.6,Math.cos(a)*10.64,a);}   /* hazard band */
-    for(let i=0;i<32;i++){const a=(i+.5)/32*Math.PI*2,stair=Math.min(Math.abs(Math.sin(a)),Math.abs(Math.cos(a)))<.0||Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))<.18||Math.abs(Math.abs(Math.atan2(Math.sin(a),Math.cos(a)))-Math.PI/2)<.16;if(stair)continue;
+    for(let i=0;i<32;i++){const a=(i+.5)/32*Math.PI*2,
       tCyl('metal',0xd9a21b,.05,1.1,Math.sin(a)*10.2,1.85,Math.cos(a)*10.2);const b2=a+Math.PI/32;tBox('metal',0xd9a21b,2.02,.07,.07,Math.sin(b2)*10.18,2.38,Math.cos(b2)*10.18,b2);tBox('metal',0xd9a21b,2.02,.06,.06,Math.sin(b2)*10.18,1.9,Math.cos(b2)*10.18,b2);}   /* platform railing */
     for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;tBox('matte',0x15171b,1.6,.9,.12,Math.sin(a)*8.85,2.1,Math.cos(a)*8.85,a);for(let k=0;k<3;k++)tBox('glow',0xff8a1e,1.3,.08,.04,Math.sin(a)*8.93,1.84+k*.26,Math.cos(a)*8.93,a);}   /* glowing vents */
     for(let i=0;i<6;i++){const a=i/6*Math.PI*2+Math.PI/6,c=new THREE.CatmullRomCurve3([new THREE.Vector3(Math.sin(a)*8.2,1.4,Math.cos(a)*8.2),new THREE.Vector3(Math.sin(a)*6.8,4.6,Math.cos(a)*6.8),new THREE.Vector3(Math.sin(a)*4.2,7.4,Math.cos(a)*4.2)]);
