@@ -779,7 +779,7 @@ const DUSK_GLOWS=[];   /* [x,y,z,color,size] soft additive glow points, drawn in
 const TL_MAT={};   /* traffic light lamp materials, shared so one colour change switches every light */
 /* street names on the green blades (user 2026-11-27): white text, user-picked names + made-up ones. One canvas atlas, all name plates merged
    into ONE mesh (one draw call). Blade along x = east-west street, blade along z = north-south street. */
-const NS_NAMES={'0':'Andrea Ave','-93':'Patrick St','93':'Cedar St','-160':'Mission Ave','160':'Willow St'},EW_NAMES={'128':'East 15th St','62':'Billie St','-4':'Maple Ave','-72':'Harbor Blvd'};
+const NS_NAMES={'0':'Andrea Mariano Ave','-93':'Patrick St','93':'Cedar St','-160':'Mission Ave','160':'Willow St'},EW_NAMES={'128':'East 15th St','62':'Billie St','-4':'Maple Ave','-72':'Harbor Blvd'};
 const STREET_LIST=[...Object.values(NS_NAMES),...Object.values(EW_NAMES)],SN_ROW=64,SN_W=512;
 const SN_TEX=(()=>{const c=document.createElement('canvas');c.width=SN_W;c.height=SN_ROW*STREET_LIST.length;const g=c.getContext('2d');
   STREET_LIST.forEach((n,i)=>{const y=i*SN_ROW;g.fillStyle='#1f6b3a';g.fillRect(0,y,SN_W,SN_ROW);g.strokeStyle='#f4f4ee';g.lineWidth=4;g.strokeRect(5,y+5,SN_W-10,SN_ROW-10);
