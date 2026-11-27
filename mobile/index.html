@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0040</div>
+<div id="buildTag">BUILD 1127-0044</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1631,7 +1631,7 @@ ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
 const sky=new THREE.Group();scene.add(sky);
 if(DUSK){const dome=new THREE.Mesh(new THREE.SphereGeometry(560,32,20),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
   vertexShader:'varying vec3 vP;void main(){vP=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:'varying vec3 vP;void main(){float h=vP.y;vec3 top=vec3(.15,.075,.06),hor=mix(vec3(1.,.94,.66),top,.4),mid=mix(vec3(1.,.56,.2),top,.4);   /* yellow + orange 40% more see-through; orange reaches higher and the blue is warmer (user 2026-11-27, top was .02,.035,.13, blend .1-.42) */   /* light yellow -> lighter orange (was 1,.74,.3 / .72,.27,.05) -> darker dark blue starry sky (user 2026-11-27: purple removed, blue darker; was .05,.08,.25) */float s=max(0.,dot(normalize(vec3(-.75,0.,-.66)),normalize(vec3(vP.x,0.,vP.z)+1e-4)));vec3 c=h<.22?mix(hor,mid,smoothstep(-.04,.22,h)):mix(mid,top,smoothstep(.22,.78,h));c+=vec3(1.,.62,.18)*pow(s,8.)*smoothstep(.45,0.,h)*.36;gl_FragColor=vec4(c,1.);}'}));
+  fragmentShader:'varying vec3 vP;void main(){float h=vP.y;vec3 hor=vec3(1.,.8,.38),org=vec3(.86,.4,.1),blu=vec3(.06,.11,.29),top=vec3(.008,.012,.035);   /* like the user reference photo (2026-11-27): thin dusk-yellow horizon -> orange -> deep blue -> near black overhead */float s=max(0.,dot(normalize(vec3(-.75,0.,-.66)),normalize(vec3(vP.x,0.,vP.z)+1e-4)));vec3 c=h<.05?mix(hor,org,smoothstep(-.04,.05,h)):h<.2?mix(org,blu,smoothstep(.05,.2,h)):mix(blu,top,smoothstep(.2,.65,h));c+=vec3(1.,.62,.18)*pow(s,8.)*smoothstep(.12,0.,h)*.5;gl_FragColor=vec4(c,1.);}'}));
   dome.renderOrder=-10;dome.frustumCulled=false;sky.add(dome);sky.scale.setScalar(.7);}   /* fits inside the dusk view distance (420) */   /* dusk sky: orange horizon -> violet -> deep blue */
 const starMat=new THREE.ShaderMaterial({uniforms:{uTime:{value:0},uPR:{value:renderer.getPixelRatio()}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false,
   vertexShader:`attribute float aPhase;attribute float aSize;uniform float uTime;uniform float uPR;varying float vA;
@@ -4190,7 +4190,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0040'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0044'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
