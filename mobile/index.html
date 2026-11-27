@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1344</div>
+<div id="buildTag">BUILD 1127-1402</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1081,7 +1081,7 @@ function labStairs(s){const X=s*LS_X,W=1.6,ST=0x2a2d33,TR=0x4a4f57,YL=0xd9a21b,R
 const LAB_DOORS=[-45,-25,25,45];
 function buildLabCrew(){const N=38,crew=[];
   const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;scene.add(m);return m;};
-  const torso=mk([...torsoItems(0xf2f4f6,0x2b2f36,0xb8c0c8),{geo:rboxL(.47,.52,.29,.07),col:0xeef0f2,m:_pm(0,.78,0)},{geo:UBOX,col:0x1e3a2a,m:_ps(0,1.32,.136,.07,.3,.01)},{geo:UBOX,col:0xd8dde2,m:_ps(.13,1.38,.137,.09,.12,.01)}],N);
+  const torso=mk([...torsoItems(0xf2f4f6,0xf2f4f6,0xf2f4f6),...coatItems()],N);   /* long flowing lab coat (user 2026-11-27) */
   const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),...goggleItems(.06,1.8,.13,1),{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.108,.12,.32))}   /* snug head strap (was 2x the head size, user 2026-11-27) */],N);
   const legs=mk(thighItems(0x2a2d33),N*2),shins=mk(shinItems(0x2a2d33,0x141414),N*2),arms=mk(upperItems(0xf2f4f6),N*2),fores=mk(foreItems(0xf2f4f6),N*2),hands=mk([{geo:USPH,col:0xffffff,m:_ps(0,-.35,.02,.075,.1,.065)}],N*2);
   const SK=[0xf0c8a0,0xe0b088,0xc89870,0xf4d2b4];const c=new THREE.Color();
@@ -1437,13 +1437,27 @@ function labLogoTex(){return signTex((g,W,H)=>{g.clearRect(0,0,W,H);const C=W/2;
   g.lineWidth=10;g.beginPath();g.arc(C,C,120,0,7);g.stroke();g.beginPath();g.moveTo(C-150,C);for(let x=-150;x<=150;x+=10)g.lineTo(C+x,C+Math.sin(x/16)*(40-Math.abs(x)/5));g.stroke();
   g.beginPath();g.arc(C,C,26,0,7);g.fill();},512,512);}
 /* scientist (bald, white lab coat, goggles), facing +z, feet at y 0 */
-function tScientist(x,y,z,ry,s=1){tFrame(x,y,z,ry,()=>{const CO=0xe8ecef,SK=0xd8b89a;
-  tBox('lab',0x2b2f36,.44*s,.9*s,.26*s,0,.45*s,0);tBox('lab',CO,.62*s,.95*s,.36*s,0,1.35*s,0);tBox('lab',CO,.66*s,.5*s,.4*s,0,.95*s,0);
-  tBox('lab',0x1e3a2a,.12*s,.3*s,.02*s,0,1.55*s,.19*s);   /* tie */
-  for(const sd of[-1,1])tBox('lab',CO,.15*s,.75*s,.17*s,sd*.38*s,1.35*s,.06*s,0,-.25,0);
-  tAdd('lab',USPH,SK,0,2.02*s,0,0,0,0,.42*s,.48*s,.42*s);
-  tAdd('lab',torusG(1,.09,28),0x101214,0,2.06*s,0,Math.PI/2,0,0,.218*s,.218*s,.5*s);   /* head strap hugging the head (user 2026-11-27) */
-  for(const g of goggleItems(.114*s,2.06*s,.22*s,1.9*s))TB.lab.push({geo:g.geo,col:g.col,m:TF.clone().multiply(g.m)});});}
+/* long flowing lab coat (user 2026-11-27, styled on the user's reference photos): flared knee-length skirt with drape folds and hem,
+   closed front seam + 4 buttons, notched lapels in a V showing shirt + tie, collar, chest pocket, two lower pockets */
+let _COAT=null;
+function coatGeos(){if(_COAT)return _COAT;const sk=[[.214,.26],[.222,.18],[.236,.06],[.25,-.06],[.264,-.17],[.278,-.25],[.282,-.27]].map(([r,y])=>new THREE.Vector2(r,y)).reverse();
+  const skirt=new THREE.LatheGeometry(sk,20);const p=skirt.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),a=Math.atan2(z,x),u=(.26-y)/.53;const f=1+.045*u*Math.sin(a*7+.6)+.02*u*Math.sin(a*13);p.setXYZ(i,x*f,y,z*f*.72);}   /* drape folds growing toward the hem */
+  skirt.computeVertexNormals();const hem=new THREE.TorusGeometry(1,.06,6,28);hem.rotateX(Math.PI/2);_COAT={skirt,hem};return _COAT;}
+function coatItems(CO=0xf2f4f6,TIE=0x1e3a2a){const G=coatGeos(),SH=0xdfe7ef,LP=0xe6eaee,PK=0xdfe3e8,BT=0xcfd5db;
+  const it=[{geo:G.skirt,col:CO,m:_pm(0,.76,0)},{geo:G.hem,col:LP,m:_pm(0,.495,0).multiply(_ps(0,0,0,.282,.06,.203))},
+    {geo:UBOX,col:SH,m:_ps(0,1.42,.122,.09,.2,.01)},{geo:UBOX,col:TIE,m:_ps(0,1.36,.13,.05,.26,.008)},                       /* shirt V + tie */
+    {geo:UBOX,col:LP,m:_pm(-.075,1.4,.128,0,0,-.38).multiply(_ps(0,0,0,.075,.3,.018))},{geo:UBOX,col:LP,m:_pm(.075,1.4,.128,0,0,.38).multiply(_ps(0,0,0,.075,.3,.018))},   /* lapels */
+    {geo:torusG(1,.25,16),col:LP,m:_pm(0,1.555,-.01,Math.PI/2).multiply(_ps(0,0,0,.095,.075,.12))},                         /* collar */
+    {geo:UBOX,col:0xd6dce2,m:_pm(0,.75,.181,-.094,0,0).multiply(_ps(0,0,0,.008,.52,.006))}];             /* front seam down the coat */
+  for(let i=0;i<4;i++){const y=1.22-i*.17;it.push({geo:USPH,col:BT,m:_ps(.022,y,y>.95?.128:.15+(1-y)*.1,.022,.022,.012)});}   /* buttons */
+  it.push({geo:UBOX,col:PK,m:_pm(.13,1.38,.121,0,.45,0).multiply(_ps(0,0,0,.09,.11,.008))},{geo:UBOX,col:0x2a5a9a,m:_pm(.11,1.44,.126,0,.4,0).multiply(_ps(0,0,0,.012,.05,.008))});   /* chest pocket + pen */
+  for(const sx of[-1,1])it.push({geo:UBOX,col:PK,m:_pm(sx*.14,.8,.146,-.12,sx*.55,0).multiply(_ps(0,0,0,.11,.13,.008))},{geo:UBOX,col:0xd0d6dc,m:_pm(sx*.14,.86,.142,-.12,sx*.55,0).multiply(_ps(0,0,0,.11,.012,.01))});   /* lower pockets */
+  return it;}
+function tScientist(x,y,z,ry,s=1){tFrame(x,y,z,ry,()=>{const S=1.14*s,SK=0xd8b89a,CO=0xe8ecef,PA=0x2b2f36;   /* rebuilt from the same parts as the walking crew (user 2026-11-27) */
+  const items=[...torsoItems(CO,CO,CO),...coatItems(CO),...headItems(SK,0x1c140f,0x0e0e0e,[]),{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.108,.12,.32))},...goggleItems(.06,1.8,.13,1)];
+  for(const sd of[-1,1]){const H=_pm(sd*.1,.92,0);for(const a of legItems(PA,0x141414))items.push({geo:a.geo,col:a.col,m:H.clone().multiply(a.m)});
+    const A=_pm(sd*.29,1.47,0,-.12,0,sd*.12);for(const a of armItems(CO))items.push({geo:a.geo,col:a.col,m:A.clone().multiply(a.m)});items.push({geo:USPH,col:SK,m:A.clone().multiply(_ps(0,-.66,.03,.075,.09,.075))});}
+  const Sm=_ps(0,0,0,S,S,S);for(const g of items)TB.lab.push({geo:g.geo,col:g.col,m:TF.clone().multiply(Sm).multiply(g.m)});});}
 /* rivet bolts on the boss's steel piping (user 2026-11-27, like the riveted plates on the mech): rings of low-poly dome bolts + a darker seam band */
 const BOLT_G=new THREE.SphereGeometry(.5,6,4);
 function boltRingY(bin,x,y,z,r,n,bs){for(let k=0;k<n;k++){const a=k/n*Math.PI*2;tAdd(bin,BOLT_G,0xdfe3e8,x+Math.cos(a)*r,y,z+Math.sin(a)*r,0,0,0,bs,bs,bs);}tAdd(bin,torusG(r-.01,.025,24),0x8a9098,x,y-.06,z,Math.PI/2);}
@@ -4622,7 +4636,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1344'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1402'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
