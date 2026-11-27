@@ -573,10 +573,11 @@ function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=HALF_X+40,H=H
   for(const o of OUTPOST_POS)R(o.x-11,o.z-11,o.x+11,o.z+11,'#3a3d44');
   /* lane markings */
   const inInter=(x,z)=>DUSK_NS.some(s=>Math.abs(x-s.x)<s.w/2)&&DUSK_EW.some(e=>Math.abs(z-e.z)<e.w/2);
-  for(const s of DUSK_NS){for(let z=TOWN_Z0+1;z<H;z+=1){if(inInter(s.x,z))continue;
+  const nearXwZ=z=>DUSK_EW.some(e=>Math.abs(z-e.z)<e.w/2+2.9),nearXwX=x=>DUSK_NS.some(s=>Math.abs(x-s.x)<s.w/2+2.9);   /* centre lines stop short of the crosswalks (user 2026-11-27) */
+  for(const s of DUSK_NS){for(let z=TOWN_Z0+1;z<H;z+=1){if(inInter(s.x,z)||nearXwZ(z)||nearXwZ(z+1))continue;
       if(s.x===0){R(-.45,z,-.15,z+1,'#d9a21b');R(.15,z,.45,z+1,'#d9a21b');}else if(Math.floor(z/3)%2===0)R(s.x-.15,z,s.x+.15,z+1.6,'#cfcfc8');}
     for(const sd of[-1,1])R(s.x+sd*(s.w/2-.5)-.1,TOWN_Z0,s.x+sd*(s.w/2-.5)+.1,H,'#bdbdb6');}
-  for(const e of DUSK_EW){for(let x=-W;x<W;x+=1){if(inInter(x,e.z))continue;if(Math.floor(x/3)%2===0)R(x,e.z-.15,x+1.6,e.z+.15,'#cfcfc8');}
+  for(const e of DUSK_EW){for(let x=-W;x<W;x+=1){if(inInter(x,e.z)||nearXwX(x)||nearXwX(x+1.6))continue;if(Math.floor(x/3)%2===0)R(x,e.z-.15,x+1.6,e.z+.15,'#cfcfc8');}
     for(const sd of[-1,1])R(-W,e.z+sd*(e.w/2-.5)-.1,W,e.z+sd*(e.w/2-.5)+.1,'#bdbdb6');}
   /* crosswalks + stop lines at every intersection */
   for(const s of DUSK_NS)for(const e of DUSK_EW){
