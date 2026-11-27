@@ -555,7 +555,7 @@ function vehBuild(kind,emit,crushed,rnd=Math.random){const {L,W}=VDIM[kind],GL=c
   const tilt=crushed?(rnd()-.5)*.12:0,C=crushed?new THREE.Matrix4().makeTranslation(0,.06,0).multiply(new THREE.Matrix4().makeRotationZ(tilt)).multiply(new THREE.Matrix4().makeScale(1.04,.46,1.02)):null;
   const add=(part,geo,col,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1,tag)=>{if(crushed&&tag==='wheel'){rz+=Math.sign(x)*.45;x*=1.08;y*=.9;}
     let m=new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(sx,sy,sz));if(C&&tag!=='wheel')m=C.clone().multiply(m);emit(part,crushed&&part==='paint'?segBox(geo):geo,col,m);};
-  const glass=(geo,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{add('trim',geo,GL,x,y,z,rx,ry,rz,sx,sy,sz);
+  const glass=(geo,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{add(crushed?'trim':'glass',geo,GL,x,y,z,rx,ry,rz,sx,sy,sz);
     if(crushed)for(let i=0;i<3;i++)add('trim',UBOX,0xeaf6ff,x+(rnd()-.5)*.6,y+.05,z+(rnd()-.5)*.6,rnd()*1.2,rnd()*3,rnd()*1.2,.18,.02,.14);};   /* shattered: white crazed glass + shards */
   const hw=W/2,tz=L/2-(kind===1?1.05:.95),wr=kind===1?.4:.35;
   for(const sx of[-1,1])for(const sz of[-1,1]){const x=sx*(hw-.13),z=sz*tz;add('trim',cylG(wr,wr,.26,18),TI,x,wr,z,0,0,Math.PI/2,1,1,1,'wheel');add('trim',cylG(wr*.6,wr*.6,.27,12),RIM,x,wr,z,0,0,Math.PI/2,1,1,1,'wheel');
@@ -582,20 +582,22 @@ function vehBuild(kind,emit,crushed,rnd=Math.random){const {L,W}=VDIM[kind],GL=c
     add('trim',UBOX,DK,-hx+.02,.8,hz-dl/2,0,0,0,.03,.5,dl*.95);add('paint',UBOX,0xffffff,-(hw+1.15),.05,hz-.9,0,.45,0,.62,.06,dl);}}
 function tVehicle(kind,col){vehBuild(kind,(part,geo,c,m)=>{TB[part==='paint'?'metal':'metal'].push({geo,col:part==='paint'?col:c,m:TF.clone().multiply(m)});},false);}
 /* parked cars: instanced per kind and state, so stepping on one swaps it to the crushed model (shattered windows) */
-const CAR_MAT={paint:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.3,metalness:.55}),trim:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.45,metalness:.3})};
+const CAR_MAT={glass:new THREE.MeshStandardMaterial({color:0x050607,roughness:.12,metalness:.35,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),   /* black tinted windows like the vans (user 2026-11-27); offset so the paint never shows through */
+  paint:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.3,metalness:.55}),trim:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.45,metalness:.3})};
 const CAR_SETS=[],_Z0=new THREE.Matrix4().makeScale(0,0,0);
 function buildCars(){const L=duskLayout(),c=new THREE.Color(),T=60;   /* one instanced set per car kind per 60-unit map tile, so off-screen cars are skipped (lag fix 2026-11-26) */
   for(let k=0;k<3;k++){const all=L.cars.filter(v=>v.kind===k);if(!all.length)continue;const geo={};
-    for(const st of['ok','crush']){const it={paint:[],trim:[]};let s2=1234+k;const rr=()=>(s2=(s2*16807)%2147483647)/2147483647;vehBuild(k,(part,g,col,m)=>it[part].push({geo:g,col,m}),st==='crush',rr);geo[st+'paint']=st==='crush'?crumple(mergeColored(it.paint),VDIM[k].L,k):mergeColored(it.paint);geo[st+'trim']=mergeColored(it.trim);}
+    for(const st of['ok','crush']){const it={paint:[],trim:[],glass:[]};let s2=1234+k;const rr=()=>(s2=(s2*16807)%2147483647)/2147483647;vehBuild(k,(part,g,col,m)=>it[part].push({geo:g,col,m}),st==='crush',rr);geo[st+'paint']=st==='crush'?crumple(mergeColored(it.paint),VDIM[k].L,k):mergeColored(it.paint);geo[st+'trim']=mergeColored(it.trim);if(st==='ok')geo.okglass=mergeColored(it.glass);}
     const tiles=new Map();for(const v of all){const key=Math.floor(v.x/T)+','+Math.floor(v.z/T);let l=tiles.get(key);if(!l)tiles.set(key,l=[]);l.push(v);}
     for(const list of tiles.values()){const set={k,list,m:{}};
       for(const st of['ok','crush'])for(const part of['paint','trim']){const im=new THREE.InstancedMesh(geo[st+part],CAR_MAT[part],list.length);im.castShadow=true;im.receiveShadow=true;im.userData.noAir=true;scene.add(im);set.m[st+part]=im;}
+      {const im=new THREE.InstancedMesh(geo.okglass,CAR_MAT.glass,list.length);im.castShadow=false;im.receiveShadow=true;im.userData.noAir=true;scene.add(im);set.m.okglass=im;}
       list.forEach((v,i)=>{v.set=set;v.i=i;v.mat=new THREE.Matrix4().compose(new THREE.Vector3(v.x,0,v.z),new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),v.ry),new THREE.Vector3(1,1,1));
-        set.m.okpaint.setMatrixAt(i,v.mat);set.m.oktrim.setMatrixAt(i,v.mat);c.setHex(v.col);set.m.okpaint.setColorAt(i,c);
+        set.m.okpaint.setMatrixAt(i,v.mat);set.m.oktrim.setMatrixAt(i,v.mat);set.m.okglass.setMatrixAt(i,v.mat);c.setHex(v.col);set.m.okpaint.setColorAt(i,c);
         const along=Math.abs(Math.sin(v.ry))<.5,D=VDIM[k];addBlock(v.x,v.z,along?D.W+.2:D.L+.2,along?D.L+.2:D.W+.2,k===2?2.1:1.7);v.block=buildings[buildings.length-1];});
-      set.m.okpaint.computeBoundingSphere();set.m.oktrim.computeBoundingSphere();set.m.crushpaint.count=set.m.crushtrim.count=0;set.nc=0;CAR_SETS.push(set);}}}
+      set.m.okpaint.computeBoundingSphere();set.m.oktrim.computeBoundingSphere();set.m.okglass.computeBoundingSphere();set.m.crushpaint.count=set.m.crushtrim.count=0;set.nc=0;CAR_SETS.push(set);}}}
 function smashCar(v){v.smashed=true;const S=v.set,tilt=new THREE.Matrix4().makeRotationY((Math.random()-.5)*.25);
-  S.m.okpaint.setMatrixAt(v.i,_Z0);S.m.oktrim.setMatrixAt(v.i,_Z0);const m=v.mat.clone().multiply(tilt),j=S.nc++;S.m.crushpaint.setMatrixAt(j,m);S.m.crushtrim.setMatrixAt(j,m);S.m.crushpaint.setColorAt(j,new THREE.Color(v.col));S.m.crushpaint.instanceColor.needsUpdate=true;S.m.crushpaint.count=S.m.crushtrim.count=S.nc;S.m.crushpaint.computeBoundingSphere();S.m.crushtrim.computeBoundingSphere();
+  S.m.okpaint.setMatrixAt(v.i,_Z0);S.m.oktrim.setMatrixAt(v.i,_Z0);S.m.okglass.setMatrixAt(v.i,_Z0);const m=v.mat.clone().multiply(tilt),j=S.nc++;S.m.crushpaint.setMatrixAt(j,m);S.m.crushtrim.setMatrixAt(j,m);S.m.crushpaint.setColorAt(j,new THREE.Color(v.col));S.m.crushpaint.instanceColor.needsUpdate=true;S.m.crushpaint.count=S.m.crushtrim.count=S.nc;S.m.crushpaint.computeBoundingSphere();S.m.crushtrim.computeBoundingSphere();
   for(const k in S.m)S.m[k].instanceMatrix.needsUpdate=true;v.block.h=.55;   /* the mech can walk over the wreck */
   for(let i=0;i<14;i++)puff(_c.set(v.x+rand(-1,1),rand(.6,1.4),v.z+rand(-1,1)),Math.random()<.5?0xeaf6ff:0x9fdcff,rand(.12,.25),.1,rand(.4,.8),rand(-6,6),rand(2,6),rand(-6,6));
   dustBurst(v.x,0,v.z,.6);sfx('hit',_c.set(v.x,1,v.z),2);playBoom(_c,2.5)||sfx('boom',_c,.3);camShake=Math.max(camShake,.25);}
