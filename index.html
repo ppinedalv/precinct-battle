@@ -1054,14 +1054,16 @@ function updatePedGroup(D,dt){const {peds,torso,head,legs,shins,arms,fores,hands
   for(const m of[torso,head,legs,shins,arms,fores,hands])m.instanceMatrix.needsUpdate=true;}
 /* armed thugs (merged per variant) */
 function thugGeos(role,vi){const k=role+vi;if(_THG[k])return _THG[k];
-  const SHIRT=[0x2a2c30,0x6a1c1c,0x22365a,0x3d4a2a,0x5a4a32][vi],PANTS=[0x1e2a3c,0x2a2a2a,0x3a3328,0x232326,0x2c3440][vi],SKIN=[0xc89870,0x8a5a3a,0xf0c8a0,0x5a3a26,0xb07a50][vi],GUN=0x0d0d0f,DK=0x141416;
+  const MO=role==='molotov',SHIRT=MO?0x18181b:[0x2a2c30,0x6a1c1c,0x22365a,0x3d4a2a,0x5a4a32][vi],PANTS=MO?0x111113:[0x1e2a3c,0x2a2a2a,0x3a3328,0x232326,0x2c3440][vi],SKIN=[0xc89870,0x8a5a3a,0xf0c8a0,0x5a3a26,0xb07a50][vi],HAND=MO?0x0e0e10:SKIN,GUN=0x0d0d0f,DK=0x141416;   /* Molotov throwers: all black hoodie, pants, gloves, ski-mask (user 2026-11-27) */
   const cap=role==='guard'?[{geo:USPH,col:0x22262c,m:_ps(0,1.86,0,.235,.17,.25)},{geo:UBOX,col:0x22262c,m:_ps(0,1.84,.02,.48,.03,.5)}]
     :role==='gun'?[{geo:USPH,col:DK,m:_ps(0,1.84,-.01,.215,.15,.235)},{geo:UBOX,col:DK,m:_ps(0,1.835,.17,.2,.025,.16)}]
-    :[{geo:USPH,col:0x3a3a3a,m:_ps(0,1.85,-.01,.22,.18,.24)},{geo:UBOX,col:0x8a1414,m:_ps(0,1.71,.1,.21,.1,.05)}];
+    :[{geo:USPH,col:0x141416,m:_ps(0,1.79,-.05,.27,.31,.29)},{geo:torusG(1,.18,20),col:0x1c1c1f,m:_pm(0,1.79,.085,0,0,0).multiply(_ps(0,0,0,.112,.13,.12))},   /* black hood + its front rim */
+      {geo:USPH,col:0x0b0b0c,m:_ps(0,1.715,.025,.215,.14,.24)},{geo:USPH,col:0x0b0b0c,m:_ps(0,1.875,.0,.215,.1,.225)}];   /* black face mask below the eyes + over the brow: only an eye slit shows */
   const b=[...torsoItems(SHIRT,PANTS,DK),...headItems(SKIN,0x1c140f,0x0c0c0c,cap),{geo:rboxL(.3,.13,.12,.04),col:SHIRT,m:_pm(0,1.58,-.13)},{geo:UBOX,col:DK,m:_ps(0,1.13,.142,.28,.11,.012)}];
+  if(MO)b.push({geo:UBOX,col:0x222226,m:_ps(0,1.2,.15,.3,.14,.014)},{geo:UBOX,col:0x2c2c31,m:_ps(-.04,1.5,.152,.012,.16,.01)},{geo:UBOX,col:0x2c2c31,m:_ps(.04,1.5,.152,.012,.16,.01)},{geo:cylG(.072,.078,.16,10),col:0x0b0b0c,m:_pm(0,1.6,0)});   /* hoodie pocket + drawstrings + black neck gaiter */
   if(role==='guard')b.push({geo:rboxL(.48,.42,.31,.06),col:0x2b3138,m:_pm(0,1.31,0)},{geo:UBOX,col:0x3a424c,m:_ps(.12,1.22,.16,.1,.12,.05)},{geo:UBOX,col:0x3a424c,m:_ps(-.12,1.22,.16,.1,.12,.05)});
   const base=b.slice();   /* corpse pose (user 2026-11-26) reuses the torso/head/vest without the posed arms + gun */
-  if(role==='molotov'){const S0=_pm(-.29,1.47,0,-.25,0,.08),E0=S0.clone().multiply(_pm(0,-.31,0,-.9,0,0));for(const a of upperItems(SHIRT))b.push({geo:a.geo,col:a.col,m:S0.clone().multiply(a.m)});for(const a of foreItems(SHIRT))b.push({geo:a.geo,col:a.col,m:E0.clone().multiply(a.m)});b.push({geo:USPH,col:SKIN,m:E0.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});}
+  if(role==='molotov'){const S0=_pm(-.29,1.47,0,-.25,0,.08),E0=S0.clone().multiply(_pm(0,-.31,0,-.9,0,0));for(const a of upperItems(SHIRT))b.push({geo:a.geo,col:a.col,m:S0.clone().multiply(a.m)});for(const a of foreItems(SHIRT))b.push({geo:a.geo,col:a.col,m:E0.clone().multiply(a.m)});b.push({geo:USPH,col:HAND,m:E0.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});}
   else{const L=role==='guard'?.75:.5;
     for(const [s,ux,uz,fx,fz,hz] of[[1,.25,.12,.15,.36,.5],[-1,-.25,.16,-.12,.44,.62]]){b.push({geo:rboxL(.13,.33,.14,.05),col:SHIRT,m:_pm(ux,1.37,uz,-1.05,0,s*.15)},{geo:rboxL(.11,.31,.12,.045),col:SHIRT,m:_pm(fx,1.4,fz,-1.5,s*.35,0)},{geo:USPH,col:SKIN,m:_ps(s*.03,1.42,hz,.075,.09,.075)});}
     b.push({geo:UBOX,col:GUN,m:_ps(0,1.45,.5+L/2-.2,.075,.12,L)},{geo:UCYL,col:GUN,m:_pm(0,1.47,.5+L-.12,Math.PI/2).multiply(_ps(0,0,0,.04,.35,.04))},{geo:UBOX,col:GUN,m:_ps(0,1.33,.55,.055,.2,.09)});
@@ -1069,7 +1071,7 @@ function thugGeos(role,vi){const k=role+vi;if(_THG[k])return _THG[k];
   const g={body:mergeColored(b),leg:mergeColored(thighItems(PANTS)),shin:mergeColored(shinItems(PANTS,0x1a1a1a))};
   {const c=base.slice();   /* dead: flat on the back, arms and legs spread out, weapon lying on the ground beside the right hand */
     for(const s of[-1,1]){const S=_pm(s*.29,1.47,0,0,0,s*(1.95+.15*s)),E=S.clone().multiply(_pm(0,-.31,0,0,0,s*.45));
-      for(const a of upperItems(SHIRT))c.push({geo:a.geo,col:a.col,m:S.clone().multiply(a.m)});for(const a of foreItems(SHIRT))c.push({geo:a.geo,col:a.col,m:E.clone().multiply(a.m)});c.push({geo:USPH,col:SKIN,m:E.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});
+      for(const a of upperItems(SHIRT))c.push({geo:a.geo,col:a.col,m:S.clone().multiply(a.m)});for(const a of foreItems(SHIRT))c.push({geo:a.geo,col:a.col,m:E.clone().multiply(a.m)});c.push({geo:USPH,col:HAND,m:E.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});
       const H=_pm(s*.1,.92,0,0,0,s*.38),K=H.clone().multiply(_pm(0,-.46,0,.12,0,-s*.1));
       for(const a of thighItems(PANTS))c.push({geo:a.geo,col:a.col,m:H.clone().multiply(a.m)});for(const a of shinItems(PANTS,0x1a1a1a))c.push({geo:a.geo,col:a.col,m:K.clone().multiply(a.m)});}
     if(role!=='molotov'){const L=role==='guard'?.75:.5,G0=_pm(1.35,1.75,-.12,0,0,-.5);   /* rifle / pistol on the ground */
@@ -1077,7 +1079,7 @@ function thugGeos(role,vi){const k=role+vi;if(_THG[k])return _THG[k];
       if(role==='guard')c.push({geo:UBOX,col:GUN,m:G0.clone().multiply(_ps(0,-L/2-.12,0,.11,.28,.065))});}
     else for(const it of molotovItems(-.25))c.push({geo:it.geo,col:it.col,m:_pm(1.2,1.9,-.02,0,0,1.2).multiply(it.m)});   /* dropped bottle */
     g.corpse=mergeColored(c);}
-  if(role==='molotov'){g.arm=mergeColored(upperItems(SHIRT));g.fore=mergeColored([...foreItems(SHIRT),{geo:USPH,col:SKIN,m:_ps(0,-.35,.02,.075,.1,.065)},...molotovItems(-.62).map(it=>({geo:it.geo,col:it.col,m:new THREE.Matrix4().makeTranslation(0,0,.05).multiply(it.m)}))]);}
+  if(role==='molotov'){g.arm=mergeColored(upperItems(SHIRT));g.fore=mergeColored([...foreItems(SHIRT),{geo:USPH,col:HAND,m:_ps(0,-.35,.02,.075,.1,.065)},...molotovItems(-.62).map(it=>({geo:it.geo,col:it.col,m:new THREE.Matrix4().makeTranslation(0,0,.05).multiply(it.m)}))]);}
   return (_THG[k]=g);}
 const CORPSES=[];
 function thugDown(e,team){if(e.G&&e.G.corpse){for(const ch of e.mesh.children)ch.visible=false;const cm=new THREE.Mesh(e.G.corpse,THUG_MAT);cm.castShadow=true;e.mesh.add(cm);e.mesh.rotation.y+=rand(-.4,.4);}CORPSES.push({g:e.mesh,t:0,y:e.mesh.position.y});bloodUnder(e.mesh.position.x,e.mesh.position.y,e.mesh.position.z,e.mesh.rotation.y,rand(1.8,2.6));if(e.flame)e.flame.visible=false;for(const l of e.legs){l.rotation.x=0;l.children[0].rotation.x=.15;}if(e.arm)e.arm.rotation.x=0;if(e.fore)e.fore.rotation.x=-.15;
