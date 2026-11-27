@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0958</div>
+<div id="buildTag">BUILD 1127-1003</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1768,7 +1768,8 @@ function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStar
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
     v.next=t+dur+rand(.15,1.6-CROWD.lvl);}}
-function updateDusk(dt,t){updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
+function updateDusk(dt,t){if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
+  updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
   for(const p of['A','B'])for(const c of['r','y','g'])st(p,c);
   for(const n of DUSK_DYN.neon){if(n.off>0){n.off-=dt;n.m.opacity=.15;continue;}if(Math.random()<.004)n.off=rand(.05,.25);n.m.opacity=.9+.1*Math.sin(t*9+n.ph);}
@@ -2548,11 +2549,14 @@ if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAi
   const disc=new THREE.Mesh(new THREE.CircleGeometry(5.8,48),new THREE.MeshBasicMaterial({color:0xf2b51d,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false}));disc.rotation.x=-Math.PI/2;disc.position.y=.36;g.add(disc);
   for(let i=0;i<3;i++){const r2=new THREE.Mesh(new THREE.TorusGeometry(2+i*1.2,.05,4,48),new THREE.MeshBasicMaterial({color:0xffd86a}));r2.rotation.x=Math.PI/2;r2.position.y=.37;g.add(r2);}
   const t=new THREE.Mesh(new THREE.PlaneGeometry(4.6,1.15),stencilLetters('AMMO','#f2b51d',800));t.rotation.x=-Math.PI/2;t.rotation.z=Math.PI;t.position.set(0,.38,-3.6);g.add(t);
-  const pm=new THREE.MeshStandardMaterial({color:0x3a3d42,metalness:.7,roughness:.4}),lm=new THREE.MeshBasicMaterial({color:0xffb02e}),cm=new THREE.MeshStandardMaterial({color:0x3d4a2a,roughness:.7});
+  const beacons=[],pm=new THREE.MeshStandardMaterial({color:0x3a3d42,metalness:.7,roughness:.4}),lm=new THREE.MeshBasicMaterial({color:0xffb02e}),cm=new THREE.MeshStandardMaterial({color:0x3d4a2a,roughness:.7});
   for(let i=0;i<6;i++){const a=i/6*Math.PI*2+Math.PI/6,x=Math.sin(a)*7.6,z=Math.cos(a)*7.6,post=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,2.4,8),pm);post.position.set(x,1.2,z);post.castShadow=true;g.add(post);
-    const l=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),lm);l.position.set(x,2.5,z);g.add(l);DUSK_GLOWS.push([DUSK_PAD_POS.x+x,2.5,DUSK_PAD_POS.z+z,0xffb02e,3]);}
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.12,12),pm);base.position.set(x,2.45,z);g.add(base);   /* red slow-flashing beacon on each post (user 2026-11-27, was a yellow ball) */
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(.2,14,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0xff2a1a}));lens.position.set(x,2.5,z);lens.scale.y=1.3;g.add(lens);
+    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff2a1a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));halo.position.set(x,2.65,z);halo.scale.setScalar(2.6);halo.userData.noAir=true;g.add(halo);
+    beacons.push({lens,halo,ph:i*.18});}
   for(const [x,z] of[[-8.6,-2],[8.6,-2],[-8.6,2],[8.6,2]]){for(let k=0;k<2;k++){const c=new THREE.Mesh(new THREE.BoxGeometry(1.6,.8,1),cm);c.position.set(x,.4+k*.8,z);c.rotation.y=k*.2;c.castShadow=true;g.add(c);}}   /* ammo crates */
-  DUSK_PAD={ring,disc};}
+  DUSK_PAD={ring,disc,beacons};}
 // ---------------- HQ wall buttons + laser hover bots (added 2026-11-22)
 // One glowing gold button on the outer wall of each HQ side block (2 per HQ). A mech touching its OWN HQ's button
 // deploys one laser hover bot for its team: it rises out of that team's tank tunnel, flies to the enemy HQ and
@@ -4374,7 +4378,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0958'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1003'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
