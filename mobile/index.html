@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1057</div>
+<div id="buildTag">BUILD 1127-1103</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1703,15 +1703,15 @@ function lightningPath(a,b,jag){const L=a.distanceTo(b),n=Math.max(6,Math.min(18
 function lightningMesh(pts,r,mat){const path=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)path.add(new THREE.LineCurve3(pts[i],pts[i+1]));
   return new THREE.Mesh(new THREE.TubeGeometry(path,pts.length*2,r,5,false),mat);}
 function lightningStrike(from,to,life=.38,thin=1){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning (user 2026-11-27 reference): white-blue core, deep blue glow, many fine forks */
-  const core=softBeamMat(0xcfe6ff,1),glow=softBeamMat(0x2a6bff,.8),haze=softBeamMat(0x0b2cff,.32);core.fog=glow.fog=haze.fog=false;   /* soft blurry edges, no hard rim (user 2026-11-27) */
-  const pts=lightningPath(from,to,1);g.add(lightningMesh(pts,.2*thin,core),lightningMesh(pts,.6*thin,glow));if(thin>=1)g.add(lightningMesh(pts,1.6,haze));
-  if(thin>=1){const fork=(o,dir,len,r,depth)=>{const end=o.clone().addScaledVector(dir,len).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(len*.45));
-      const bp=lightningPath(o,end,1.5);g.add(lightningMesh(bp,r*1.6,core),lightningMesh(bp,r*4,glow));
+  const core=softBeamMat(0xcfe6ff,1),glow=softBeamMat(0x2a6bff,.8),haze=softBeamMat(0x0b2cff,.2);core.fog=glow.fog=haze.fog=false;   /* soft blurry edges, no hard rim (user 2026-11-27) */
+  const pts=lightningPath(from,to,thin>=1?.45:1);g.add(lightningMesh(pts,(thin>=1?.11:.2)*thin,core),lightningMesh(pts,(thin>=1?.3:.6)*thin,glow));if(thin>=1)g.add(lightningMesh(pts,.75,haze));   /* thinner, straighter main bolt (user 2026-11-27) */
+  if(thin>=1){const fork=(o,dir,len,r,depth)=>{const end=o.clone().addScaledVector(dir,len).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(len*.25));
+      const bp=lightningPath(o,end,.8);g.add(lightningMesh(bp,r*1.6,core),lightningMesh(bp,r*4,glow));
       if(depth>0){const j=1+Math.floor(Math.random()*(bp.length-2));fork(bp[j],_lsd.copy(end).sub(o).normalize(),len*.55,r*.6,depth-1);}};
     const dir=new THREE.Vector3().subVectors(to,from).normalize();
-    for(let k=0;k<5;k++){const i=1+Math.floor(Math.random()*(pts.length-2));fork(pts[i],dir.clone().add(new THREE.Vector3(rand(-1,1),rand(-.6,.6),rand(-1,1))).normalize(),rand(4,9),.05,1);}
-    for(const [q,sc] of[[from,7],[to,10]]){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x2f6cff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));sp.position.copy(q);sp.scale.setScalar(sc);g.add(sp);}}   /* blue glow where it leaves the orb and where it hits */
-  scene.add(g);LBOLTS.push({g,mats:[core,glow,haze],ops:[1,.8,.32],life,max:life});}
+    for(let k=0;k<2;k++){const i=1+Math.floor(Math.random()*(pts.length-2));fork(pts[i],dir.clone().add(new THREE.Vector3(rand(-.45,.45),rand(-.3,.3),rand(-.45,.45))).normalize(),rand(2,4),.035,0);}   /* fewer, shorter forks hugging the bolt */
+    for(const [q,sc] of[[from,4],[to,6]]){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0x2f6cff,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));sp.position.copy(q);sp.scale.setScalar(sc);g.add(sp);}}   /* blue glow where it leaves the orb and where it hits */
+  scene.add(g);LBOLTS.push({g,mats:[core,glow,haze],ops:[1,.8,.2],life,max:life});}
 function thunderSnd(pos){if(muted||!actx||!noise)return;const v=clamp(1-pos.distanceTo(player.pos)/260,0,1);if(v<.05)return;const t=actx.currentTime;   /* dry high-voltage arc (user reference 2026-11-27): instant snap, dense 3-8 kHz sizzle, 120 Hz buzz, ~0.7 s tail, no rumble. Synthesized. */
   const out=actx.createGain();out.gain.value=v*1.3;const lim=actx.createDynamicsCompressor();lim.threshold.value=-6;lim.ratio.value=10;out.connect(lim).connect(actx.destination);
   const snap=actx.createBufferSource();snap.buffer=noise;const shp=actx.createBiquadFilter();shp.type='highpass';shp.frequency.value=2500;const sg=actx.createGain();
@@ -4488,7 +4488,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1057'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1103'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
