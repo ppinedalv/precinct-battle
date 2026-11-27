@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0834</div>
+<div id="buildTag">BUILD 1127-0854</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1383,7 +1383,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
       const muzzle=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff4fd2,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));muzzle.position.z=3.45;muzzle.scale.set(2.8,2.8,1);can.add(muzzle);
       const arm={s,k,segs,can,muzzle,cd:rand(1,3),aimT:0,ph:Math.random()*6,aim:new THREE.Vector3(),dead:false};
       arm.ent={kind:'bossarm',team:RED,pos:new THREE.Vector3(s*15,12,BOSS_Z),hp:100,maxHp:100,hits:0,hitsMax:7,r:2.4,hy:0,alive:true,air:true,arm};ents.push(arm.ent);   /* each arm is its own target (user 2026-11-26) */
-      arm.tag=makeHealthTag(.11,.03);arm.tag.sp.position.set(s*15,15,BOSS_Z);scene.add(arm.tag.sp);BOSS_RIG.arms.push(arm);}}
+      arm.tag=makeHealthTag(.11,.03);arm.tag.sp.position.set(s*15,15,BOSS_Z);scene.add(arm.tag.sp);arm.tag.sp.visible=false;   /* laser arm health bars hidden (user 2026-11-27) */BOSS_RIG.arms.push(arm);}}
   addBlock(0,BOSS_Z,21,21,4.2);addBlock(0,BOSS_Z,10.4,10.4,23);
   const padRing=new THREE.Mesh(undefined,new THREE.MeshBasicMaterial()),padDisc=new THREE.Mesh(undefined,new THREE.MeshBasicMaterial()),z=BASE_Z[RED];
   const b={kind:'base',boss:true,team:RED,pos:new THREE.Vector3(0,0,BOSS_Z),hp:2500,maxHp:2500,hits:0,hitsMax:60,r:8.5,hy:13,alive:true,core:null,btnZ:z,pad:{ring:padRing,disc:padDisc},
@@ -1427,7 +1427,6 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
   const rate=[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][lvl-1],dmg=[6,7,8,9,10,13,16,20,26,32][lvl-1];   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
   for(const a of R.arms){a.can.localToWorld(a.ent.pos.set(0,0,1.7));
     if(a.dead){if(Math.random()<.3){a.segs[Math.min(7,a.segs.length-1)].localToWorld(_bt.set(0,0,1.6));puff(_bt,Math.random()<.3?0xff8a2a:0x2c2c30,.8,2.6,1,0,2.5,0);}continue;}
-    a.tag.sp.position.copy(a.ent.pos);a.tag.sp.position.y+=3.2;drawHealthTag(a.tag,1-a.ent.hits/a.ent.hitsMax,'LASER ARM');
     a.cd-=dt;a.aimT=Math.max(0,a.aimT-dt);
     if(tg&&a.cd<=0){center(tg,_bt);a.can.localToWorld(_bt2.set(0,0,3.4));
       if(losClear(_bt2,_bt,tg.r)){a.can.lookAt(_bt);a.can.updateMatrixWorld(true);a.can.localToWorld(_bt2.set(0,0,3.4));
@@ -4196,7 +4195,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0834'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0854'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
