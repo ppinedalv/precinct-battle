@@ -1246,7 +1246,17 @@ function makeCrackleBuf(){const sr=actx.sampleRate,L=Math.floor(sr*2.3),d=new Fl
   for(let i=0;i<L;i++){const tt=i/sr,env=tt<.02?tt/.02:tt<1.75?1:Math.max(0,1-(tt-1.75)/.45),hum=Math.max(-.6,Math.min(.6,Math.sin(2*Math.PI*58*tt)*1.4));d[i]=(d[i]+hum*.05)*env;}
   let m=0;for(let i=0;i<L;i++)m=Math.max(m,Math.abs(d[i]));const g=.9/(m||1);for(let i=0;i<L;i++)d[i]*=g;
   const b=actx.createBuffer(1,L,sr);b.getChannelData(0).set(d);return b;}
-function elecCrackle(vol=.75){if(muted||!actx)return;if(!CRACKLE_BUFS)CRACKLE_BUFS=[0,1,2].map(makeCrackleBuf);
+/* loud electrical pops (user 2026-11-27): a big arc-flash snap on impact, then random pops through the crackle. Each pop = sharp
+   noise crack (band 1-4 kHz) + click + low thump (100 -> 40 Hz), all through a limiter so it is loud without clipping */
+let POP_LIM=null;
+function elecPops(){if(muted||!actx||!noise)return;if(!POP_LIM){POP_LIM=actx.createDynamicsCompressor();POP_LIM.threshold.value=-8;POP_LIM.knee.value=2;POP_LIM.ratio.value=14;POP_LIM.attack.value=.001;POP_LIM.release.value=.12;POP_LIM.connect(actx.destination);}
+  const t0=actx.currentTime+.01,pop=(t,v)=>{const n=actx.createBufferSource();n.buffer=noise;const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=rand(1200,3800);bp.Q.value=.9;const g=actx.createGain(),d=rand(.02,.05);
+      g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(1.6*v,t+.0015);g.gain.exponentialRampToValueAtTime(.001,t+d);n.connect(bp).connect(g).connect(POP_LIM);n.start(t,Math.random()*.8,d+.02);n.stop(t+d+.02);
+      const c=actx.createOscillator(),cg=actx.createGain();c.type='square';c.frequency.value=rand(2500,5000);cg.gain.setValueAtTime(.7*v,t);cg.gain.exponentialRampToValueAtTime(.001,t+.004);c.connect(cg).connect(POP_LIM);c.start(t);c.stop(t+.006);   /* click */
+      const th=actx.createOscillator(),tg=actx.createGain();th.type='sine';th.frequency.setValueAtTime(rand(95,130),t);th.frequency.exponentialRampToValueAtTime(40,t+.09);tg.gain.setValueAtTime(.0001,t);tg.gain.exponentialRampToValueAtTime(1.1*v,t+.004);tg.gain.exponentialRampToValueAtTime(.001,t+.12);th.connect(tg).connect(POP_LIM);th.start(t);th.stop(t+.13);};   /* thump */
+  pop(t0,1.2);pop(t0+.03,.8);   /* big double snap on impact */
+  let t=t0+rand(.12,.25);while(t<t0+2.05){pop(t,rand(.45,1)*(1-(t-t0)/2.6));if(Math.random()<.25)pop(t+rand(.015,.04),rand(.3,.6));t+=rand(.1,.32);}}
+function elecCrackle(vol=.9){if(muted||!actx)return;elecPops();if(!CRACKLE_BUFS)CRACKLE_BUFS=[0,1,2].map(makeCrackleBuf);
   const src=actx.createBufferSource(),g=actx.createGain();src.buffer=CRACKLE_BUFS[Math.floor(Math.random()*3)];src.playbackRate.value=rand(.94,1.06);g.gain.value=vol;src.connect(g).connect(actx.destination);src.start();}
 function glassBreak(pos){if(muted||!actx||!noise)return;const v=_sv(pos);if(v<.04)return;const t=actx.currentTime,out=actx.destination;
   for(let i=0;i<7;i++){const t0=t+i*rand(.008,.03)+(i?rand(0,.05):0),n=actx.createBufferSource();n.buffer=noise;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=rand(2500,5500);
