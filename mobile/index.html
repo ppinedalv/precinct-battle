@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1821</div>
+<div id="buildTag">BUILD 1126-1836</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -250,7 +250,7 @@ body.playing #buildTag{display:none}
       <b>🔊</b><span>Mute / unmute all sound</span>
       <b>II</b><span>Pause. The pause screen has music on/off, music volume and load your own track</span>
     </div>
-    <div id="credits">Sound credits: police radio chatter by Played N Faved (CC BY); male screams by Sound Effects Factory (soundeffectsfactory.com); other effects listed in the game's sound credits file.</div>
+    <div id="credits">Sound credits: police radio chatter by Played N Faved (CC BY); male screams by Sound Effects Factory (soundeffectsfactory.com); Dusk Streets music: "Westcoast Rap Beat (Dishonor)" by imaboo via Pixabay; other effects listed in the game's sound credits file.</div>
     
   </div>
 </div>
@@ -932,13 +932,25 @@ function fireAudio(dt){if(!actx||!noise)return;if(!FIRE_SND.g){const n=actx.crea
     if(!muted&&k>.05&&Math.random()<.35){const t=actx.currentTime,c=actx.createBufferSource();c.buffer=noise;const hp=actx.createBiquadFilter();hp.type='bandpass';hp.frequency.value=rand(1200,4200);hp.Q.value=2;   /* crackle */
       const g=actx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(rand(.05,.2)*k,t+.002);g.gain.exponentialRampToValueAtTime(.0002,t+rand(.01,.04));c.connect(hp).connect(g).connect(actx.destination);c.start(t,Math.random()*.9,.06);c.stop(t+.06);}}
   FIRE_SND.g.gain.setTargetAtTime(muted||paused?0:v*.28,actx.currentTime,.15);}
+
+/* rising flames for Molotov fires (user 2026-11-26: "rising fire instead of hot clouds"): tall teardrop flame tongues that climb, flicker and shrink */
+const FLAME_TEX=(()=>{const c=document.createElement('canvas');c.width=64;c.height=128;const g=c.getContext('2d');
+  const gr=g.createLinearGradient(0,128,0,0);gr.addColorStop(0,'rgba(255,255,220,1)');gr.addColorStop(.25,'rgba(255,200,60,.95)');gr.addColorStop(.6,'rgba(255,90,10,.7)');gr.addColorStop(1,'rgba(200,20,0,0)');
+  g.filter='blur(3px)';g.fillStyle=gr;g.beginPath();g.moveTo(32,4);g.bezierCurveTo(44,40,58,62,56,92);g.bezierCurveTo(54,116,40,124,32,124);g.bezierCurveTo(24,124,10,116,8,92);g.bezierCurveTo(6,62,20,40,32,4);g.fill();
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+const FLAMES=[];for(let i=0;i<160;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:FLAME_TEX,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));s.visible=false;s.center.set(.5,0);scene.add(s);FLAMES.push({s,life:0,max:1,w:1,h:1,vy:0,ph:0,x:0,z:0});}
+let flameI=0;
+function spawnFlame(x,y,z,size){const f=FLAMES[flameI=(flameI+1)%FLAMES.length];f.x=x;f.z=z;f.s.position.set(x,y,z);f.life=f.max=rand(.45,.85);f.w=size*rand(.5,.8);f.h=size*rand(1.4,2.2);f.vy=rand(1.6,3.2);f.ph=Math.random()*6;f.s.visible=true;f.s.material.color.setHSL(rand(.03,.09),1,rand(.55,.7));}
+function updateFlames(dt){for(const f of FLAMES){if(f.life<=0)continue;f.life-=dt;if(f.life<=0){f.s.visible=false;continue;}const k=1-f.life/f.max;
+  f.s.position.y+=f.vy*dt;f.s.position.x=f.x+Math.sin(f.ph+k*9)*.15*k;f.s.position.z=f.z+Math.cos(f.ph+k*7)*.12*k;
+  f.s.scale.set(f.w*(1-k*.55)*(1+.12*Math.sin(f.ph+k*30)),f.h*(1-k*.35),1);f.s.material.opacity=Math.pow(1-k,.7);}}
 function molotovBurst(p){const g=_th2.set(p.x,Math.max(.3,p.y),p.z);
-  puff(g,0xfff0b0,2.5,7,.25);for(let i=0;i<12;i++)puff(_c.set(g.x+rand(-2,2),g.y+rand(0,2.5),g.z+rand(-2,2)),Math.random()<.5?0xff6a14:0xffb030,rand(1.8,3),rand(5,8),rand(.5,.9),rand(-3,3),rand(2,6),rand(-3,3));
+  puff(g,0xfff0b0,1.6,4,.18);for(let i=0;i<26;i++)spawnFlame(p.x+rand(-2.2,2.2),0,p.z+rand(-2.2,2.2),rand(1.4,2.6));   /* whoosh: a burst of tall rising flames */
   for(let i=0;i<5;i++)puff(_c.set(g.x+rand(-1.5,1.5),g.y+rand(1,3),g.z+rand(-1.5,1.5)),0x2a1e18,2.5,6,rand(1.2,2),0,rand(2,4),0);
   glassBreak(g);fireWhoosh(g);
   const P=player;if(P.alive&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<4.8&&P.pos.y<3)damage(P,14+DIFF.level*.8,RED,false,false);
   FIRES.push({x:p.x,z:p.z,t:4.5,tick:0});}
-function updateThugs(dt,t){const P=player;updateCorpses(dt);
+function updateThugs(dt,t){const P=player;updateCorpses(dt);updateFlames(dt);
   if(BOSS&&BOSS.alive&&P.alive){DUSK_DYN.thugT=(DUSK_DYN.thugT??3)-dt;if(DUSK_DYN.thugT<=0){DUSK_DYN.thugT=lerp(6,2.2,(DIFF.level-1)/9);if(THUGS.filter(u=>u.alive&&u.role!=='guard').length<thugCap())spawnThug();}}
   for(let i=THUGS.length-1;i>=0;i--){const u=THUGS[i];if(!u.alive){THUGS.splice(i,1);continue;}
     if(u.frozen>0){u.frozen-=dt;continue;}
@@ -965,7 +977,8 @@ function updateThugs(dt,t){const P=player;updateCorpses(dt);
     if(b.pos.y<=0||hitP||insideBuilding(b.pos)||b.life<=0){molotovBurst(b.pos);scene.remove(b.m);b.m.children[0].material.dispose();MOLOTOVS.splice(i,1);}}
   fireAudio(dt);
   for(let i=FIRES.length-1;i>=0;i--){const f=FIRES[i];f.t-=dt;if(f.t<=0){FIRES.splice(i,1);continue;}const k=Math.min(1,f.t/1.5);
-    for(let j=0;j<2;j++)if(Math.random()<.8*k){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*3.6;puff(_c.set(f.x+Math.cos(a)*r,.3,f.z+Math.sin(a)*r),Math.random()<.5?0xff6a14:0xffa030,rand(.8,1.6),rand(2,3.5),rand(.4,.7),0,rand(2.5,4.5),0);}
+    for(let j=0;j<3;j++)if(Math.random()<.9*k){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*3.6;spawnFlame(f.x+Math.cos(a)*r,0,f.z+Math.sin(a)*r,rand(.9,1.9)*(.6+.4*k));}
+    if(Math.random()<.25*k)puff(_c.set(f.x+rand(-2.5,2.5),rand(.5,2),f.z+rand(-2.5,2.5)),0xffc060,.08,.03,rand(.6,1.1),rand(-.6,.6),rand(3,5),rand(-.6,.6));   /* embers */
     if(Math.random()<.15*k)puff(_c.set(f.x+rand(-2,2),2,f.z+rand(-2,2)),0x2a1e18,1.5,4,1.4,0,3,0);
     f.tick-=dt;if(f.tick<=0){f.tick=.25;if(player.alive&&player.pos.y<2.5&&Math.hypot(player.pos.x-f.x,player.pos.z-f.z)<4)damage(player,1.8+DIFF.level*.12,RED,false,false);}}}
 
@@ -2577,8 +2590,17 @@ function updateMusicUI(){
   $('musicHud').textContent=music.on?`♪ MUSIC ${pct}  (N, - / =)`:'♪ MUSIC OFF  (N)';}
 const mtof=n=>440*Math.pow(2,(n-69)/12),SPB=60/(DUSK?84:92)/4;   /* dusk beat: 84 BPM */   /* 92 BPM (was 100): heavier */
 const ROOTS=[38,34,39,33],CHORDS=[[0,3,7],[0,4,7],[0,4,7],[0,4,7]]; /* Dm  Bb  Eb  A: villain progression with the flat-II (was Dm Bb Gm A) */
-function startSynth(){if(music.timer||!actx)return;music.next=actx.currentTime+.1;music.timer=setInterval(scheduleMusic,25);}
-function stopSynth(){if(music.timer){clearInterval(music.timer);music.timer=null;}}
+/* DUSK soundtrack (user 2026-11-26): "Westcoast Rap Beat | Gangsta x Street x Murder (Dishonor)" by imaboo via Pixabay (Pixabay Content License).
+   Intro plays once, then the main section loops on the bar line (23.522 s -> 206.1307 s, 92 BPM, 70 bars). */
+const DT={url:'music/dusk_dishonor.mp3',ls:23.522,le:206.1307,buf:null,src:null,el:null,loading:false,playing:false};
+function duskTrackStart(){DT.playing=true;const vol=music.vol*.55;
+  if(location.protocol.startsWith('http')){if(DT.src)return;if(DT.buf){const src=actx.createBufferSource();src.buffer=DT.buf;src.loop=true;src.loopStart=DT.ls;src.loopEnd=DT.le;const g=actx.createGain();g.gain.value=.85;src.connect(g).connect(musicOut());src.start();DT.src=src;return;}
+    if(!DT.loading){DT.loading=true;fetch(DT.url).then(r=>r.arrayBuffer()).then(a=>actx.decodeAudioData(a)).then(b=>{DT.buf=b;if(DT.playing)duskTrackStart();}).catch(()=>{DT.loading=false;});}return;}
+  if(!DT.el){DT.el=new Audio(DT.url);DT.el.preload='auto';DT.el.addEventListener('timeupdate',()=>{if(DT.el.currentTime>=DT.le-.03)DT.el.currentTime=DT.ls;});DT.el.addEventListener('ended',()=>{DT.el.currentTime=DT.ls;DT.el.play().catch(()=>{});});}   /* file:// fallback */
+  DT.el.volume=clamp(vol,0,1);if(DT.el.paused)DT.el.play().catch(()=>{});}
+function duskTrackStop(){DT.playing=false;if(DT.src){try{DT.src.stop();}catch(e){}DT.src=null;}if(DT.el&&!DT.el.paused)DT.el.pause();}
+function startSynth(){if(DUSK){duskTrackStart();return;}if(music.timer||!actx)return;music.next=actx.currentTime+.1;music.timer=setInterval(scheduleMusic,25);}
+function stopSynth(){if(DUSK)duskTrackStop();if(music.timer){clearInterval(music.timer);music.timer=null;}}
 function scheduleMusic(){while(music.next<actx.currentTime+.12){musicStep(music.step,music.next);music.next+=SPB;music.step++;}}
 function vEnv(g,t,a,peak,dec){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(.0004,t+a+dec);}
 function mOsc(type,f,t,dur,peak,a,dec,filt,toDelay){
@@ -3833,7 +3855,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1821'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1836'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
