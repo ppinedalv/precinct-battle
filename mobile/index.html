@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0937</div>
+<div id="buildTag">BUILD 1127-0940</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -419,7 +419,8 @@ function buildSpots(){const F=SPOTS;
     const mx0=-49,mx1=-38;tBox('matte',0xd9d2c0,mx1-mx0,5,22,(mx0+mx1)/2,2.5,cz);addBlock((mx0+mx1)/2,cz,mx1-mx0,22,5.4);tBox('matte',0xd61f26,mx1-mx0+.3,.8,22.3,(mx0+mx1)/2,5.1,cz);
     tBox('glow',0xe6f0ff,.06,2.4,12,mx1+.04,1.7,cz);for(let i=-3;i<=3;i++)tBox('metal',0x222,.1,2.5,.1,mx1+.08,1.7,cz+i*2);
     litSign('MART','#ffffff','#d61f26',5,1,mx1+.1,4.2,cz,Math.PI/2,0xff6a5a);
-    tCyl('metal',0x3a3d42,.25,9,-15.5,4.5,115);tBox('matte',0x1b1b1e,.4,4,3.6,-15.5,8.5,115);
+    tCyl('metal',0x3a3d42,.25,6.5,-15.5,3.25,115);tBox('matte',0x1b1b1e,.4,5.8,3.6,-15.5,9.4,115);   /* pole stops under the board so it no longer pokes through the prices; board taller for the name (user 2026-11-27) */
+    for(const sd of[-1,1])litSign('WaWa','#ff2a2a','#141416',3.4,1.6,-15.5+sd*.22,11.3,115,sd*Math.PI/2,0xff3a2a);   /* station name in red above the prices (user 2026-11-27) */
     for(const sd of[-1,1])litSign('GAS  3.89','#ffdf6a','#141416',3.4,1.4,-15.5+sd*.22,8.9,115,sd*Math.PI/2,0);
     for(const sd of[-1,1])litSign('DIESEL 4.29','#9fe6ff','#141416',3.4,1,-15.5+sd*.22,7.4,115,sd*Math.PI/2,0);
     DUSK_GLOWS.push([cx,ch-1,cz,0xf4f7ff,14],[cx,ch-1,cz-9,0xf4f7ff,10],[cx,ch-1,cz+9,0xf4f7ff,10]);}
@@ -4289,7 +4290,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0937'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0940'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
