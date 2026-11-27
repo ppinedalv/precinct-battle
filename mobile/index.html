@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1808</div>
+<div id="buildTag">BUILD 1126-1821</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -2575,7 +2575,7 @@ function updateMusicUI(){
   const pct=Math.round(music.vol*100)+'%';$('mPct').textContent=pct;$('mVol').value=Math.round(music.vol*100);
   $('mToggle').textContent=music.on?'ON':'OFF';$('mToggle').className=music.on?'':'off';
   $('musicHud').textContent=music.on?`♪ MUSIC ${pct}  (N, - / =)`:'♪ MUSIC OFF  (N)';}
-const mtof=n=>440*Math.pow(2,(n-69)/12),SPB=60/92/4;   /* 92 BPM (was 100): heavier */
+const mtof=n=>440*Math.pow(2,(n-69)/12),SPB=60/(DUSK?84:92)/4;   /* dusk beat: 84 BPM */   /* 92 BPM (was 100): heavier */
 const ROOTS=[38,34,39,33],CHORDS=[[0,3,7],[0,4,7],[0,4,7],[0,4,7]]; /* Dm  Bb  Eb  A: villain progression with the flat-II (was Dm Bb Gm A) */
 function startSynth(){if(music.timer||!actx)return;music.next=actx.currentTime+.1;music.timer=setInterval(scheduleMusic,25);}
 function stopSynth(){if(music.timer){clearInterval(music.timer);music.timer=null;}}
@@ -2587,27 +2587,37 @@ function mOsc(type,f,t,dur,peak,a,dec,filt,toDelay){
   n.connect(g).connect(music.gain);if(toDelay)g.connect(music.delay);o.start(t);o.stop(t+dur);return o;}
 function mNoise(t,type,freq,peak,dec){const n=actx.createBufferSource();n.buffer=noise;const f=actx.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=actx.createGain();vEnv(g,t,.002,peak,dec);n.connect(f).connect(g).connect(music.gain);n.start(t,Math.random()*.5);n.stop(t+dec+.05);}
 
-/* DUSK field music (user 2026-11-26): ORIGINAL West Coast lowrider / Chicano-rap style beat made in code (style guided by the user's reference: ~92 BPM,
-   light swing, C minor, i-VI-VII-v; nothing copied). Boom-bap kick + rim/snare, 8th hats, open hat into each bar, warm glide bass, Rhodes 7th/9th stabs,
-   high whistle lead + clean guitar licks in the hook, vinyl crackle. 32-bar form: intro 4, verse 16, hook 8, verse 4. */
-const LR_ROOT=[48,44,46,43],LR_CH=[[0,3,7,10,14],[0,4,7,11,14],[0,4,7,10,14],[0,3,7,10,14]];   /* Cm9  Abmaj9  Bb9  Gm9 (2 beats each) */
-const LR_LEAD=[[7,-1,-1,-1,10,-1,12,-1,-1,-1,10,-1,7,-1,-1,-1],[5,-1,-1,-1,3,-1,-1,-1,2,-1,3,-1,-1,-1,-1,-1],[7,-1,-1,-1,10,-1,12,-1,15,-1,-1,-1,14,-1,12,-1],[10,-1,-1,-1,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]];
-const LR_GTR=[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,19,-1,17,15,-1,12];
-function lrPluck(f,t,pk){const o=mOsc('triangle',f,t,.5,pk,.002,.42,[3200,900,2],true);const o2=mOsc('sawtooth',f*1.003,t,.4,pk*.35,.002,.3,[2400,700,1]);return o;}
-function hipStep(st,t){const s=st%16,bar=Math.floor(st/16),b32=bar%32,sec=b32<4?0:b32<20?1:b32<28?2:1,half=s<8?0:1,ci=((bar%2)*2+half)%4,R=LR_ROOT[ci],ch=LR_CH[ci],sw=s%2?SPB*.14:0,tt=t+sw,drums=sec>0;
-  if(Math.random()<.35)mNoise(t+Math.random()*SPB,'highpass',3500+Math.random()*3000,.02+Math.random()*.03,.006);   /* vinyl crackle */
-  if(drums){if(s===0||s===10||s===14){const o=mOsc('sine',118,tt,.42,.8,.003,.34);o.frequency.exponentialRampToValueAtTime(44,tt+.12);mOsc('triangle',1100,tt,.02,.07,.001,.015);}
-    if(s===4||s===12){mNoise(tt,'bandpass',1900,.32,.18);mNoise(tt,'highpass',3000,.1,.06);mOsc('triangle',210,tt,.1,.16,.001,.07);mOsc('square',1650,tt,.02,.05,.001,.012);}   /* snare + rim */
-    if(s%2===0)mNoise(tt,'highpass',8200,s%4===0?.055:.03,.028);
-    if(s===15)mNoise(tt,'highpass',6800,.045,.2);   /* open hat into the next bar */
-    if(sec===2&&(s===6||s===14)&&bar%2)mNoise(tt,'bandpass',2600,.08,.04);}   /* finger snap */
-  const BL=[0,-1,-1,7,-1,-1,0,-1,12,-1,0,-1,7,-1,10,-1],bn=BL[s];
-  if(bn>=0){const f=mtof(R-12+bn),o=mOsc('sawtooth',f,tt,SPB*2.2,.2,.008,SPB*1.9,[700,180,6]);const sub=mOsc('sine',f/2,tt,SPB*2.4,.32,.006,SPB*2.1);
-    if(s===14){o.frequency.setTargetAtTime(mtof(LR_ROOT[(ci+1)%4]-12),tt+SPB*.8,.05);sub.frequency.setTargetAtTime(mtof(LR_ROOT[(ci+1)%4]-24),tt+SPB*.8,.05);}}   /* glide into the next chord */
-  if(s===2||s===7||s===10||(s===15&&bar%2)){for(const i of ch){const f=mtof(R+12+i);for(const [ty,pk,dt] of[['sine',.032,0],['triangle',.018,3]]){const o=mOsc(ty,f,tt,SPB*2.6,pk,.006,SPB*2.3,[2600,900,1],true);o.detune.value=dt;}}}   /* Rhodes stabs */
-  if(sec===2){const ln=LR_LEAD[b32%4][s];if(ln>=0){const f=mtof(72+ln),o=mOsc('sine',f,tt,SPB*4,.05,.04,SPB*3.6,null,true);o.frequency.setValueAtTime(f*.94,tt);o.frequency.exponentialRampToValueAtTime(f,tt+.08);
-      const l=actx.createOscillator(),lg=actx.createGain();l.frequency.value=5.2;lg.gain.value=f*.011;l.connect(lg).connect(o.frequency);l.start(tt);l.stop(tt+SPB*4);}}   /* whistle lead */
-  if((sec===2||b32===19||b32===31)&&bar%2){const g=LR_GTR[s];if(g>=0)lrPluck(mtof(R+12+g),tt,.06);}}   /* clean guitar licks on turnarounds */
+/* DUSK field music (user 2026-11-26, v3): ORIGINAL dark hip hop beat made in code, less synthetic: heavy saturated kick, snare + clap with room,
+   tight hats with ghosts and rolls, deep driven 808 that glides, plucked dark piano (additive harmonics), low strings, faint music-box bell.
+   84 BPM, F minor: Fm - Db - Bbm - C (harmonic-minor turn). 16-bar form: 4 intro (piano + strings), 12 full. */
+let DK_SAT=null;
+function dkSat(){if(!DK_SAT){DK_SAT=new Float32Array(512);for(let i=0;i<512;i++){const x=i/256-1;DK_SAT[i]=Math.tanh(x*2.4);}}const w=actx.createWaveShaper();w.curve=DK_SAT;return w;}
+function dkKick(t){const o=actx.createOscillator(),g=actx.createGain(),ws=dkSat();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(48,t+.09);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.95,t+.004);g.gain.exponentialRampToValueAtTime(.001,t+.42);o.connect(ws).connect(g).connect(music.gain);o.start(t);o.stop(t+.45);mNoise(t,'bandpass',3200,.09,.012);}
+function dkSnare(t,ghost){const v=ghost?.25:1;mNoise(t,'bandpass',1700,.36*v,.17);mNoise(t,'highpass',4200,.12*v,.09);mOsc('triangle',190,t,.12,.18*v,.001,.09);
+  if(!ghost){for(let k=0;k<3;k++)mNoise(t+.008*k,'bandpass',1200,.12,.04);const n=actx.createBufferSource();n.buffer=noise;const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=1500;const g=actx.createGain();vEnv(g,t+.02,.01,.05,.35);n.connect(f).connect(g);g.connect(music.delay);n.start(t+.02,Math.random()*.4);n.stop(t+.5);}}
+function dkHat(t,v){mNoise(t,'highpass',9500,.045*v,.022);}
+function dk808(f,t,dur,glideTo){const o=actx.createOscillator(),g=actx.createGain(),ws=dkSat(),lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;o.type='sine';o.frequency.setValueAtTime(f,t);
+  if(glideTo)o.frequency.setTargetAtTime(glideTo,t+dur*.6,.05);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.62,t+.008);g.gain.setTargetAtTime(.0001,t+dur*.75,.12);
+  o.connect(ws).connect(lp).connect(g).connect(music.gain);o.start(t);o.stop(t+dur+.6);}
+function dkPiano(f,t,v=1,len=1.6){const H=[[1,.6,1],[2,.28,.7],[3,.14,.5],[4,.07,.35],[5,.035,.25]];
+  for(const [h,a,dl] of H){const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f*h*(1+(h-1)*.0008);o.detune.value=(Math.random()-.5)*4;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a*.14*v,t+.004);g.gain.exponentialRampToValueAtTime(.0002,t+len*dl);o.connect(g).connect(music.gain);g.connect(music.delay);o.start(t);o.stop(t+len*dl+.05);}
+  mNoise(t,'bandpass',f*4,.012*v,.03);}   /* hammer */
+function dkStrings(f,t,dur){for(const dt of[-8,0,8]){const o=actx.createOscillator(),lp=actx.createBiquadFilter(),g=actx.createGain();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;lp.type='lowpass';lp.frequency.value=520;lp.Q.value=.6;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.022,t+dur*.35);g.gain.linearRampToValueAtTime(.0001,t+dur);o.connect(lp).connect(g).connect(music.gain);o.start(t);o.stop(t+dur+.05);}}
+const DK_ROOT=[41,37,46,36],DK_CH=[[0,3,7],[0,4,7],[0,3,7],[0,4,7]];   /* Fm Db Bbm C (F2 Db2 Bb2 C2) */
+const DK_MEL=[[12,-1,-1,15,-1,-1,13,-1, 12,-1,-1,-1,8,-1,-1,-1],[13,-1,-1,12,-1,-1,8,-1, 5,-1,-1,-1,-1,-1,-1,-1],[10,-1,-1,13,-1,-1,12,-1, 10,-1,-1,-1,5,-1,-1,-1],[11,-1,-1,-1,7,-1,-1,-1, 4,-1,-1,-1,7,-1,11,-1]];
+function hipStep(st,t){const s=st%16,bar=Math.floor(st/16),b16=bar%16,ci=bar%4,R=DK_ROOT[ci],ch=DK_CH[ci],full=b16>=4,sw=s%2?SPB*.1:0,tt=t+sw;
+  if(s===0)dkStrings(mtof(R+12),t,SPB*16);
+  if(s===0&&ci===0&&b16%4===0)for(const [f,pk] of[[mtof(R+48),.04],[mtof(R+48)*2.76,.012]])mOsc('sine',f,t,SPB*28,pk,.003,SPB*26,null,true);   /* faint music-box bell */
+  {const mn=DK_MEL[ci][s];if(mn>=0)dkPiano(mtof(R+36+mn-12*(R>40?1:0)),tt,b16<4?.8:1,2.2);if(s===0)for(const i of ch)dkPiano(mtof(R+24+i),t,.55,2.6);}
+  if(!full)return;
+  if(s===0||s===7||s===10||(s===13&&bar%2))dkKick(tt);
+  if(s===4||s===12)dkSnare(tt,false);else if((s===15&&bar%2===0)||(s===9&&b16%4===3))dkSnare(tt,true);
+  if(s%2===0)dkHat(tt,s%4===0?1:.6);else if(Math.random()<.25)dkHat(tt,.3);
+  if(b16%4===3&&s>=12){dkHat(tt+SPB/3,.5);dkHat(tt+2*SPB/3,.45);}   /* hat roll into the next phrase */
+  const BL={0:[0,SPB*6],7:[0,SPB*3],10:[-5,SPB*3],13:[0,SPB*3]};if(BL[s]){const [o,d]=BL[s];dk808(mtof(R-12+o),tt,d,s===13&&bar%4===3?mtof(DK_ROOT[(ci+1)%4]-12):0);}}
 function musicStep(st,t){if(DUSK)return hipStep(st,t);
   const s=st%16,bar=Math.floor(st/16),ci=Math.floor(bar/2)%4,root=ROOTS[ci],ch=CHORDS[ci],full=Math.floor(bar/8)%4!==0;
   if(s%4===0){const o=mOsc('sine',150,t,.35,.55,.004,.28);o.frequency.exponentialRampToValueAtTime(42,t+.12);}
@@ -3823,7 +3833,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1808'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1821'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
