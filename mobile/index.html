@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2246</div>
+<div id="buildTag">BUILD 1126-2249</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -2912,6 +2912,32 @@ function fire(type,team,from,dir,dmg,opts={}){
     p.vel.set(d.x/T,d.y/T+.5*G*T,d.z/T);p.grav=G;p.life=T+1.5;}
   projs.push(p);}
 const _t=V(),_t2=V();
+/* shatterable store windows (user 2026-11-26): player gun / cannon / missile hits break a panel -> shards + dark empty interior */
+const SHOP_WINS=[];
+const shatterTex=(seed)=>{const S=128,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');let sd=seed;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  const gr=g.createLinearGradient(0,0,0,S);gr.addColorStop(0,'#0b0c0f');gr.addColorStop(.7,'#08090b');gr.addColorStop(.72,'#121316');gr.addColorStop(1,'#060607');g.fillStyle=gr;g.fillRect(0,0,S,S);
+  g.fillStyle='rgba(30,32,36,.6)';g.fillRect(S*.15,S*.45,S*.25,S*.27);g.fillRect(S*.6,S*.5,S*.3,S*.22);   /* empty shelf shapes in the dark */
+  const edge=(pts)=>{g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const q of pts.slice(1))g.lineTo(q[0],q[1]);g.closePath();g.fillStyle='rgba(170,205,235,.55)';g.fill();g.strokeStyle='rgba(225,240,255,.8)';g.lineWidth=1.2;g.stroke();};
+  for(const side of[0,1,2,3]){const pts=[];const n=5+Math.floor(r()*4);for(let i=0;i<=n;i++){const u=i/n*S,dd=4+r()*(i%2?30:12);pts.push(side===0?[u,dd]:side===1?[S-dd,u]:side===2?[S-u,S-dd]:[dd,S-u]);}
+    pts.push(side===0?[S,0]:side===1?[S,S]:side===2?[0,S]:[0,0]);pts.unshift(side===0?[0,0]:side===1?[S,0]:side===2?[S,S]:[0,S]);edge(pts);}
+  g.strokeStyle='rgba(200,225,245,.35)';g.lineWidth=1;for(let i=0;i<7;i++){g.beginPath();const a=r()*6.28;g.moveTo(S/2+Math.cos(a)*20,S/2+Math.sin(a)*20);g.lineTo(S/2+Math.cos(a)*(50+r()*20),S/2+Math.sin(a)*(50+r()*20));g.stroke();}
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;};
+let SHATTER_MATS=null;
+function addShopWin(px,nx,cz,width,y,h,panels){const pw=width/panels;for(let i=0;i<panels;i++)SHOP_WINS.push({px,nx,z:cz-width/2+pw*(i+.5),y,w:pw,h,broken:false});}
+function initShopWins(){if(!DUSK||SHOP_WINS.length)return;const F=SPOTS;
+  addShopWin(-62+.04,1,(F.grocery.z0+F.grocery.z1)/2,22,1.6,3,11);addShopWin(-38+.04,1,95,12,1.7,2.4,6);
+  addShopWin(22-.04,-1,(F.donut.z0+F.donut.z1)/2,8,1.4,2.2,4);addShopWin(23-.04,-1,(F.coffee.z0+F.coffee.z1)/2,14,1.6,2.6,6);
+  for(const [S,nx] of[[LIQUOR,-1],[SMOKE,1]]){const cx=(S.x0+S.x1)/2,d=S.x1-S.x0,w=S.z1-S.z0;addShopWin(cx+nx*(d/2+.05),nx,(S.z0+S.z1)/2,w*.62,1.9,2.6,9);}}
+const _sw=new THREE.Vector3();
+function shopWindowHit(a,b,splash){if(!DUSK)return;initShopWins();let snd=null;
+  for(const W of SHOP_WINS){if(W.broken)continue;let hit=false;
+    const da=a.x-W.px,db=b.x-W.px;if(da*db<=0&&da!==db){const t=da/(da-db),y=a.y+(b.y-a.y)*t,z=a.z+(b.z-a.z)*t;if(Math.abs(z-W.z)<W.w/2+.15&&Math.abs(y-W.y)<W.h/2+.15)hit=true;}
+    if(!hit&&splash>0&&Math.abs(b.x-W.px)<splash&&Math.hypot(b.z-W.z,b.y-W.y)<splash*.8+W.w/2)hit=true;
+    if(!hit)continue;W.broken=true;
+    if(!SHATTER_MATS)SHATTER_MATS=[3,77,901].map(k=>new THREE.MeshBasicMaterial({map:shatterTex(k)}));const m=new THREE.Mesh(new THREE.PlaneGeometry(W.w*.96,W.h*.96),SHATTER_MATS[Math.floor(Math.random()*3)]);m.position.set(W.px+W.nx*.07,W.y,W.z);m.rotation.y=W.nx>0?Math.PI/2:-Math.PI/2;if(Math.random()<.5)m.scale.x=-1;m.userData.noAir=true;scene.add(m);
+    _sw.set(W.px+W.nx*.3,W.y,W.z);snd=snd||_sw.clone();
+    for(let k=0;k<9;k++)puff(_sw,k%3?0xcfe8ff:0xffffff,.12,.35,rand(.5,.9),W.nx*rand(1,4),rand(-1,3),rand(-2.5,2.5));}
+  if(snd)glassBreak(snd);}
 function updateProjs(dt){
   for(let i=projs.length-1;i>=0;i--){
     const p=projs[i];p.prev.copy(p.pos);
@@ -2931,6 +2957,7 @@ function updateProjs(dt){
     if(p.type==='flak'&&p.life<=0)boom=true;
     if(p.type==='missile'&&p.byPlayer&&p.life<=0)boom=true;   // player missiles detonate (with damage) at max range instead of vanishing
     if(hitEnt||boom){
+      if(DUSK&&p.team===BLUE)shopWindowHit(p.prev,p.pos,p.splash||0);
       if(p.heavyGun){puff(p.pos,0xfff0c0,.5,1.8,.12);for(let k=0;k<2;k++)puff(p.pos,0xff7a20,.35,1.1,rand(.25,.45),rand(-5,5),rand(2,6),rand(-5,5));puff(p.pos,0x3a2a22,.5,1.6,.8,0,rand(1.5,3),0);if(Math.random()<.15)sfx('hit',p.pos,.8);}   // RX-13 heavy gatling (levels 9-10): small blast + sparks + smoke on every impact
       if(p.cluster){const o=p.pos.clone(),dm=p.dmg*.3,tm=p.team;for(let k=0;k<3;k++)setTimeout(()=>{if(over)return;const q=o.clone().add(V().set(rand(-5,5),0,rand(-5,5)));q.y=Math.max(q.y,.5);explosion(q,4.5);splashDamage(q,4,dm,tm,false,false);camShake=Math.max(camShake,.25);},160+k*150);}   // RX-13 levels 9-10: 3 secondary blasts around each missile/mortar impact
       if(p.splash>0){if(p.heavyGun&&hitEnt&&hitEnt.hitsMax)damage(hitEnt,0,p.team,p.byPlayer,false,true);   /* RX-13 heavy gun (lvl 9-10) counts toward structure hits too */
@@ -4023,7 +4050,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2246'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2249'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
