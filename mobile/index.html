@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2301</div>
+<div id="buildTag">BUILD 1126-2310</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -588,10 +588,20 @@ function withBins(fn){const old=TB;TB={matte:[],metal:[],glow:[],stop:[],lab:[],
 /* ---- modern vehicles (user 2026-11-26): rounded bodies, sloped glass, rims, light bars, mirrors, door seams. kind 0 sedan, 1 pickup, 2 SUV/van. Local +z = front.
    vehBuild() emits parts to a callback, so the same model feeds the merged gang vans and the instanced parked cars (intact + crushed). */
 const VDIM=[{L:4.6,W:1.86},{L:5.3,W:1.96},{L:4.9,W:1.98}];
+const _segBox=new Map();function segBox(geo){let g=_segBox.get(geo);if(g)return g;geo.computeBoundingBox();const b=geo.boundingBox,sx=b.max.x-b.min.x,sy=b.max.y-b.min.y,sz=b.max.z-b.min.z;   /* finely divided box so crumpling shows */
+  g=new THREE.BoxGeometry(sx,sy,sz,Math.max(2,Math.round(sx*7)),Math.max(2,Math.round(sy*7)),Math.max(2,Math.round(sz*7)));g.translate((b.max.x+b.min.x)/2,(b.max.y+b.min.y)/2,(b.max.z+b.min.z)/2);_segBox.set(geo,g);return g;}
+function crumple(g,L,kind){const p=g.attributes.position,hf=L/2-1.4;   /* wrecked car (user 2026-11-26): wrinkled metal, caved-in roof, buckled shortened hood */
+  for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),n1=Math.sin(x*6.1+z*2.3+kind)*Math.cos(z*4.9-y*5.3),n2=Math.sin(z*9.7+x*3.1)*Math.sin(y*12+z*2.7),n3=Math.sin(x*17+z*13)*Math.sin(z*19-x*7);
+    let X=x+.06*n2+.02*n3,Y=y+.05*n1+.025*n3,Z=z+.05*n1;
+    if(Y>.42)Y-=.2*Math.exp(-(X*X)/.5-((Z+.15)*(Z+.15))/1.3)*Math.min(1,(Y-.42)/.12);   /* roof caved in */
+    if(Z>hf){const u=(Z-hf)/1.4;Z=hf+(Z-hf)*.78;Y+=(.11*Math.sin(u*8+X*2.2)-.06)*u;X+=.05*Math.sin(u*11)*u;}   /* hood folded up like an accordion */
+    if(Z<-L/2+.9){const u=(-L/2+.9-Z)/.9;Y-=.05*u;Z+=.15*u;}
+    p.setXYZ(i,X,Y,Z);}
+  g.computeVertexNormals();return g;}
 function vehBuild(kind,emit,crushed,rnd=Math.random){const {L,W}=VDIM[kind],GL=crushed?0xcfe2ec:0x16212c,TR=0x232427,TI=0x141416,RIM=0xb9bec5,DK=0x0f1012;
   const tilt=crushed?(rnd()-.5)*.12:0,C=crushed?new THREE.Matrix4().makeTranslation(0,.06,0).multiply(new THREE.Matrix4().makeRotationZ(tilt)).multiply(new THREE.Matrix4().makeScale(1.04,.46,1.02)):null;
   const add=(part,geo,col,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1,tag)=>{if(crushed&&tag==='wheel'){rz+=Math.sign(x)*.45;x*=1.08;y*=.9;}
-    let m=new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(sx,sy,sz));if(C&&tag!=='wheel')m=C.clone().multiply(m);emit(part,geo,col,m);};
+    let m=new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(sx,sy,sz));if(C&&tag!=='wheel')m=C.clone().multiply(m);emit(part,crushed&&part==='paint'?segBox(geo):geo,col,m);};
   const glass=(geo,x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>{add('trim',geo,GL,x,y,z,rx,ry,rz,sx,sy,sz);
     if(crushed)for(let i=0;i<3;i++)add('trim',UBOX,0xeaf6ff,x+(rnd()-.5)*.6,y+.05,z+(rnd()-.5)*.6,rnd()*1.2,rnd()*3,rnd()*1.2,.18,.02,.14);};   /* shattered: white crazed glass + shards */
   const hw=W/2,tz=L/2-(kind===1?1.05:.95),wr=kind===1?.4:.35;
@@ -612,14 +622,18 @@ function vehBuild(kind,emit,crushed,rnd=Math.random){const {L,W}=VDIM[kind],GL=c
     add('paint',UBOX,0xffffff,s*(hw+.07),kind===2?1.38:1.1,kind===1?1.25:.62,0,0,0,.2,.11,.1);add('trim',UBOX,DK,s*(hw+.002),.74,.25,0,0,0,.012,.42,.02);add('trim',UBOX,0x9aa0a6,s*(hw+.01),.92,.02,0,0,0,.015,.04,.18);}
   add('trim',UBOX,0x9a1210,0,hy+.08,bz-.005,0,0,0,W-.3,.07,.04);add('trim',UBOX,DK,0,.66,fz+.01,0,0,0,.95,.16,.05);add('trim',UBOX,DK,0,.47,fz+.01,0,0,0,1.25,.1,.03);
   for(const zz of[fz-.07,bz+.07])add('trim',rboxL(W,.16,.2,.06),TR,0,.42,zz);add('trim',UBOX,0xe8e8e0,0,.6,bz-.012,0,0,0,.5,.12,.02);
-  if(crushed)for(let i=0;i<8;i++)add('trim',UBOX,0xbfe8ff,(rnd()-.5)*(W+2),.02/.46,(rnd()-.5)*(L+1.6),0,rnd()*3,0,.16,.02,.12);}
+  if(crushed)for(let i=0;i<8;i++)add('trim',UBOX,0xbfe8ff,(rnd()-.5)*(W+2),.02/.46,(rnd()-.5)*(L+1.6),0,rnd()*3,0,.16,.02,.12);
+  if(crushed){const dl=kind===1?1.15:1.05,hz=kind===2?1.0:.75,th=-1.05,hx=hw+.03;   /* doors: one hanging off its hinge, the other torn off on the ground */
+    add('trim',UBOX,DK,hx-.02,.8,hz-dl/2,0,0,0,.03,.5,dl*.95);add('trim',UBOX,0x2a2b2e,hx-.25,.72,hz-dl/2,0,0,0,.4,.3,.5);
+    add('paint',UBOX,0xffffff,hx-Math.sin(th)*dl/2,.62,hz-Math.cos(th)*dl/2,0,th,.32,.06,.6,dl);add('trim',UBOX,0xcfe2ec,hx-Math.sin(th)*dl/2+.04,.95,hz-Math.cos(th)*dl/2,0,th,.32,.02,.22,dl*.7);
+    add('trim',UBOX,DK,-hx+.02,.8,hz-dl/2,0,0,0,.03,.5,dl*.95);add('paint',UBOX,0xffffff,-(hw+1.15),.05,hz-.9,0,.45,0,.62,.06,dl);}}
 function tVehicle(kind,col){vehBuild(kind,(part,geo,c,m)=>{TB[part==='paint'?'metal':'metal'].push({geo,col:part==='paint'?col:c,m:TF.clone().multiply(m)});},false);}
 /* parked cars: instanced per kind and state, so stepping on one swaps it to the crushed model (shattered windows) */
 const CAR_MAT={paint:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.3,metalness:.55}),trim:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.45,metalness:.3})};
 const CAR_SETS=[],_Z0=new THREE.Matrix4().makeScale(0,0,0);
 function buildCars(){const L=duskLayout(),c=new THREE.Color(),T=60;   /* one instanced set per car kind per 60-unit map tile, so off-screen cars are skipped (lag fix 2026-11-26) */
   for(let k=0;k<3;k++){const all=L.cars.filter(v=>v.kind===k);if(!all.length)continue;const geo={};
-    for(const st of['ok','crush']){const it={paint:[],trim:[]};let s2=1234+k;const rr=()=>(s2=(s2*16807)%2147483647)/2147483647;vehBuild(k,(part,g,col,m)=>it[part].push({geo:g,col,m}),st==='crush',rr);geo[st+'paint']=mergeColored(it.paint);geo[st+'trim']=mergeColored(it.trim);}
+    for(const st of['ok','crush']){const it={paint:[],trim:[]};let s2=1234+k;const rr=()=>(s2=(s2*16807)%2147483647)/2147483647;vehBuild(k,(part,g,col,m)=>it[part].push({geo:g,col,m}),st==='crush',rr);geo[st+'paint']=st==='crush'?crumple(mergeColored(it.paint),VDIM[k].L,k):mergeColored(it.paint);geo[st+'trim']=mergeColored(it.trim);}
     const tiles=new Map();for(const v of all){const key=Math.floor(v.x/T)+','+Math.floor(v.z/T);let l=tiles.get(key);if(!l)tiles.set(key,l=[]);l.push(v);}
     for(const list of tiles.values()){const set={k,list,m:{}};
       for(const st of['ok','crush'])for(const part of['paint','trim']){const im=new THREE.InstancedMesh(geo[st+part],CAR_MAT[part],list.length);im.castShadow=true;im.receiveShadow=true;im.userData.noAir=true;scene.add(im);set.m[st+part]=im;}
@@ -945,16 +959,27 @@ function thugGeos(role,vi){const k=role+vi;if(_THG[k])return _THG[k];
     :[{geo:USPH,col:0x3a3a3a,m:_ps(0,1.85,-.01,.22,.18,.24)},{geo:UBOX,col:0x8a1414,m:_ps(0,1.71,.1,.21,.1,.05)}];
   const b=[...torsoItems(SHIRT,PANTS,DK),...headItems(SKIN,0x1c140f,0x0c0c0c,cap),{geo:rboxL(.3,.13,.12,.04),col:SHIRT,m:_pm(0,1.58,-.13)},{geo:UBOX,col:DK,m:_ps(0,1.13,.142,.28,.11,.012)}];
   if(role==='guard')b.push({geo:rboxL(.48,.42,.31,.06),col:0x2b3138,m:_pm(0,1.31,0)},{geo:UBOX,col:0x3a424c,m:_ps(.12,1.22,.16,.1,.12,.05)},{geo:UBOX,col:0x3a424c,m:_ps(-.12,1.22,.16,.1,.12,.05)});
+  const base=b.slice();   /* corpse pose (user 2026-11-26) reuses the torso/head/vest without the posed arms + gun */
   if(role==='molotov'){const S0=_pm(-.29,1.47,0,-.25,0,.08),E0=S0.clone().multiply(_pm(0,-.31,0,-.9,0,0));for(const a of upperItems(SHIRT))b.push({geo:a.geo,col:a.col,m:S0.clone().multiply(a.m)});for(const a of foreItems(SHIRT))b.push({geo:a.geo,col:a.col,m:E0.clone().multiply(a.m)});b.push({geo:USPH,col:SKIN,m:E0.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});}
   else{const L=role==='guard'?.75:.5;
     for(const [s,ux,uz,fx,fz,hz] of[[1,.25,.12,.15,.36,.5],[-1,-.25,.16,-.12,.44,.62]]){b.push({geo:rboxL(.13,.33,.14,.05),col:SHIRT,m:_pm(ux,1.37,uz,-1.05,0,s*.15)},{geo:rboxL(.11,.31,.12,.045),col:SHIRT,m:_pm(fx,1.4,fz,-1.5,s*.35,0)},{geo:USPH,col:SKIN,m:_ps(s*.03,1.42,hz,.075,.09,.075)});}
     b.push({geo:UBOX,col:GUN,m:_ps(0,1.45,.5+L/2-.2,.075,.12,L)},{geo:UCYL,col:GUN,m:_pm(0,1.47,.5+L-.12,Math.PI/2).multiply(_ps(0,0,0,.04,.35,.04))},{geo:UBOX,col:GUN,m:_ps(0,1.33,.55,.055,.2,.09)});
     if(role==='guard')b.push({geo:UBOX,col:GUN,m:_ps(0,1.42,.2,.065,.12,.28)});}
   const g={body:mergeColored(b),leg:mergeColored(thighItems(PANTS)),shin:mergeColored(shinItems(PANTS,0x1a1a1a))};
+  {const c=base.slice();   /* dead: flat on the back, arms and legs spread out, weapon lying on the ground beside the right hand */
+    for(const s of[-1,1]){const S=_pm(s*.29,1.47,0,0,0,s*(1.95+.15*s)),E=S.clone().multiply(_pm(0,-.31,0,0,0,s*.45));
+      for(const a of upperItems(SHIRT))c.push({geo:a.geo,col:a.col,m:S.clone().multiply(a.m)});for(const a of foreItems(SHIRT))c.push({geo:a.geo,col:a.col,m:E.clone().multiply(a.m)});c.push({geo:USPH,col:SKIN,m:E.clone().multiply(_ps(0,-.35,.02,.075,.1,.065))});
+      const H=_pm(s*.1,.92,0,0,0,s*.38),K=H.clone().multiply(_pm(0,-.46,0,.12,0,-s*.1));
+      for(const a of thighItems(PANTS))c.push({geo:a.geo,col:a.col,m:H.clone().multiply(a.m)});for(const a of shinItems(PANTS,0x1a1a1a))c.push({geo:a.geo,col:a.col,m:K.clone().multiply(a.m)});}
+    if(role!=='molotov'){const L=role==='guard'?.75:.5,G0=_pm(1.35,1.75,-.12,0,0,-.5);   /* rifle / pistol on the ground */
+      c.push({geo:UBOX,col:GUN,m:G0.clone().multiply(_ps(0,0,0,.12,L,.075))},{geo:UCYL,col:GUN,m:G0.clone().multiply(_ps(0,L/2+.15,0,.04,.35,.04))},{geo:UBOX,col:GUN,m:G0.clone().multiply(_pm(.1,-.05,0,0,0,Math.PI/2)).multiply(_ps(0,0,0,.09,.2,.055))});
+      if(role==='guard')c.push({geo:UBOX,col:GUN,m:G0.clone().multiply(_ps(0,-L/2-.12,0,.11,.28,.065))});}
+    else c.push({geo:UCYL,col:0x2f6a3a,m:_pm(1.2,1.9,-.08,0,0,1.2).multiply(_ps(0,0,0,.13,.26,.13))});   /* dropped bottle */
+    g.corpse=mergeColored(c);}
   if(role==='molotov'){g.arm=mergeColored(upperItems(SHIRT));g.fore=mergeColored([...foreItems(SHIRT),{geo:USPH,col:SKIN,m:_ps(0,-.35,.02,.075,.1,.065)},{geo:UCYL,col:0x2f6a3a,m:_ps(0,-.49,.05,.13,.26,.13)},{geo:UCYL,col:0x2f6a3a,m:_ps(0,-.31,.05,.05,.12,.05)},{geo:UBOX,col:0xd8c8a0,m:_ps(0,-.23,.05,.07,.08,.07)}]);}
   return (_THG[k]=g);}
 const CORPSES=[];
-function thugDown(e,team){CORPSES.push({g:e.mesh,t:0,y:e.mesh.position.y});if(e.flame)e.flame.visible=false;for(const l of e.legs){l.rotation.x=0;l.children[0].rotation.x=.15;}if(e.arm)e.arm.rotation.x=0;if(e.fore)e.fore.rotation.x=-.15;
+function thugDown(e,team){if(e.G&&e.G.corpse){for(const ch of e.mesh.children)ch.visible=false;const cm=new THREE.Mesh(e.G.corpse,THUG_MAT);cm.castShadow=true;e.mesh.add(cm);e.mesh.rotation.y+=rand(-.4,.4);}CORPSES.push({g:e.mesh,t:0,y:e.mesh.position.y});if(e.flame)e.flame.visible=false;for(const l of e.legs){l.rotation.x=0;l.children[0].rotation.x=.15;}if(e.arm)e.arm.rotation.x=0;if(e.fore)e.fore.rotation.x=-.15;
   if((team===BLUE||PVP)&&Math.random()<.4)dropCrate(e.pos);
   while(CORPSES.length>45){const c=CORPSES.shift();scene.remove(c.g);}}
 function updateCorpses(dt){for(const c of CORPSES){if(c.t>=1)continue;c.t=Math.min(1,c.t+dt*2.4);const k=c.t*c.t;c.g.rotation.x=-Math.PI/2*k;c.g.position.y=c.y+.16*k;}}
@@ -965,7 +990,7 @@ function makeThug(role,x,z,y=0){const vi=Math.floor(Math.random()*5),G=thugGeos(
   grp.rotation.order='YXZ';for(const s of[-1,1]){const l=new THREE.Mesh(G.leg,THUG_MAT);l.position.set(s*.1,.92,0);l.castShadow=true;const sh=new THREE.Mesh(G.shin,THUG_MAT);sh.position.y=-.46;sh.castShadow=true;l.add(sh);grp.add(l);legs.push(l);}
   let arm=null,fore=null,flame=null;if(G.arm){arm=new THREE.Group();arm.position.set(.29,1.47,0);const am=new THREE.Mesh(G.arm,THUG_MAT);am.castShadow=true;arm.add(am);fore=new THREE.Group();fore.position.y=-.31;fore.rotation.x=-.5;const fm=new THREE.Mesh(G.fore,THUG_MAT);fm.castShadow=true;fore.add(fm);arm.add(fore);
     flame=new THREE.Sprite(FLAME_SPR);flame.position.set(0,-.17,.05);flame.scale.set(.5,.5,1);fore.add(flame);grp.add(arm);}
-  const u={kind:'thug',role,team:RED,pos:new THREE.Vector3(x,y,z),vel:V(),hp:role==='guard'?45:28,maxHp:role==='guard'?45:28,r:.9,moveR:.55,hy:1.15,alive:true,mesh:grp,legs,arm,fore,flame,
+  const u={kind:'thug',role,team:RED,pos:new THREE.Vector3(x,y,z),vel:V(),hp:role==='guard'?45:28,maxHp:role==='guard'?45:28,r:.9,moveR:.55,hy:1.15,alive:true,mesh:grp,legs,arm,fore,flame,G,
     cd:rand(.8,2.5),burst:0,bt:0,think:0,los:false,ph:Math.random()*6,side:Math.random()<.5?1:-1,throwT:0,heading:Math.random()*6};
   grp.position.copy(u.pos);scene.add(grp);ents.push(u);THUGS.push(u);return u;}
 function thugCap(){return Math.round(5+DIFF.level*1.6);}
@@ -4050,7 +4075,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2301'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2310'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
