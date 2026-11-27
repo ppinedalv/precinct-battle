@@ -979,7 +979,10 @@ function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowi
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;canG.push({geo:UBOX,col:0xff8ae6,m:m(Math.cos(a)*.8,Math.sin(a)*.8,3.36,0,0,a,.18,.03,.02)});}
   return {seg:mergeColored(seg),segG:mergeColored(segG),can:mergeColored(can),canG:mergeColored(canG)};}
 const BRAIN_FS=.75,BRAIN_O=-.04,BRAIN_CUT=-.36,BRAIN_YS=1.0,BRAIN_Y=8.25,BRAIN_S=3.4;   /* tall brain dome: lots of brain above the eyes, face low on the front, flat underside */
-function brainSurf(x,yu,d){const z=Math.sqrt(Math.max(0,1-x*x-yu*yu));return new THREE.Vector3(x*(1+d),yu*BRAIN_YS*(1+d),z*1.12*(1+d));}
+function brainShape(x,y,z,k,out=new THREE.Vector3()){   /* slightly top-heavy, less round: narrow base, wide upper lobes, flatter crown, longer front-to-back */
+  const t=clamp((y-BRAIN_CUT)/(.45-BRAIN_CUT),0,1),f=.88+.2*t*t*(3-2*t),yy=y>.55?.55+(y-.55)*.8:y;
+  return out.set(x*k*f*1.04,yy*k*BRAIN_YS,z*k*(z<0?1.22:1.16)*(.92+.08*f));}
+function brainSurf(x,yu,d){const z=Math.sqrt(Math.max(0,1-x*x-yu*yu));return brainShape(x,yu,z,1+d);}
 const brainMouthY=x=>-.22-1.5*x*x,BRAIN_MW=.2;   /* small frown; x in face units */   /* frown: corners turn down */
 function brainGeo(){   /* tall brain: deep folds, center fissure, flat cut underside, angry frowning face sculpted low on the front (original design) */
   const g=new THREE.SphereGeometry(1,160,120),p=g.attributes.position,v=new THREE.Vector3(),col=new Float32Array(p.count*3),c=new THREE.Color(),cA=new THREE.Color(0x8a2a48),cB=new THREE.Color(0xf48aa8),cC=new THREE.Color(0xffc2d2),cD=new THREE.Color(0x4a1222);
@@ -994,8 +997,8 @@ function brainGeo(){   /* tall brain: deep folds, center fissure, flat cut under
     k+=.045*Math.exp(-(Math.pow(ax-.21,2)+Math.pow(yf+.12,2))/.006)*face;   /* scowling cheeks */
     k+=.05*Math.exp(-(fx*fx)/.004-Math.pow(yf+.12,2)/.008)*face;   /* nose */
     const my=brainMouthY(fx),mouth=Math.exp(-Math.pow(yf-my,2)/.0011)*(ax<BRAIN_MW?1:0)*face;k-=.07*mouth;k+=.035*Math.exp(-Math.pow(yf-my+.055,2)/.0018)*(ax<BRAIN_MW?1:0)*face;   /* frown groove + pouting lower lip */
-    let bot=0;if(y<BRAIN_CUT){const rh=Math.sqrt(x*x+z*z)/Math.sqrt(1-BRAIN_CUT*BRAIN_CUT);bot=1;v.set(x*k,(BRAIN_CUT-.05*(1-rh*rh))*BRAIN_YS,z*k*1.12);}
-    else{v.copy(n).multiplyScalar(k);v.y*=BRAIN_YS;v.z*=1.12;}
+    let bot=0;if(y<BRAIN_CUT){const rh=Math.sqrt(x*x+z*z)/Math.sqrt(1-BRAIN_CUT*BRAIN_CUT);bot=1;brainShape(x,BRAIN_CUT,z,k,v);v.y=(BRAIN_CUT-.05*(1-rh*rh))*BRAIN_YS;}
+    else brainShape(x,y,z,k,v);
     p.setXYZ(i,v.x,v.y,v.z);
     const t=clamp((k-.9)/.12,0,1);c.copy(cA).lerp(cB,Math.min(1,t*1.6));if(t>.65)c.lerp(cC,(t-.65)*1.5);if(eye>.3||mouth>.3)c.lerp(cA,.6);if(brow>.4)c.lerp(cA,.3);if(bot||y<BRAIN_CUT+.05)c.copy(cD);col.set([c.r,c.g,c.b],i*3);}
   g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();return g;}
@@ -1018,7 +1021,7 @@ function brainFace(brain){   /* evil slanted eyes (yellow glow, red iris, black 
   const mouth=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ps.slice(2,-2)),40,.011*F,6),MO);brain.add(mouth);BOSS_RIG.mouth=mouth;
   const VM=new THREE.MeshStandardMaterial({color:0xa0102a,roughness:.5,emissive:0x400010});
   for(let k=0;k<11;k++){const a0=Math.random()*6.28,pts2=[];let a=a0,yy=.8+Math.random()*.15;for(let i=0;i<9;i++){a+=(Math.random()-.5)*.5;yy-=.09;if(yy<BRAIN_CUT+.05)break;const r=Math.sqrt(Math.max(0,1-yy*yy));
-      const pz=Math.cos(a)*r*1.12;if(pz>.7&&yy<.25)continue;pts2.push(new THREE.Vector3(Math.sin(a)*r*.99,yy*BRAIN_YS,pz*.99));}
+      const pz=Math.cos(a)*r*1.12;if(pz>.7&&yy<.25)continue;pts2.push(brainShape(Math.sin(a)*r,yy,Math.cos(a)*r,.99));}
     if(pts2.length>2)brain.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2),20,.012,5),VM));}}
 const _eyeL=new THREE.Vector3();
 function updateBrainEyes(dt){const R=BOSS_RIG;if(!R.pupils||!R.brain)return;const tg=player.alive?player:null;
