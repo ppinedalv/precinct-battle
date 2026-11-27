@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1103</div>
+<div id="buildTag">BUILD 1127-1105</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1732,10 +1732,14 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
   O.arc-=dt;if(on>.3&&O.arc<=0){O.arc=rand(.07,.14);const c=T.localToWorld(_bt2.set(0,2.1,6.15)).clone();   /* small arcs crackling across the dial face */
     {const a=rand(0,Math.PI*2),r=rand(1,2.2);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*r,2.1+Math.sin(a)*r,6.15)),.08,.25);}}
   O.cd-=dt;if(O.age<1.2||O.cd>0||!tg)return;
-  const from=T.localToWorld(new THREE.Vector3(0,2.1,6.3));center(tg,_bt);if(!losClear(from,_bt,tg.r)){O.cd=.5;return;}
+  const from=T.localToWorld(new THREE.Vector3(0,2.1,8.6));center(tg,_bt);if(!losClear(from,_bt,tg.r)){O.cd=.5;return;}
+  /* bolt leaves the dial centre (user 2026-11-27): straight discharge out of the middle of the dial, a flash at the centre, sparks across the face; the main bolt bends toward the target from there */
+  const dialShot=()=>{const c=T.localToWorld(new THREE.Vector3(0,2.1,5.42));lightningStrike(c,from.clone(),.4,.75);
+    for(let k=0;k<6;k++){const a=k/6*Math.PI*2+rand(-.3,.3);lightningStrike(c,T.localToWorld(_bt2.set(Math.cos(a)*1.55,2.1+Math.sin(a)*1.55,5.45)).clone(),.14,.22);}
+    puff(c,0xffffff,1.4,4.5,.18);puff(c,0x6fb4ff,2.2,6,.3);};
   if(tg.onGround===false){_bt.set(tg.pos.x+rand(-2,2),groundAt(tg.pos.x,tg.pos.z,.5,tg.pos.y),tg.pos.z+rand(-2,2));   /* mech in the air from a jump = safe: the bolt misses into the ground below it, no damage (user 2026-11-27) */
-    lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
-  lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,6.3)).clone(),_bt,.22);}},90);   /* quick re-strike flicker */
+    dialShot();lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
+  dialShot();lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,5.42)).clone(),BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),.22,.75);lightningStrike(BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),_bt,.22);}},90);   /* quick re-strike flicker */
   damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
   for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
   O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
@@ -4488,7 +4492,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1103'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1105'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
