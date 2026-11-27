@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1137</div>
+<div id="buildTag">BUILD 1127-1145</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1721,14 +1721,14 @@ function bossArmDown(e){const a=e.arm;a.dead=true;a.tag.sp.visible=false;a.muzzl
 /* ---- lightning orb (user 2026-11-27): once every laser arm is destroyed, a ball of electric light rises out of the boss's crown and
    strikes the mech (or the nearest blue unit) with jagged lightning bolts until the brain is destroyed. Original effect, synthesized thunder. */
 const LBOLTS=[],_lsd=new THREE.Vector3();let LORB=null;
-function lightningPath(a,b,jag){const L=a.distanceTo(b),n=Math.max(6,Math.min(18,Math.round(L/4))),pts=[a.clone()];
+function lightningPath(a,b,jag,nmin=6){const L=a.distanceTo(b),n=Math.max(nmin,Math.min(18,Math.round(L/4))),pts=[a.clone()];
   for(let i=1;i<n;i++){const k=i/n,amp=Math.sin(k*Math.PI)*Math.min(4,L*.09)*jag;pts.push(a.clone().lerp(b,k).add(new THREE.Vector3(rand(-1,1)*amp,rand(-1,1)*amp,rand(-1,1)*amp)));}
   pts.push(b.clone());return pts;}
 function lightningMesh(pts,r,mat){const path=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)path.add(new THREE.LineCurve3(pts[i],pts[i+1]));
   return new THREE.Mesh(new THREE.TubeGeometry(path,pts.length*2,r,5,false),mat);}
-function lightningStrike(from,to,life=.76,thin=1,nf=-1){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning: white-blue core, deep blue glow, a web of fine branching forks (user 2026-11-27 reference) */
+function lightningStrike(from,to,life=.76,thin=1,nf=-1,zig=0){const g=new THREE.Group();g.userData.noAir=true;   /* glowing blue lightning: white-blue core, deep blue glow, a web of fine branching forks (user 2026-11-27 reference) */
   const core=softBeamMat(0xdcefff,1),glow=softBeamMat(0x2a6bff,.85),haze=softBeamMat(0x0b2cff,.26);core.fog=glow.fog=haze.fog=false;
-  const main=thin>=1,pts=lightningPath(from,to,main?.55:1);g.add(lightningMesh(pts,(main?.16:.2)*thin,core),lightningMesh(pts,(main?.42:.6)*thin,glow));if(main)g.add(lightningMesh(pts,1.15,haze));
+  const main=thin>=1,pts=zig?lightningPath(from,to,zig,9):lightningPath(from,to,main?.55:1);   /* zig: short strands with many sharp bends */g.add(lightningMesh(pts,(main?.16:.2)*thin,core),lightningMesh(pts,(main?.42:.6)*thin,glow));if(main)g.add(lightningMesh(pts,1.15,haze));
   const fork=(o,dir,len,r,depth)=>{const end=o.clone().addScaledVector(dir,len).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(len*.35));
     const bp=lightningPath(o,end,1.1);g.add(lightningMesh(bp,r*1.6,core));if(r>.02)g.add(lightningMesh(bp,r*4,glow));
     if(depth>0){const kids=1+(Math.random()<.5?1:0);for(let c=0;c<kids;c++){const j=1+Math.floor(Math.random()*(bp.length-2));const d2=_lsd.copy(end).sub(o).normalize().clone().add(new THREE.Vector3(rand(-.8,.8),rand(-.8,.8),rand(-.8,.8))).normalize();fork(bp[j],d2,len*rand(.4,.6),r*.6,depth-1);}}};
@@ -1918,12 +1918,12 @@ function updateMechZap(dt){const P=player;if(!(P.zapT>0)||!P.alive){if(ZAP_GLOW)
   ZAP_GLOW.visible=true;ZAP_GLOW.position.set(P.pos.x,P.pos.y+2.6,P.pos.z);ZAP_GLOW.scale.setScalar(7+rand(-1,1.5));ZAP_GLOW.material.opacity=k*(.45+.35*Math.random());
   P.zapAcc=(P.zapAcc||0)+dt;while(P.zapAcc>.045){P.zapAcc-=.045;if(Math.random()>k*.95+.05)continue;
     const a=rand(0,6.283),y=Y0+rand(0,H);_za.set(P.pos.x+Math.cos(a)*R*rand(.75,1.5),y,P.pos.z+Math.sin(a)*R*rand(.75,1.5));   /* more scattered (user 2026-11-27) */
-    if(Math.random()<.35){const b=a+Math.PI+rand(-.5,.5);_zb.set(P.pos.x+Math.cos(b)*R,Y0+rand(0,H),P.pos.z+Math.sin(b)*R);}   /* straight through the body */
-    else{const b=a+rand(-1.3,1.3);_zb.set(P.pos.x+Math.cos(b)*R*rand(.85,1.1),Math.max(P.pos.y+.2,y+rand(-1.8,1.8)),P.pos.z+Math.sin(b)*R*rand(.85,1.1));}   /* crawling over the surface */
-    lightningStrike(_za.clone(),_zb.clone(),rand(.09,.18),rand(.18,.3),Math.random()<.4?1:0);
+    if(Math.random()<.18){const b=a+Math.PI+rand(-.5,.5);_zb.set(P.pos.x+Math.cos(b)*R,Y0+rand(0,H),P.pos.z+Math.sin(b)*R);}   /* straight through the body */
+    else{_zb.copy(_za).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).normalize().multiplyScalar(rand(.7,1.7)));_zb.y=Math.max(P.pos.y+.2,_zb.y);}   /* short jagged arcs over the surface (user 2026-11-27) */
+    lightningStrike(_za.clone(),_zb.clone(),rand(.09,.18),rand(.18,.3),0,rand(4,7));
     if(Math.random()<.3)puff(_za,0xbfe0ff,.15,.5,.12);
-    for(let w=0;w<3;w++){const a2=rand(0,6.283),y2=Y0+rand(-.5,H+1.6),r2=R*rand(.6,2.1);_za.set(P.pos.x+Math.cos(a2)*r2,y2,P.pos.z+Math.sin(a2)*r2);const b2=a2+rand(-1.8,1.8),r3=R*rand(.6,2.2);
-      _zb.set(P.pos.x+Math.cos(b2)*r3,Math.max(P.pos.y+.15,y2+rand(-2.2,2.2)),P.pos.z+Math.sin(b2)*r3);lightningStrike(_za.clone(),_zb.clone(),rand(.06,.14),rand(.08,.14),0);}}}   /* extra thin wisps flickering around the mech (user 2026-11-27) */
+    for(let w=0;w<3;w++){const a2=rand(0,6.283),y2=Y0+rand(-.5,H+1.6),r2=R*rand(.6,2.1);_za.set(P.pos.x+Math.cos(a2)*r2,y2,P.pos.z+Math.sin(a2)*r2);_zb.copy(_za).add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).normalize().multiplyScalar(rand(.35,1.1)));_zb.y=Math.max(P.pos.y+.15,_zb.y);
+      lightningStrike(_za.clone(),_zb.clone(),rand(.06,.14),rand(.08,.14),0,rand(5,9));}}}   /* extra thin wisps flickering around the mech (user 2026-11-27) */
 function updateDusk(dt,t){updateSeaMonster(dt);updateMechZap(dt);if(DC_LEDS){const U=DC_LEDS.material.uniforms;U.t.value=t;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
   updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
@@ -4534,7 +4534,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1137'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1145'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
