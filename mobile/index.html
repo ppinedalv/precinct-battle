@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-1909</div>
+<div id="buildTag">BUILD 1126-2018</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1028,33 +1028,49 @@ function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowi
   canG.push({geo:torusG(.55,.07),col:0xff6ad8,m:m(0,0,3.36)},{geo:torusG(.36,.05),col:0xffb3ee,m:m(0,0,3.37)},{geo:new THREE.CircleGeometry(.5,28),col:0xff3fc0,m:m(0,0,3.34)},{geo:new THREE.CircleGeometry(.16,20),col:0xffffff,m:m(0,0,3.39)});
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;canG.push({geo:UBOX,col:0xff8ae6,m:m(Math.cos(a)*.8,Math.sin(a)*.8,3.36,0,0,a,.18,.03,.02)});}
   return {seg:mergeColored(seg),segG:mergeColored(segG),can:mergeColored(can),canG:mergeColored(canG)};}
-function brainGeo(){   /* deep folds + shading, both halves, cerebellum, and an evil face sculpted into the front (original design) */
-  const g=new THREE.SphereGeometry(1,160,120),p=g.attributes.position,v=new THREE.Vector3(),col=new Float32Array(p.count*3),c=new THREE.Color(),cA=new THREE.Color(0x8a2a48),cB=new THREE.Color(0xf48aa8),cC=new THREE.Color(0xffc2d2);
-  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const n=v.clone().normalize(),x=n.x,y=n.y,z=n.z;
-    const face=clamp((z-.45)/.25,0,1)*clamp(1-Math.abs(y+.05)/.6,0,1);
+const BRAIN_O=.28,BRAIN_CUT=-.15,BRAIN_Y=7.4,BRAIN_S=3.3;   /* half brain: top dome only, flat underside; face sits low on the front */
+function brainSurf(x,yu,d){const z=Math.sqrt(Math.max(0,1-x*x-yu*yu));return new THREE.Vector3(x*(1+d),yu*.82*(1+d),z*1.12*(1+d));}
+function brainGeo(){   /* top half of a brain: deep folds, center fissure, flat cut underside, angry face sculpted into the front (original design) */
+  const g=new THREE.SphereGeometry(1,160,120),p=g.attributes.position,v=new THREE.Vector3(),col=new Float32Array(p.count*3),c=new THREE.Color(),cA=new THREE.Color(0x8a2a48),cB=new THREE.Color(0xf48aa8),cC=new THREE.Color(0xffc2d2),cD=new THREE.Color(0x4a1222);
+  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);const n=v.clone().normalize(),x=n.x,y=n.y,z=n.z,yf=y-BRAIN_O;
+    const face=clamp((z-.4)/.25,0,1)*clamp(1-Math.abs(yf+.05)/.6,0,1);
     const a=13*y+5*Math.sin(4*x+2.5*z)+3*Math.sin(7*z),b=12*z+4*Math.sin(5*y+1.7*x)+2*Math.sin(9*x),fold=Math.sqrt(Math.abs(Math.sin(a))*Math.abs(Math.sin(b)));
     const fine=.5+.5*Math.sin(31*x+17*y)*Math.sin(27*z-11*x);let k=.9+.1*fold+.02*fine;k=lerp(k,.97+.03*fold,face*.85);
-    k*=1-.2*Math.exp(-(x*x)/.0022)*(y>-.25?1:0)*(1-face);   /* fissure between the halves */
-    if(z<-.35&&y<-.15)k+=.05*Math.sin(40*y)*Math.sin(30*x);   /* cerebellum ridges */
-    const ax=Math.abs(x),brow=Math.exp(-Math.pow(y-(.2-.42*ax),2)/.0035)*(ax<.5?1:0)*face;k+=.11*brow;   /* angry brow ridge: low in the middle */
-    const eye=Math.exp(-(Math.pow(ax-.21,2)+Math.pow(y-.02+.15*(ax-.21),2)*2)/.006)*face;k-=.07*eye;   /* eye sockets */
-    const my=-.33+.55*x*x,mouth=Math.exp(-Math.pow(y-my,2)/.0011)*(ax<.4?1:0)*face;k-=.06*mouth;k+=.03*Math.exp(-Math.pow(y-my-.06,2)/.002)*(ax<.42?1:0)*face;   /* wicked grin + lip */
-    k+=.04*Math.exp(-(x*x)/.004-Math.pow(y+.08,2)/.01)*face;   /* nose bridge */
-    v.copy(n).multiplyScalar(k);v.y*=.82;v.z*=1.12;if(v.y<-.45)v.y=-.45+(v.y+.45)*.4;p.setXYZ(i,v.x,v.y,v.z);
-    const t=clamp((k-.9)/.12,0,1);c.copy(cA).lerp(cB,Math.min(1,t*1.6));if(t>.65)c.lerp(cC,(t-.65)*1.5);if(eye>.3||mouth>.3)c.lerp(cA,.6);col.set([c.r,c.g,c.b],i*3);}
+    k*=1-.2*Math.exp(-(x*x)/.0022)*(1-face);   /* fissure between the halves */
+    const ax=Math.abs(x),brow=Math.exp(-Math.pow(yf-(.07+.42*ax),2)/.003)*(ax<.46?1:0)*face;k+=.12*brow;   /* angry V brow: low in the middle */
+    const eye=Math.exp(-(Math.pow(ax-.22,2)+Math.pow(yf+.01-.3*(ax-.22),2)*2.5)/.006)*face;k-=.08*eye;   /* slanted eye sockets, inner ends low */
+    const my=-.3+.7*x*x,mouth=Math.exp(-Math.pow(yf-my,2)/.0013)*(ax<.42?1:0)*face;k-=.07*mouth;k+=.035*Math.exp(-Math.pow(yf-my-.065,2)/.002)*(ax<.44?1:0)*face;   /* wide angry grin + lip */
+    k+=.04*Math.exp(-(x*x)/.004-Math.pow(yf+.1,2)/.01)*face;   /* nose bridge */
+    let bot=0;if(y<BRAIN_CUT){const rh=Math.sqrt(x*x+z*z)/Math.sqrt(1-BRAIN_CUT*BRAIN_CUT);bot=1;v.set(x*k,(BRAIN_CUT-.05*(1-rh*rh))*.82,z*k*1.12);}
+    else{v.copy(n).multiplyScalar(k);v.y*=.82;v.z*=1.12;}
+    p.setXYZ(i,v.x,v.y,v.z);
+    const t=clamp((k-.9)/.12,0,1);c.copy(cA).lerp(cB,Math.min(1,t*1.6));if(t>.65)c.lerp(cC,(t-.65)*1.5);if(eye>.3||mouth>.3)c.lerp(cA,.6);if(brow>.4)c.lerp(cA,.35);if(bot||y<BRAIN_CUT+.05)c.copy(cD);col.set([c.r,c.g,c.b],i*3);}
   g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();return g;}
-function brainFace(brain){   /* glowing slanted eyes, jagged grin with teeth, surface veins (children of the brain mesh, unit scale) */
-  const EM=new THREE.MeshBasicMaterial({color:0xff2a10}),EC=new THREE.MeshBasicMaterial({color:0xffe14a}),MO=new THREE.MeshBasicMaterial({color:0xff4a1a}),TE=new THREE.MeshStandardMaterial({color:0xf2ead8,roughness:.4});
-  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),EM);e.scale.set(.12,.045,.05);e.position.set(s*.21,.005,1.01);e.rotation.set(-.2,s*.35,s*-.42);brain.add(e);
-    const pc=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),EC);pc.scale.set(.03,.03,.02);pc.position.set(s*.2,.005,1.055);brain.add(pc);
-    const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff3a10,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.9}));gl.position.set(s*.21,.01,1.1);gl.scale.set(.42,.3,1);brain.add(gl);BOSS_RIG.eyeGlow.push(gl);}
-  const pts=[];for(let i=0;i<=24;i++){const x=-.36+i*.03;pts.push(new THREE.Vector3(x,(-.33+.55*x*x)*.82,Math.sqrt(Math.max(0,1-x*x-.11))*1.12-.04));}
-  const mouth=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),48,.022,8),MO);brain.add(mouth);BOSS_RIG.mouth=mouth;
-  for(let i=0;i<13;i++){const x=-.3+i*.05,y=(-.33+.55*x*x)*.82,z=Math.sqrt(Math.max(0,1-x*x-.11))*1.12-.02;for(const up of[1,-1]){const t=new THREE.Mesh(new THREE.ConeGeometry(.018,.06,5),TE);t.position.set(x,y+up*.03,z);t.rotation.z=up>0?Math.PI:0;brain.add(t);}}
+function brainFace(brain){   /* evil slanted eyes (yellow glow, red iris, black slit that tracks the mech), heavy angry lids, wide toothy grin, veins */
+  const O=BRAIN_O,EM=new THREE.MeshBasicMaterial({color:0xff2a10}),EC=new THREE.MeshBasicMaterial({color:0xffd23a}),PU=new THREE.MeshBasicMaterial({color:0x050000}),
+    LID=new THREE.MeshStandardMaterial({color:0x7a1f3a,roughness:.5,emissive:0x2a0610}),MO=new THREE.MeshBasicMaterial({color:0xff4a1a}),GUM=new THREE.MeshBasicMaterial({color:0x1a0204}),TE=new THREE.MeshStandardMaterial({color:0xf2ead8,roughness:.4});
+  BOSS_RIG.pupils=[];
+  for(const s of[-1,1]){const yu=O-.005,c=brainSurf(s*.22,yu,.0),sl=s*.3;
+    const e=new THREE.Mesh(new THREE.SphereGeometry(1,24,14),EC);e.scale.set(.13,.055,.05);e.position.copy(c);e.rotation.set(-.25,s*.22,sl);brain.add(e);
+    const lid=new THREE.Mesh(new THREE.SphereGeometry(1,20,12,0,Math.PI*2,0,Math.PI/2),LID);lid.scale.set(.16,.07,.075);lid.position.copy(brainSurf(s*.215,yu+.025,.005));lid.rotation.set(-.15,s*.22,s*.55);brain.add(lid);
+    const pg=new THREE.Group();pg.position.copy(brainSurf(s*.22,yu,.035));pg.rotation.set(-.25,s*.22,0);
+    const ir=new THREE.Mesh(new THREE.SphereGeometry(1,16,10),EM);ir.scale.set(.052,.05,.012);pg.add(ir);
+    const sp=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),PU);sp.scale.set(.016,.047,.01);sp.position.z=.008;pg.add(sp);
+    brain.add(pg);BOSS_RIG.pupils.push({g:pg,base:pg.position.clone(),cur:new THREE.Vector2()});
+    const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff3a10,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,opacity:.9}));gl.position.copy(brainSurf(s*.22,yu,.09));gl.scale.set(.42,.3,1);brain.add(gl);BOSS_RIG.eyeGlow.push(gl);}
+  const my=x=>O-.3+.7*x*x,pts=[],gp=[];for(let i=0;i<=26;i++){const x=-.39+i*.03;pts.push(brainSurf(x,my(x),-.02));}
+  const mouth=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),56,.026,8),MO);brain.add(mouth);BOSS_RIG.mouth=mouth;
+  const gum=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.slice(3,-3)),40,.014,6),GUM);brain.add(gum);
+  for(let i=0;i<15;i++){const x=-.33+i*.047;for(const up of[1,-1]){const t=new THREE.Mesh(new THREE.ConeGeometry(.02,.07,5),TE);t.position.copy(brainSurf(x,my(x)+up*.035,.0));t.rotation.z=up>0?Math.PI:0;t.rotation.x=-.3;brain.add(t);}}
   const VM=new THREE.MeshStandardMaterial({color:0xa0102a,roughness:.5,emissive:0x400010});
-  for(let k=0;k<9;k++){const a0=Math.random()*6.28,pts2=[];let a=a0,yy=.3+Math.random()*.4;for(let i=0;i<8;i++){a+=(Math.random()-.5)*.5;yy-=.06;const r=Math.sqrt(Math.max(0,1-yy*yy));
-      const pz=Math.cos(a)*r*1.12;if(pz>.75)continue;pts2.push(new THREE.Vector3(Math.sin(a)*r*.99,yy*.82,pz*.99));}
+  for(let k=0;k<9;k++){const a0=Math.random()*6.28,pts2=[];let a=a0,yy=.75+Math.random()*.2;for(let i=0;i<8;i++){a+=(Math.random()-.5)*.5;yy-=.08;if(yy<BRAIN_CUT+.05)break;const r=Math.sqrt(Math.max(0,1-yy*yy));
+      const pz=Math.cos(a)*r*1.12;if(pz>.7&&yy<.6)continue;pts2.push(new THREE.Vector3(Math.sin(a)*r*.99,yy*.82,pz*.99));}
     if(pts2.length>2)brain.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2),20,.012,5),VM));}}
+const _eyeL=new THREE.Vector3();
+function updateBrainEyes(dt){const R=BOSS_RIG;if(!R.pupils||!R.brain)return;const tg=player.alive?player:null;
+  if(tg){R.brain.updateMatrixWorld(true);_eyeL.set(tg.pos.x,tg.pos.y+3,tg.pos.z);R.brain.worldToLocal(_eyeL);}
+  for(const p of R.pupils){let tx=0,ty=0;if(tg){const dx=_eyeL.x-p.base.x,dy=_eyeL.y-p.base.y,dz=Math.max(.15,_eyeL.z-p.base.z),L=Math.hypot(dx,dy,dz);tx=clamp(dx/L*1.6,-1,1);ty=clamp(dy/L*1.6,-1,1);}
+    const k=Math.min(1,dt*8);p.cur.x+=(tx-p.cur.x)*k;p.cur.y+=(ty-p.cur.y)*k;p.g.position.set(p.base.x+p.cur.x*.075,p.base.y+p.cur.y*.026,p.base.z);}}
 const LIQ_U={t:{value:0},lvl:{value:.45}};
 function liquidMats(){const vs='varying vec3 vP;varying vec3 vN;varying vec3 vV;uniform float t;uniform float lvl;void main(){vec3 p=position;'+'#CAP#'+'vP=p;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}';
   const fs='uniform float t;uniform float lvl;varying vec3 vP;varying vec3 vN;varying vec3 vV;void main(){vec3 p=vP/4.55;float surf=lvl+.05*sin(p.x*5.+t*1.7)+.04*sin(p.z*6.-t*1.3);'+'#DISC#'+
@@ -1160,7 +1176,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     const LM=liquidMats(),liquid=new THREE.Mesh(new THREE.SphereGeometry(4.55,48,32),LM.body);liquid.position.y=9.7;
     const cap=new THREE.Mesh(new THREE.RingGeometry(0,4.06,64,8).rotateX(-Math.PI/2),LM.cap);cap.position.y=9.7;BOSS_RIG.cap=cap;
     const bm=new THREE.MeshStandardMaterial({vertexColors:true,emissive:0x5a0c26,emissiveIntensity:.3,roughness:.42,metalness:.05});
-    const brain=new THREE.Mesh(brainGeo(),bm);brain.scale.setScalar(3.1);brain.position.set(0,9.1,0);brain.castShadow=true;brainFace(brain);
+    const brain=new THREE.Mesh(brainGeo(),bm);brain.scale.setScalar(BRAIN_S);brain.position.set(0,BRAIN_Y,0);brain.castShadow=true;brainFace(brain);
     T.add(brain,liquid,cap,glass);BOSS_RIG.brain=brain;BOSS_RIG.brainMat=bm;BOSS_RIG.glass=glass;BOSS_RIG.liquid=liquid;
     const n=60,pos=new Float32Array(n*3);for(let i=0;i<n;i++){pos[i*3]=rand(-3,3);pos[i*3+1]=rand(5.5,13.5);pos[i*3+2]=rand(-3,3);}
     const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(pos,3));
@@ -1201,8 +1217,8 @@ function bossTarget(){let best=null,bd=1e9;for(const e of ents){if(!e.alive||e.t
   const d=Math.hypot(e.pos.x,e.pos.z-BOSS_Z);if(d>105)continue;const sc=d-(e.isPlayer?25:0);if(sc<bd){bd=sc;best=e;}}return best;}
 function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
   const f=Math.max(0,b.flashT||0);b.flashT=Math.max(0,f-dt);const k=f/.45;R.brainMat.emissiveIntensity=.35+.25*Math.sin(t*2.2)+k*2.4;
-  R.brain.scale.setScalar(3.1*(1+.015*Math.sin(t*2.2)));LIQ_U.t.value=t;R.brain.position.y=9.1+.14*Math.sin(t*.9);R.brain.rotation.y=Math.sin(t*.4)*.1;R.brain.rotation.z=Math.sin(t*.55)*.04;
-  {const fire=R.arms.some(a=>!a.dead&&a.aimT>.35);for(const e of R.eyeGlow){e.material.opacity=(fire?1:.6)+.3*Math.sin(t*6+e.position.x*9);const sc=fire?.6:.42;e.scale.set(sc,sc*.7,1);}if(R.mouth)R.mouth.material.color.setHSL(.04,1,fire?.6:.42+.08*Math.sin(t*4));}
+  R.brain.scale.setScalar(BRAIN_S*(1+.015*Math.sin(t*2.2)));LIQ_U.t.value=t;R.brain.position.y=BRAIN_Y+.14*Math.sin(t*.9);updateBrainEyes(dt);R.brain.rotation.y=Math.sin(t*.4)*.1;R.brain.rotation.z=Math.sin(t*.55)*.04;
+  {const fire=R.arms.some(a=>!a.dead&&a.aimT>.35);for(const e of R.eyeGlow){e.material.opacity=(fire?1:.6)+.3*Math.sin(t*6+e.position.x*9);const sc=fire?.5:.34;e.scale.set(sc,sc*.6,1);}if(R.mouth)R.mouth.material.color.setHSL(.04,1,fire?.6:.42+.08*Math.sin(t*4));}
   if(R.edgeMat)R.edgeMat.color.setScalar(.75+.25*Math.sin(t*3.2));if(Math.random()<.08)puff(_bt.set(rand(-7,7),1.6,BOSS_Z+rand(-7,7)),0x9aa0a8,1,3.2,1.4,rand(-.5,.5),rand(2,4),rand(-.5,.5));
   drawHealthTag(b.tag,1-b.hits/b.hitsMax,'BOSS');
   bossShT=Math.max(0,bossShT-dt);if(R.shield.visible)R.shield.material.opacity=.022+.012*Math.sin(t*3)+bossShT*.7;
@@ -1324,7 +1340,7 @@ function updateDusk(dt,t){updateCrowd();const ph=t%16,on={r:0xff2a1a,y:0xffc21a,
   for(const n of DUSK_DYN.neon){if(n.off>0){n.off-=dt;n.m.opacity=.15;continue;}if(Math.random()<.004)n.off=rand(.05,.25);n.m.opacity=.9+.1*Math.sin(t*9+n.ph);}
   for(const tb of BOSS_RIG.tubes){tb.tx.offset.x-=dt*(1.6+Math.sin(t*3+tb.ph)*.4);tb.core.material.opacity=BOSS_RIG.dead?0:.75+.25*Math.random();}
   for(const d of BOSS_RIG.doors){const u=d.userData;if(u.fall>0&&u.fall<1){u.fall=Math.min(1,u.fall+dt*1.4);const e=u.fall*u.fall;d.rotation.x=e*Math.PI/2*.98;d.position.z=WALL_Z+e*1.2;d.position.x=u.s*(5+e*1.5);}}
-  if(BOSS_RIG.dead>0&&BOSS_RIG.dead<2){BOSS_RIG.dead=Math.min(2,BOSS_RIG.dead+dt*.4);const k=BOSS_RIG.dead-1;BOSS_RIG.brain.position.y=9.1-k*4.5;BOSS_RIG.brain.rotation.z=k*.6;
+  if(BOSS_RIG.dead>0&&BOSS_RIG.dead<2){BOSS_RIG.dead=Math.min(2,BOSS_RIG.dead+dt*.4);const k=BOSS_RIG.dead-1;BOSS_RIG.brain.position.y=BRAIN_Y-k*3;BOSS_RIG.brain.rotation.z=k*.6;
     for(const a of BOSS_RIG.arms)a.segs.forEach(g=>{g.rotation.x=lerp(g.rotation.x,.32,dt*2);});}
   updatePeds(dt);updateLabCrew(dt);updateVans(dt);updateThugs(dt,t);updateCars();}
 
@@ -3865,7 +3881,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-1909'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2018'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
