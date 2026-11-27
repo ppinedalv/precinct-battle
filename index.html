@@ -1718,9 +1718,16 @@ const GV_CACHE=[];
 function gangVanMesh(){const ci=Math.floor(Math.random()*3);if(GV_CACHE[ci])return GV_CACHE[ci].clone();   /* detailed gang van (user 2026-11-26) */
   const col=[0x1a1a1d,0x3a1218,0x2a2d33][ci],acc=[0xc41e2a,0xd9a21b,0x2a8ad8][ci],L=4.9,W=1.98,hw=W/2;
   const g=withBins(()=>{tVehicle(2,col);
+    /* flat, tall cargo rear like a modern panel van (user 2026-11-27): full-width box flush to the roof over the back half, split rear doors with black windows, tall corner tail lights, handles */
+    tAdd('metal',rboxL(W,1.53,2.45,.07),col,0,1.145,-1.245);
+    tBox('metal',0x050607,.02,.42,1.7,-hw-.006,1.58,-1.25);tBox('metal',0x050607,.02,.42,.55,hw+.006,1.58,-2.05);   /* black side windows on the cargo section */
+    {const rz=-L/2-.012;tBox('metal',0x0b0b0d,.03,1.3,.02,0,1.15,rz);   /* rear door split */
+      for(const sx of[-1,1]){tBox('metal',0x050607,.78,.5,.02,sx*.44,1.55,rz-.002);tBox('metal',0x9aa0a6,.14,.04,.03,sx*.12,1.1,rz-.01);   /* black rear windows, handles */
+        tBox('glow',0xd81818,.13,.62,.03,sx*(hw-.07),1.25,rz-.004);tBox('glow',0xff7a1a,.13,.1,.035,sx*(hw-.07),.88,rz-.006);tBox('metal',0x2a2c30,.15,.7,.02,sx*(hw-.07),1.22,rz+.004);}   /* tall corner tail lights */
+      tBox('glow',0xd81818,.5,.05,.03,0,1.93,rz);   /* third brake light */}
     for(const sz of[-1,1]){tBox('metal',0xb9bec5,W+.12,.22,.2,0,.46,sz*(L/2+.06));tBox('metal',0x2a2c30,W-.2,.08,.22,0,.6,sz*(L/2+.06));}   /* chrome bumpers */
     tBox('matte',0x0c0c0d,1.2,.4,.05,0,.86,L/2+.02);for(let i=0;i<5;i++)tBox('metal',0xc8ccd2,1.18,.035,.06,0,.7+i*.08,L/2+.04);tBox('metal',0xc8ccd2,1.28,.05,.07,0,1.08,L/2+.04);   /* grille */
-    for(const sx of[-1,1]){tBox('glow',0xfff2c8,.34,.2,.05,sx*.72,.9,L/2+.03);tBox('glow',0xffb02e,.18,.1,.05,sx*.72,.72,L/2+.03);tBox('glow',0xff2020,.14,.5,.05,sx*(hw-.1),1.05,-L/2-.03);   /* lights */
+    for(const sx of[-1,1]){tBox('glow',0xfff2c8,.34,.2,.05,sx*.72,.9,L/2+.03);tBox('glow',0xffb02e,.18,.1,.05,sx*.72,.72,L/2+.03);   /* lights */
       tBox('metal',0x1a1a1d,.08,.24,.32,sx*(hw+.16),1.55,1.55);tBox('metal',0x1a1a1d,.2,.04,.04,sx*(hw+.06),1.55,1.62);   /* mirrors */
       tBox('metal',0x2a2c30,.28,.06,2.6,sx*(hw+.12),.42,.1);tBox('metal',0x9aa0a6,.05,.05,3.9,sx*.68,2.02,-.5);   /* running boards, roof rails */
       tBox('glow',acc,.02,.1,L-.6,sx*(hw+.01),1.12,0);tBox('glow',acc,.02,.04,L-.9,sx*(hw+.01),1.0,0);   /* racing stripe */
