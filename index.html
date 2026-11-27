@@ -624,10 +624,39 @@ function tTree(x,z,s,kind){const TR=0x3e2c1f,TR2=0x4a3626,rnd=drand;
       const tz=(.55+rnd()*.4)*s;tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*(.3+l*.75),ty+l*.62,z+Math.sin(a)*(.3+l*.75),rnd()*3,rnd()*3,0,tz,tz*.8,tz);}
     const m=6+Math.floor(rnd()*6);for(let i=0;i<m;i++){const a=rnd()*6.283,r=(1.4+rnd()*1.1)*s,y=(3.1+rnd()*2.4)*s,sz=(.3+rnd()*.35)*s;   /* small loose tufts poking out of the outline */
       tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*r,y,z+Math.sin(a)*r,rnd()*3,rnd()*3,rnd()*3,sz*(.7+rnd()*.6),sz,sz*(.7+rnd()*.6));}}
-  else{tAdd('matte',cylG(.12,.22,1,8),TR,x,.9*s,z,0,0,0,s,1.8*s,s);
-    const tiers=4+Math.floor(rnd()*2);for(let i=0;i<tiers;i++){const w=(2.9-i*(2.4/tiers))*s*(.85+rnd()*.3),h=(1.9-i*.15)*s*(.85+rnd()*.3);tAdd('matte',PINE_G[i%2],PINE_SH[Math.floor(rnd()*PINE_SH.length)],x+(rnd()-.5)*.25*s,(2.2+i*(4.6/tiers))*s,z+(rnd()-.5)*.25*s,(rnd()-.5)*.15,rnd()*3,(rnd()-.5)*.15,w,h,w);
-      if(i<tiers-1)for(let k=0;k<2+Math.floor(rnd()*2);k++){const a=rnd()*6.283,o=w*(.55+rnd()*.25),c=(.35+rnd()*.3)*s;tAdd('matte',PINE_G[(i+k)%2],PINE_SH[Math.floor(rnd()*PINE_SH.length)],x+Math.cos(a)*o,(2.0+i*(4.6/tiers))*s,z+Math.sin(a)*o,Math.sin(a)*.5,rnd()*3,-Math.cos(a)*.5,c,c*1.3,c);}}   /* uneven tiers + small jagged side sprigs */
-    tAdd('matte',PINE_G[0],PINE_SH[0],x,(2.2+4.6)*s,z,0,rnd()*3,0,.35*s,.9*s,.35*s);}}   /* top spike */
+  else{const pick=rnd();   /* pines removed (user 2026-11-27): each one is now a palm, a wide spreading shade tree or a birch, picked at random */
+    if(pick<.4){   /* PALM: leaning ringed trunk, drooping folded fronds, coconuts, dead fronds hanging below the crown */
+      const H=(7+rnd()*2.5)*s,la=rnd()*6.283,lean=(.4+rnd()*.9)*s,N=9;let px=x,pz=z;
+      for(let i=0;i<N;i++){const t0=i/N,t1=(i+1)/N,y0=t0*H,y1=t1*H,o0=lean*t0*t0,o1=lean*t1*t1,x0=x+Math.cos(la)*o0,z0=z+Math.sin(la)*o0,x1=x+Math.cos(la)*o1,z1=z+Math.sin(la)*o1,
+          r=(.24-.07*t0)*s,L=Math.hypot(x1-x0,y1-y0,z1-z0),tilt=Math.atan2(Math.hypot(x1-x0,z1-z0),y1-y0);
+        tFrame((x0+x1)/2,(y0+y1)/2,(z0+z1)/2,-la+Math.PI/2,()=>{tAdd('matte',cylG(r*.92,r,1,9),i%2?0x6e5a44:0x7a6650,0,0,0,tilt,0,0,1,L,1);tAdd('matte',cylG(r*1.08,r*1.08,1,9),0x5a4836,0,-L*.45,0,tilt,0,0,1,.06*s,1);});px=x1;pz=z1;}
+      const ty=H;tAdd('matte',USPH,0x4a5a2a,px,ty,pz,0,0,0,.7*s,.55*s,.7*s);
+      for(let k=0;k<4;k++){const a=k*1.57+rnd()*.5;tAdd('matte',USPH,0x5a3a1c,px+Math.cos(a)*.28*s,ty-.32*s,pz+Math.sin(a)*.28*s,0,0,0,.26*s,.3*s,.26*s);}
+      const NF=10+Math.floor(rnd()*4);
+      for(let f=0;f<NF;f++){const a=f/NF*6.283+rnd()*.35,col=LEAF_SH[2+Math.floor(rnd()*4)],dead=rnd()<.12;
+        tFrame(px,ty,pz,a,()=>{let fy=0,fz=0,e=-.35-rnd()*.25;
+          for(let j=0;j<6;j++){const l=.62*s,w=(.95-j*.13)*s;e+=.24+rnd()*.06;const dy=-Math.sin(e)*l,dz=Math.cos(e)*l,cy=fy+dy/2,cz=fz+dz/2;
+            for(const sd of[-1,1])tBox('matte',dead?0x8a6a3a:col,w/2,.03*s,l*1.02,sd*w/4,cy+.04*s,cz,0,e,sd*.38);   /* folded leaflet blade either side of the rib */
+            tBox('matte',dead?0x6a4a2a:0x5a6a2a,.05*s,.05*s,l,0,cy,cz,0,e,0);fy+=dy;fz+=dz;}});}
+      for(let k=0;k<3;k++){const a=rnd()*6.283;tFrame(px,ty-.4*s,pz,a,()=>{tBox('matte',0x7a5a32,.5*s,.03*s,1.6*s,0,-.75*s,.32*s,0,1.25+rnd()*.2,rnd()*.3);});}}   /* dry fronds */
+    else if(pick<.72){   /* SPREADING SHADE TREE: short thick trunk splitting into crooked limbs, wide flat layered canopy (some in purple bloom) */
+      const bloom=rnd()<.35,TRK=0x4a3828;tAdd('matte',cylG(.26,.38,1,9),TRK,x,1.1*s,z,0,0,0,s,2.2*s,s);
+      for(let k=0;k<3;k++)tAdd('matte',cylG(.08,.18,1,6),TRK,x+Math.cos(k*2.1)*.35*s,.15*s,z+Math.sin(k*2.1)*.35*s,Math.sin(k*2.1)*1.2,0,-Math.cos(k*2.1)*1.2,s,.6*s,s);   /* root flare */
+      const nl=4+Math.floor(rnd()*2);for(let k=0;k<nl;k++){const a=k/nl*6.283+rnd()*.5,l=(2+rnd()*1.2)*s,tl=.75+rnd()*.25;
+        tAdd('matte',cylG(.09,.17,1,7),TRK,x+Math.cos(a)*l*.32,2.2*s+l*.3,z+Math.sin(a)*l*.32,Math.sin(a)*tl,0,-Math.cos(a)*tl,s,l,s);}
+      const R=(3.2+rnd()*1.1)*s,n=16+Math.floor(rnd()*8);
+      for(let i=0;i<n;i++){const a=rnd()*6.283,r=Math.sqrt(rnd())*R,y=(3.6+rnd()*1.3)*s+(1-r/R)*.9*s,sz=(.9+rnd()*.8)*s;
+        const c=bloom&&rnd()<.55?[0x7a5ab8,0x8e6acb,0x6a4aa0][Math.floor(rnd()*3)]:LEAF_SH[Math.floor(rnd()*LEAF_SH.length)];
+        tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],c,x+Math.cos(a)*r,y,z+Math.sin(a)*r,rnd()*3,rnd()*3,rnd()*.4,sz*(1+rnd()*.4),sz*(.45+rnd()*.25),sz*(1+rnd()*.4));}   /* flattened clumps */
+      for(let i=0;i<6;i++){const a=rnd()*6.283,r=R*(.8+rnd()*.3),sz=(.4+rnd()*.3)*s;tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],LEAF_SH[Math.floor(rnd()*LEAF_SH.length)],x+Math.cos(a)*r,(3.1+rnd()*.5)*s,z+Math.sin(a)*r,rnd()*3,rnd()*3,0,sz,sz*1.2,sz);}}   /* droopy edge tufts */
+    else{   /* BIRCH: two or three slim white trunks with dark bark marks, thin branches, airy light-green clumps */
+      const nt=2+Math.floor(rnd()*2);
+      for(let t=0;t<nt;t++){const a=t/nt*6.283+rnd(),tl=.08+rnd()*.14,H=(5.5+rnd()*2)*s,bx=x+Math.cos(a)*.25*s,bz=z+Math.sin(a)*.25*s,tx=bx+Math.cos(a)*Math.sin(tl)*H,tz=bz+Math.sin(a)*Math.sin(tl)*H;
+        tAdd('matte',cylG(.09,.15,1,8),0xe8e4dc,(bx+tx)/2,H/2,(bz+tz)/2,Math.sin(a)*tl,0,-Math.cos(a)*tl,s,H,s);
+        for(let k=0;k<7;k++){const f=.08+k*.12,mx=bx+(tx-bx)*f,mz=bz+(tz-bz)*f;tBox('matte',0x1e1c1a,.2*s,.05*s,.2*s,mx,f*H,mz,rnd()*3);}   /* bark marks */
+        for(let k=0;k<4;k++){const f=.45+k*.13,mx=bx+(tx-bx)*f,mz=bz+(tz-bz)*f,ba=rnd()*6.283,bl=(.8+rnd()*.7)*s;tAdd('matte',cylG(.025,.05,1,5),0x8a8278,mx+Math.cos(ba)*bl*.35,f*H+bl*.3,mz+Math.sin(ba)*bl*.35,Math.sin(ba)*.95,0,-Math.cos(ba)*.95,s,bl,s);}
+        const nc=7+Math.floor(rnd()*5);for(let i=0;i<nc;i++){const f=.45+rnd()*.6,r=(.4+rnd()*1.3)*s,ca=rnd()*6.283,sz=(.45+rnd()*.45)*s;
+          tAdd('matte',LEAF_G[Math.floor(rnd()*LEAF_N)],[0x5a8a3a,0x6a9a42,0x4d7a3a,0x7aa64a][Math.floor(rnd()*4)],bx+(tx-bx)*Math.min(1,f)+Math.cos(ca)*r,Math.min(1.08,f)*H,bz+(tz-bz)*Math.min(1,f)+Math.sin(ca)*r,rnd()*3,rnd()*3,0,sz,sz*1.15,sz);}}}}}
 
 function tFigure(shirt,pants,skin,lean=0){   /* small standing person (static decoration), feet at y 0 */
   tBox('matte',pants,.42,.85,.24,0,.43,0);tBox('matte',shirt,.55,.72,.32,0,1.22,0,0,lean);tAdd('matte',USPH,skin,0,1.78,0,0,0,0,.34,.36,.34);}
