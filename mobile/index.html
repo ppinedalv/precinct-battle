@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0953</div>
+<div id="buildTag">BUILD 1127-0958</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -646,13 +646,13 @@ function vehBuild(kind,emit,crushed,rnd=Math.random){const {L,W}=VDIM[kind],GL=c
     add('trim',cylG(wr*.2,wr*.2,.28,8),DK,x,wr,z,0,0,Math.PI/2,1,1,1,'wheel');add('trim',UBOX,DK,sx*(hw-.02),wr+.25,z,0,0,0,.12,.16,wr*2.4);}
   if(kind===0){add('paint',rboxL(W,.56,L,.2),0xffffff,0,.66,0);add('paint',rboxL(W-.06,.14,1.4,.07),0xffffff,0,.97,L/2-.74,.09);add('paint',rboxL(W-.06,.12,.95,.06),0xffffff,0,.98,-L/2+.56,-.05);
     add('paint',rboxL(W-.24,.46,2.2,.17),0xffffff,0,1.18,-.22);add('paint',rboxL(W-.34,.07,1.3,.05),0xffffff,0,1.43,-.28);
-    glass(rboxL(W-.32,.04,.95,.02),0,1.2,.8,1.0);glass(rboxL(W-.36,.04,.85,.02),0,1.21,-1.22,-1.0);for(const s of[-1,1])glass(UBOX,s*((W-.24)/2+.012),1.24,-.24,0,0,0,.02,.3,1.85);}
+    glass(UBOX,0,1.19,.893,0,0,0,W-.36,.38,.02);glass(UBOX,0,1.19,-1.333,0,0,0,W-.36,.38,.02);   /* windshield + rear window flat on the cabin faces (user 2026-11-27: the tilted panels stuck up like flaps) */for(const s of[-1,1])glass(UBOX,s*((W-.24)/2+.012),1.24,-.24,0,0,0,.02,.3,1.85);}
   if(kind===1){add('paint',rboxL(W,.62,L,.2),0xffffff,0,.74,0);add('paint',rboxL(W-.06,.16,1.55,.07),0xffffff,0,1.1,L/2-.82,.06);add('paint',rboxL(W-.12,.62,1.9,.17),0xffffff,0,1.36,.5);
     for(const s of[-1,1])add('paint',UBOX,0xffffff,s*(hw-.07),1.26,-1.45,0,0,0,.14,.5,2.25);add('paint',UBOX,0xffffff,0,1.26,-L/2+.08,0,0,0,W-.1,.5,.1);add('trim',UBOX,0x18191b,0,1.06,-1.45,0,0,0,W-.3,.05,2.15);
-    glass(rboxL(W-.36,.04,.8,.02),0,1.38,1.5,1.05);glass(UBOX,0,1.45,-.46,0,0,0,W-.42,.34,.02);for(const s of[-1,1])glass(UBOX,s*((W-.12)/2+.012),1.45,.5,0,0,0,.02,.34,1.5);
+    glass(UBOX,0,1.4,1.463,0,0,0,W-.32,.44,.02);glass(UBOX,0,1.45,-.46,0,0,0,W-.42,.34,.02);for(const s of[-1,1])glass(UBOX,s*((W-.12)/2+.012),1.45,.5,0,0,0,.02,.34,1.5);
     add('trim',UBOX,RIM,0,.86,L/2+.005,0,0,0,1.3,.34,.06);}
   if(kind===2){add('paint',rboxL(W,.9,L,.28),0xffffff,0,.84,0);add('paint',rboxL(W-.12,.66,L-1.5,.2),0xffffff,0,1.58,-.5);add('paint',rboxL(W-.06,.18,1.15,.08),0xffffff,0,1.27,L/2-.62,.24);
-    glass(rboxL(W-.26,.04,1.0,.02),0,1.6,L/2-1.3,1.05);glass(UBOX,0,1.62,-L/2+.26,0,0,0,W-.42,.42,.02);for(const s of[-1,1])glass(UBOX,s*((W-.12)/2+.012),1.64,-.55,0,0,0,.02,.46,L-2.1);
+    glass(UBOX,0,1.62,1.213,0,0,0,W-.3,.48,.02);glass(UBOX,0,1.62,-L/2+.26,0,0,0,W-.42,.42,.02);for(const s of[-1,1])glass(UBOX,s*((W-.12)/2+.012),1.64,-.55,0,0,0,.02,.46,L-2.1);
     for(const s of[-1,1])add('trim',UBOX,0x9aa0a6,s*.7,1.94,-.5,0,0,0,.05,.05,2.6);}
   const fz=L/2,bz=-L/2,hy=kind===2?.98:kind===1?.92:.84;
   for(const s of[-1,1]){add('trim',UBOX,0xe3eaf1,s*(hw-.4),hy,fz+.005,0,0,0,.5,.11,.06);add('trim',UBOX,0xf4fbff,s*(hw-.4),hy-.08,fz+.01,0,0,0,.42,.025,.03);
@@ -4374,7 +4374,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0953'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0958'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
