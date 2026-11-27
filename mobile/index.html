@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1428</div>
+<div id="buildTag">BUILD 1127-1430</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -404,13 +404,27 @@ function tDoor(kind,x,y0,z,ry,w=1.2,h=2.3,n=1){tFrame(x,y0,z,ry,()=>{const AL=0x
   if(n>1)tBox('metal',AL,.06,h,.1,0,h/2,.02);   /* centre mullion */
   if(kind==='glass'){tBox('glow',0xff2a3a,.5,.18,.02,tw/2-.4,h-.35,.06);tBox('metal',0x2a2c30,.4,.12,.25,0,h+.3,.15);tBox('glow',0xfff0d0,.3,.03,.2,0,h+.23,.16);}   /* OPEN sign + light */
   else{tBox('matte',0x1a1a1c,.42,.2,.08,0,h+.32,.04);tBox('glow',0x3dff6a,.36,.14,.02,0,h+.32,.09);}});}   /* EXIT light */
+/* red brick (user 2026-11-27): canvas brick texture + mortar bump map, UVs scaled per face so bricks stay the same size on every wall */
+let BRICK_MAT=null;
+function brickMat(){if(BRICK_MAT)return BRICK_MAT;const S=256,c=document.createElement('canvas'),b=document.createElement('canvas');c.width=c.height=b.width=b.height=S;const g=c.getContext('2d'),gb=b.getContext('2d');
+  let sd=7;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;g.fillStyle='#8c8178';g.fillRect(0,0,S,S);gb.fillStyle='#202020';gb.fillRect(0,0,S,S);
+  const rows=8,cols=4,rh=S/rows,cw=S/cols,m=4;
+  for(let y=0;y<rows;y++)for(let x=-1;x<=cols;x++){const ox=(y%2)*cw/2,X=x*cw+ox,Y=y*rh;const h=6+r()*10,l=33+r()*12,sat=58+r()*15;
+    g.fillStyle=`hsl(${h},${sat}%,${l}%)`;g.fillRect(X+m/2,Y+m/2,cw-m,rh-m);
+    for(let k=0;k<26;k++){g.fillStyle=`rgba(${r()<.5?0:255},${r()<.5?20:0},0,${.04+r()*.07})`;g.fillRect(X+m/2+r()*(cw-m-6),Y+m/2+r()*(rh-m-4),2+r()*6,1+r()*3);}   /* speckle */
+    gb.fillStyle='#e0e0e0';gb.fillRect(X+m/2,Y+m/2,cw-m,rh-m);}
+  const t=new THREE.CanvasTexture(c),tb=new THREE.CanvasTexture(b);t.colorSpace=THREE.SRGBColorSpace;for(const x of[t,tb]){x.wrapS=x.wrapT=THREE.RepeatWrapping;x.anisotropy=8;}
+  BRICK_MAT=new THREE.MeshStandardMaterial({map:t,bumpMap:tb,bumpScale:.035,roughness:.92,metalness:0});return BRICK_MAT;}
+function brickBox(w,h,d,x,y,z,tileW=1.05,tileH=.66){const g=new THREE.BoxGeometry(w,h,d),uv=g.attributes.uv,span=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+  for(let f=0;f<6;f++)for(let i=0;i<4;i++){const k=f*4+i;uv.setXY(k,uv.getX(k)*span[f][0]/tileW,uv.getY(k)*span[f][1]/tileH);}
+  const m=new THREE.Mesh(g,brickMat());m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;m.userData.noAir=true;scene.add(m);return m;}
 function buildSpots(){const F=SPOTS;
   /* FIRE DEPARTMENT: red brick, 3 bays facing the avenue, hose tower, truck on the apron */
   {const x0=27,x1=41,z0=F.fire.z0+1,z1=F.fire.z1-1,cz=(z0+z1)/2,h=8;addBlock((x0+x1)/2,cz,x1-x0,z1-z0,h+.5);
-    tBox('matte',0x8a2e24,x1-x0,h,z1-z0,(x0+x1)/2,h/2,cz);tBox('matte',0xe9e4da,x1-x0+.3,.5,z1-z0+.3,(x0+x1)/2,h+.25,cz);tBox('matte',0xe9e4da,.3,.4,z1-z0,x0-.1,4.6,cz);
+    brickBox(x1-x0,h,z1-z0,(x0+x1)/2,h/2,cz);   /* red brick walls (user 2026-11-27) */tBox('matte',0xe9e4da,x1-x0+.3,.5,z1-z0+.3,(x0+x1)/2,h+.25,cz);tBox('matte',0xe9e4da,.3,.4,z1-z0,x0-.1,4.6,cz);
     for(let i=0;i<3;i++){const bz=z0+4.5+i*7.2;tBox('matte',0xd2d4d6,.12,4,5.6,x0-.08,2,bz);for(let k=0;k<6;k++)tBox('matte',0x9a9ea4,.14,.06,5.6,x0-.1,.5+k*.68,bz);tBox('glow',0xfff0c8,.06,.6,4.4,x0-.12,3.3,bz);}
     for(let i=0;i<5;i++)tBox('glow',0xffd08a,.06,1,1.3,x0-.08,6.2,z0+3+i*5.6);
-    tBox('matte',0x7a2820,4,13.5,4,x1-2,6.75,z1-2);tBox('matte',0xe9e4da,4.3,.4,4.3,x1-2,13.6,z1-2);addBlock(x1-2,z1-2,4,4,14);
+    brickBox(4,13.5,4,x1-2,6.75,z1-2);tBox('matte',0xe9e4da,4.3,.4,4.3,x1-2,13.6,z1-2);addBlock(x1-2,z1-2,4,4,14);
     tCyl('metal',0xd8d8d2,.08,9,x0-9,4.5,z1-1);tBox('matte',0xc41f1f,.04,1.2,2,x0-9,8.3,z1-.0);
     litSign('FIRE DEPT','#ffffff','#9c1a14',9,1.3,x0-.2,7.1,cz,-Math.PI/2,0xff5a40);litSign('STATION 7','#f2b51d','#1b1b1e',4,.8,x0-.2,5.2,z0+4.5+7.2,-Math.PI/2,0);
     tDoor('steel',x0-.06,0,z1-4,-Math.PI/2,1.1,2.3);   /* side service door */
@@ -4665,7 +4679,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1428'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1430'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
