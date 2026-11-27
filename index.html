@@ -393,7 +393,7 @@ function buildSpots(){const F=SPOTS;
     for(const sx of[-1,1]){tCyl('metal',0xe8eaec,.2,3.75,cx+sx*5.6,1.88,CZ+4.1);addBlock(cx+sx*5.6,CZ+4.1,.5,.5,3.8);}
     addBlock(cx,CZ,12,9.2,4.2);buildings[buildings.length-1].y0=3.7;   /* walk under it, land on top */
     for(let i=0;i<3;i++)tBox('glow',0xfff4dc,2.2,.04,.5,cx-4+i*4,3.71,CZ);DUSK_GLOWS.push([cx,3.4,CZ,0xfff4dc,7]);
-    litSign('EMERGENCY','#e3141c','#ffffff',5.2,.55,cx+.7,3.98,CZ+4.67,0,0);tBox('glow',RD,.5,.16,.04,cx-2.6,3.98,CZ+4.69);tBox('glow',RD,.16,.5,.04,cx-2.6,3.98,CZ+4.69);
+    for(const sx of[-1,1])tBox('glow',RD,.05,.16,9.24,cx+sx*6.02,3.8,CZ);   /* red line wraps round both sides of the canopy (user 2026-11-27; sign removed from the canopy) */
     /* roof units */
     for(const [x,z] of[[cx-7,cz-3],[cx+6,cz+2]]){tBox('metal',0x9aa0a6,3,1.4,2.4,x,h+.7,z);for(const dx of[-.7,.7])tCyl('metal',0x5a5f66,.5,.12,x+dx,h+1.46,z);}
     tCyl('metal',0xb0b5bb,.18,1.6,cx+9,h+.8,cz-6);

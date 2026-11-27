@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1430</div>
+<div id="buildTag">BUILD 1127-1432</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -477,7 +477,7 @@ function buildSpots(){const F=SPOTS;
     for(const sx of[-1,1]){tCyl('metal',0xe8eaec,.2,3.75,cx+sx*5.6,1.88,CZ+4.1);addBlock(cx+sx*5.6,CZ+4.1,.5,.5,3.8);}
     addBlock(cx,CZ,12,9.2,4.2);buildings[buildings.length-1].y0=3.7;   /* walk under it, land on top */
     for(let i=0;i<3;i++)tBox('glow',0xfff4dc,2.2,.04,.5,cx-4+i*4,3.71,CZ);DUSK_GLOWS.push([cx,3.4,CZ,0xfff4dc,7]);
-    litSign('EMERGENCY','#e3141c','#ffffff',5.2,.55,cx+.7,3.98,CZ+4.67,0,0);tBox('glow',RD,.5,.16,.04,cx-2.6,3.98,CZ+4.69);tBox('glow',RD,.16,.5,.04,cx-2.6,3.98,CZ+4.69);
+    for(const sx of[-1,1])tBox('glow',RD,.05,.16,9.24,cx+sx*6.02,3.8,CZ);   /* red line wraps round both sides of the canopy (user 2026-11-27; sign removed from the canopy) */
     /* roof units */
     for(const [x,z] of[[cx-7,cz-3],[cx+6,cz+2]]){tBox('metal',0x9aa0a6,3,1.4,2.4,x,h+.7,z);for(const dx of[-.7,.7])tCyl('metal',0x5a5f66,.5,.12,x+dx,h+1.46,z);}
     tCyl('metal',0xb0b5bb,.18,1.6,cx+9,h+.8,cz-6);
@@ -4679,7 +4679,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1430'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1432'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
