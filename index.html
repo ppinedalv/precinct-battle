@@ -1154,12 +1154,12 @@ function updateSeaMonster(dt){if(!DUSK||!actx||!noise)return;const P=player,insi
    (no real licence, so no audio copied): ~1.2 s of dense spark crackle (~400 sharp grains/s, mostly 4-11 kHz) over a faint 58 Hz mains buzz.
    3 variants are rendered into buffers once, then one plays per hit. */
 let CRACKLE_BUFS=null;
-function makeCrackleBuf(){const sr=actx.sampleRate,L=Math.floor(sr*1.3),d=new Float32Array(L);let t=0,rate=380;
-  while(t<1.22){rate=clamp(rate+rand(-120,120),120,900);t+=-Math.log(Math.random())/rate;const st=Math.floor(t*sr),tau=rand(.0006,.0026)*sr,a=Math.pow(Math.random(),1.6)*(Math.random()<.06?2.2:1);
+function makeCrackleBuf(){const sr=actx.sampleRate,L=Math.floor(sr*2.3),d=new Float32Array(L);let t=0,rate=380;   /* 2.2 s long, lasts as long as the current on the mech (user 2026-11-27, was 1.2 s) */
+  while(t<2.2){rate=clamp(rate+rand(-120,120),120,900);t+=-Math.log(Math.random())/rate;const st=Math.floor(t*sr),tau=rand(.0006,.0026)*sr,a=Math.pow(Math.random(),1.6)*(Math.random()<.06?2.2:1);
     for(let i=0;i<tau*5&&st+i<L;i++)d[st+i]+=(Math.random()*2-1)*a*Math.exp(-i/tau);}
   let y=0,px=0;const k=Math.exp(-2*Math.PI*1800/sr);for(let i=0;i<L;i++){const x=d[i];y=k*(y+x-px);px=x;d[i]=y;}   /* high-pass ~1.8 kHz */
   {let z=0,z2=0;const al=1-Math.exp(-2*Math.PI*6500/sr);for(let i=0;i<L;i++){z+=al*(d[i]-z);z2+=al*(z-z2);d[i]=z2;}}   /* 2-pole low-pass 6.5 kHz: brightness centred ~5 kHz like the reference */
-  for(let i=0;i<L;i++){const tt=i/sr,env=tt<.02?tt/.02:tt<1.0?1:Math.max(0,1-(tt-1)/.25),hum=Math.max(-.6,Math.min(.6,Math.sin(2*Math.PI*58*tt)*1.4));d[i]=(d[i]+hum*.05)*env;}
+  for(let i=0;i<L;i++){const tt=i/sr,env=tt<.02?tt/.02:tt<1.75?1:Math.max(0,1-(tt-1.75)/.45),hum=Math.max(-.6,Math.min(.6,Math.sin(2*Math.PI*58*tt)*1.4));d[i]=(d[i]+hum*.05)*env;}
   let m=0;for(let i=0;i<L;i++)m=Math.max(m,Math.abs(d[i]));const g=.9/(m||1);for(let i=0;i<L;i++)d[i]*=g;
   const b=actx.createBuffer(1,L,sr);b.getChannelData(0).set(d);return b;}
 function elecCrackle(vol=.75){if(muted||!actx)return;if(!CRACKLE_BUFS)CRACKLE_BUFS=[0,1,2].map(makeCrackleBuf);
@@ -1673,7 +1673,7 @@ function updateLightningOrb(b,tg,dt,t,dmg){const R=BOSS_RIG;   /* bolts fire out
   if(tg.onGround===false){_bt.set(tg.pos.x+rand(-2,2),groundAt(tg.pos.x,tg.pos.z,.5,tg.pos.y),tg.pos.z+rand(-2,2));   /* mech in the air from a jump = safe: the bolt misses into the ground below it, no damage (user 2026-11-27) */
     dialShot();lightningStrike(from,_bt);O.flash=1;thunderSnd(_bt);puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));return;}
   dialShot();lightningStrike(from,_bt);O.flash=1;setTimeout(()=>{if(LORB&&tg.alive&&tg.onGround!==false){center(tg,_bt);lightningStrike(BOSS_RIG.top.localToWorld(_bt2.set(0,2.1,5.42)).clone(),BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),.44,.75);lightningStrike(BOSS_RIG.top.localToWorld(new THREE.Vector3(0,2.1,8.6)),_bt,.44,1,5);   /* every bolt lasts twice as long (user 2026-11-27) */}},90);   /* quick re-strike flicker */
-  damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);if(tg.isPlayer&&!(player.shieldT>0)){elecCrackle();player.zapT=1.6;}   /* mech hit by the lightning: electric crackle */puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
+  damage(tg,dmg*1.4,RED,false,true);thunderSnd(_bt);if(tg.isPlayer&&!(player.shieldT>0)){elecCrackle();player.zapT=2.0;}   /* mech hit by the lightning: electric crackle */puff(_bt,0xcfe6ff,2.4,6,.3);puff(_bt,0x2f6cff,1.8,5,.45);puff(from,0x2f6cff,2,5,.3);
   for(let k=0;k<6;k++)puff(_bt,0x6fa8ff,.25,.1,rand(.2,.45),rand(-8,8),rand(2,8),rand(-8,8));if(tg.isPlayer)camShake=Math.max(camShake,.7);
   O.cd=Math.max(1.6,[4.2,4,3.8,3.6,3.3,3,2.7,2.4,2.1,1.8][DIFF.level-1]*rand(.85,1.15));}
 function updateLightningBolts(dt){for(let i=LBOLTS.length-1;i>=0;i--){const L=LBOLTS[i];L.life-=dt;
