@@ -914,6 +914,45 @@ const FLAME_TEX=(()=>{const c=document.createElement('canvas');c.width=64;c.heig
   const gr=g.createLinearGradient(0,128,0,0);gr.addColorStop(0,'rgba(255,255,220,1)');gr.addColorStop(.25,'rgba(255,200,60,.95)');gr.addColorStop(.6,'rgba(255,90,10,.7)');gr.addColorStop(1,'rgba(200,20,0,0)');
   g.filter='blur(3px)';g.fillStyle=gr;g.beginPath();g.moveTo(32,4);g.bezierCurveTo(44,40,58,62,56,92);g.bezierCurveTo(54,116,40,124,32,124);g.bezierCurveTo(24,124,10,116,8,92);g.bezierCurveTo(6,62,20,40,32,4);g.fill();
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+/* molotov fireball (user 2026-11-26): lumpy fire lobes that burst apart outward + spark streaks, pooled, 3 draw calls total */
+const FIREBALL_TEX=(()=>{const S=128,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');let sd=5;const r=()=>(sd=(sd*16807)%2147483647)/2147483647;
+  for(let i=0;i<22;i++){const a=r()*6.28,d=r()*30,x=64+Math.cos(a)*d,y=64+Math.sin(a)*d,R=18+r()*26,gr=g.createRadialGradient(x,y,0,x,y,R);
+    gr.addColorStop(0,'rgba(255,255,235,.55)');gr.addColorStop(.45,'rgba(255,220,150,.35)');gr.addColorStop(.8,'rgba(230,140,80,.15)');gr.addColorStop(1,'rgba(200,90,40,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,R,0,6.29);g.fill();}
+  const id=g.getImageData(0,0,S,S),d=id.data;for(let i=0;i<d.length;i+=4){const n=.82+.18*Math.sin(i*.013)*Math.sin(i*.0071);d[i+3]=Math.min(255,d[i+3]*1.7*n);}g.putImageData(id,0,0);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;})();
+const BALLS=[];for(let i=0;i<54;i++){const add=i<14,s=new THREE.Sprite(new THREE.SpriteMaterial({map:FIREBALL_TEX,blending:add?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,transparent:true}));s.visible=false;s.userData.noAir=true;scene.add(s);BALLS.push({s,add,life:0,max:1,v:new THREE.Vector3(),size:1,spin:0});}
+let ballN=0,ballA=0;
+const SMOKES=[];for(let i=0;i<36;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:FIREBALL_TEX,color:0x2c2622,depthWrite:false,transparent:true,opacity:0}));s.visible=false;s.userData.noAir=true;s.renderOrder=-1;scene.add(s);SMOKES.push({s,life:0,max:1,delay:0,v:new THREE.Vector3(),size:1,spin:0,g:0});}
+let smokeI=0;
+function spawnSmoke(x,y,z,vx,vy,vz,size,life,delay){const m=SMOKES[smokeI=(smokeI+1)%SMOKES.length];m.s.position.set(x,y,z);m.v.set(vx,vy,vz);m.size=size;m.life=m.max=life;m.delay=delay;m.spin=rand(-.6,.6);m.g=rand(.06,.13);m.s.material.rotation=Math.random()*6.28;m.s.visible=false;}
+const SPARK_N=160,SPARKS=[],sparkPos=new Float32Array(SPARK_N*6),sparkCol=new Float32Array(SPARK_N*6);
+const SPARK_LINES=(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(sparkPos,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('color',new THREE.BufferAttribute(sparkCol,3).setUsage(THREE.DynamicDrawUsage));
+  const m=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));m.frustumCulled=false;m.userData.noAir=true;scene.add(m);
+  for(let i=0;i<SPARK_N;i++)SPARKS.push({p:new THREE.Vector3(),v:new THREE.Vector3(),life:0,max:1});return m;})();
+let sparkI=0;
+function spawnBall(add,x,y,z,vx,vy,vz,size,life){const b=add?BALLS[(ballA=(ballA+1)%14)]:BALLS[14+(ballN=(ballN+1)%40)];b.s.position.set(x,y,z);b.v.set(vx,vy,vz);b.size=size;b.life=b.max=life;b.spin=rand(-1.5,1.5);b.s.material.rotation=Math.random()*6.28;b.s.visible=true;}
+function fireballBurst(x,y,z){
+  for(let i=0;i<4;i++)spawnBall(true,x+rand(-.4,.4),y+rand(.3,1),z+rand(-.4,.4),rand(-1,1),rand(1,3),rand(-1,1),rand(2.6,3.6),rand(.35,.55));   /* white-hot flash core */
+  const L=7+Math.floor(Math.random()*3);for(let i=0;i<L;i++){const a=i/L*Math.PI*2+rand(-.3,.3),sp=rand(5,9),up=rand(2.5,6);   /* lobes that part away from each other */
+    spawnBall(false,x,y+.6,z,Math.cos(a)*sp,up,Math.sin(a)*sp,rand(2,3.2),rand(.75,1.15));spawnBall(true,x,y+.6,z,Math.cos(a)*sp*.85,up*.9,Math.sin(a)*sp*.85,rand(1.3,2),rand(.4,.6));}
+  for(let i=0;i<4;i++)spawnBall(false,x+rand(-.6,.6),y+1,z+rand(-.6,.6),rand(-1.5,1.5),rand(5,8),rand(-1.5,1.5),rand(2.4,3.4),rand(.9,1.3));   /* rising column */
+  for(let i=0;i<14;i++){const a=Math.random()*6.28,sp=rand(1.5,4.5);spawnSmoke(x+Math.cos(a)*rand(0,2),y+rand(1,3),z+Math.sin(a)*rand(0,2),Math.cos(a)*sp,rand(2.5,5),Math.sin(a)*sp,rand(2.5,4),rand(2.4,3.6),rand(.15,.6));}   /* billowing smoke (user 2026-11-26) */
+  for(let i=0;i<55;i++){const sk=SPARKS[sparkI=(sparkI+1)%SPARK_N],a=Math.random()*6.28,el=rand(.05,1.3),sp=rand(9,24);sk.p.set(x,y+.5,z);sk.v.set(Math.cos(a)*Math.cos(el)*sp,Math.sin(el)*sp+rand(0,4),Math.sin(a)*Math.cos(el)*sp);sk.life=sk.max=rand(.5,1.3);}}
+const _bc=new THREE.Color(),_bc1=new THREE.Color(0xfff6d8),_bc2=new THREE.Color(0xff8a2a),_bc3=new THREE.Color(0x5a1a08);
+function updateBlast(dt){
+  for(const b of BALLS){if(b.life<=0)continue;b.life-=dt;if(b.life<=0){b.s.visible=false;continue;}const k=1-b.life/b.max,dr=Math.exp(-dt*3.2);
+    b.v.multiplyScalar(dr);b.v.y+=dt*(b.add?1:2.2);b.s.position.addScaledVector(b.v,dt);b.s.material.rotation+=b.spin*dt;
+    const sc=b.size*(.35+1.25*(1-Math.pow(1-k,3)));b.s.scale.set(sc,sc,1);
+    if(b.add){_bc.copy(_bc1).lerp(_bc2,k);b.s.material.color.copy(_bc);b.s.material.opacity=Math.pow(1-k,1.3);}
+    else{if(k<.35)_bc.copy(_bc1).lerp(_bc2,k/.35);else _bc.copy(_bc2).lerp(_bc3,(k-.35)/.65);b.s.material.color.copy(_bc);b.s.material.opacity=k<.1?k*10:Math.pow(1-(k-.1)/.9,1.1);}}
+  for(const m of SMOKES){if(m.life<=0)continue;if(m.delay>0){m.delay-=dt;if(m.delay>0)continue;m.s.visible=true;}m.life-=dt;if(m.life<=0){m.s.visible=false;continue;}const k=1-m.life/m.max;
+    m.v.multiplyScalar(Math.exp(-dt*1.4));m.v.y+=dt*.6;m.s.position.addScaledVector(m.v,dt);m.s.material.rotation+=m.spin*dt;const sc=m.size*(.5+1.6*Math.sqrt(k));m.s.scale.set(sc,sc,1);
+    m.s.material.color.setScalar(m.g*(1-.4*k)).lerp(_bc3,Math.max(0,.4-k)*.8);m.s.material.opacity=(k<.15?k/.15:Math.pow(1-(k-.15)/.85,1.4))*.78;}
+  let any=false;for(let i=0;i<SPARK_N;i++){const sk=SPARKS[i],o=i*6;if(sk.life<=0){sparkCol.fill(0,o,o+6);continue;}any=true;sk.life-=dt;
+    sk.v.y-=16*dt;sk.v.multiplyScalar(Math.exp(-dt*.8));sk.p.addScaledVector(sk.v,dt);if(sk.p.y<.05){sk.p.y=.05;sk.v.y*=-.3;sk.v.x*=.5;sk.v.z*=.5;}
+    const f=Math.max(0,sk.life/sk.max),tl=.045;sparkPos[o]=sk.p.x;sparkPos[o+1]=sk.p.y;sparkPos[o+2]=sk.p.z;sparkPos[o+3]=sk.p.x-sk.v.x*tl;sparkPos[o+4]=sk.p.y-sk.v.y*tl;sparkPos[o+5]=sk.p.z-sk.v.z*tl;
+    sparkCol[o]=f;sparkCol[o+1]=f*(.75+.25*f);sparkCol[o+2]=f*f*.5;sparkCol[o+3]=f*.6;sparkCol[o+4]=f*.3;sparkCol[o+5]=0;}
+  SPARK_LINES.geometry.attributes.position.needsUpdate=true;SPARK_LINES.geometry.attributes.color.needsUpdate=true;SPARK_LINES.visible=any;}
 const FLAMES=[];for(let i=0;i<160;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:FLAME_TEX,color:0xffffff,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));s.visible=false;s.center.set(.5,0);scene.add(s);FLAMES.push({s,life:0,max:1,w:1,h:1,vy:0,ph:0,x:0,z:0});}
 let flameI=0;
 function spawnFlame(x,y,z,size){const f=FLAMES[flameI=(flameI+1)%FLAMES.length];f.x=x;f.z=z;f.s.position.set(x,y,z);f.life=f.max=rand(.45,.85);f.w=size*rand(.5,.8);f.h=size*rand(1.4,2.2);f.vy=rand(1.6,3.2);f.ph=Math.random()*6;f.s.visible=true;f.s.material.color.setHSL(rand(.03,.09),1,rand(.55,.7));}
@@ -921,12 +960,12 @@ function updateFlames(dt){for(const f of FLAMES){if(f.life<=0)continue;f.life-=d
   f.s.position.y+=f.vy*dt;f.s.position.x=f.x+Math.sin(f.ph+k*9)*.15*k;f.s.position.z=f.z+Math.cos(f.ph+k*7)*.12*k;
   f.s.scale.set(f.w*(1-k*.55)*(1+.12*Math.sin(f.ph+k*30)),f.h*(1-k*.35),1);f.s.material.opacity=Math.pow(1-k,.7);}}
 function molotovBurst(p){const g=_th2.set(p.x,Math.max(.3,p.y),p.z);
-  puff(g,0xfff0b0,1.6,4,.18);for(let i=0;i<26;i++)spawnFlame(p.x+rand(-2.2,2.2),0,p.z+rand(-2.2,2.2),rand(1.4,2.6));   /* whoosh: a burst of tall rising flames */
-  for(let i=0;i<5;i++)puff(_c.set(g.x+rand(-1.5,1.5),g.y+rand(1,3),g.z+rand(-1.5,1.5)),0x2a1e18,2.5,6,rand(1.2,2),0,rand(2,4),0);
+  fireballBurst(g.x,g.y,g.z);for(let i=0;i<12;i++)spawnFlame(p.x+rand(-2.4,2.4),0,p.z+rand(-2.4,2.4),rand(.9,1.6));   /* fireball bursting apart with sparks, then burning ground flames */
+  for(let i=0;i<6;i++)puff(_c.set(g.x+rand(-2,2),g.y+rand(2,4),g.z+rand(-2,2)),0x2a1e18,3,7,rand(1.4,2.2),rand(-1,1),rand(2,4),rand(-1,1));
   glassBreak(g);fireWhoosh(g);
   const P=player;if(P.alive&&Math.hypot(P.pos.x-p.x,P.pos.z-p.z)<4.8&&P.pos.y<3)damage(P,14+DIFF.level*.8,RED,false,false);
   FIRES.push({x:p.x,z:p.z,t:4.5,tick:0});}
-function updateThugs(dt,t){const P=player;updateCorpses(dt);updateFlames(dt);
+function updateThugs(dt,t){const P=player;updateCorpses(dt);updateFlames(dt);updateBlast(dt);
   if(BOSS&&BOSS.alive&&P.alive){DUSK_DYN.thugT=(DUSK_DYN.thugT??3)-dt;if(DUSK_DYN.thugT<=0){DUSK_DYN.thugT=lerp(6,2.2,(DIFF.level-1)/9);if(THUGS.filter(u=>u.alive&&u.role!=='guard').length<thugCap())spawnThug();}}
   for(let i=THUGS.length-1;i>=0;i--){const u=THUGS[i];if(!u.alive){THUGS.splice(i,1);continue;}
     if(u.frozen>0){u.frozen-=dt;continue;}
