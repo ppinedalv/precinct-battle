@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-0940</div>
+<div id="buildTag">BUILD 1127-0941</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -3167,6 +3167,20 @@ function initShopWins(){if(!DUSK||SHOP_WINS.length)return;const F=SPOTS;
   addShopWin(-62+.04,1,(F.grocery.z0+F.grocery.z1)/2,22,1.6,3,11);addShopWin(-38+.04,1,95,12,1.7,2.4,6);
   addShopWin(22-.04,-1,(F.donut.z0+F.donut.z1)/2,8,1.4,2.2,4);addShopWin(23-.04,-1,(F.coffee.z0+F.coffee.z1)/2,14,1.6,2.6,6);
   for(const [S,nx] of[[LIQUOR,-1],[SMOKE,1]]){const cx=(S.x0+S.x1)/2,d=S.x1-S.x0,w=S.z1-S.z0;addShopWin(cx+nx*(d/2+.05),nx,(S.z0+S.z1)/2,w*.62,1.9,2.6,9);}}
+/* broken glass on the ground in front of each shattered window (user 2026-11-27): jagged flat shards, one instanced draw call */
+const SHARD_N=1100;let SHARDS=null,shardI=0;
+function shardMesh(){if(SHARDS)return SHARDS;const g=new THREE.BufferGeometry(),P=[];
+  const tri=(a,b,c)=>P.push(a[0],0,a[1],b[0],0,b[1],c[0],0,c[1]);
+  tri([-.5,-.3],[.5,-.45],[.1,.55]);tri([.5,-.45],[.45,.2],[.1,.55]);tri([-.5,-.3],[.1,.55],[-.35,.35]);   /* irregular 5-sided shard, flat on the ground */
+  g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.computeVertexNormals();
+  SHARDS=new THREE.InstancedMesh(g,new THREE.MeshStandardMaterial({color:0xcfe6ff,metalness:.7,roughness:.06,transparent:true,opacity:.8,side:THREE.DoubleSide,envMap:envTex(),depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}),SHARD_N);
+  SHARDS.frustumCulled=false;SHARDS.userData.noAir=true;SHARDS.instanceMatrix.setUsage(THREE.DynamicDrawUsage);for(let i=0;i<SHARD_N;i++)SHARDS.setMatrixAt(i,_Z0);scene.add(SHARDS);return SHARDS;}
+const _shm=new THREE.Matrix4(),_shq=new THREE.Quaternion(),_she=new THREE.Euler(),_shp=new THREE.Vector3(),_shs=new THREE.Vector3();
+function scatterShards(W){const M=shardMesh(),n=16+Math.floor(Math.random()*10);
+  for(let k=0;k<n;k++){const out=Math.pow(Math.random(),1.6)*2.2+.1,z=W.z+(Math.random()-.5)*(W.w+.5),sz=rand(.06,.26)*(out<.8?1.2:.85);   /* most pieces land close to the wall, a few skid farther */
+    _shp.set(W.px+W.nx*out,.035+Math.random()*.01,z);_she.set(rand(-.08,.08),Math.random()*6.283,rand(-.08,.08));_shq.setFromEuler(_she);_shs.set(sz*rand(.6,1.4),1,sz*rand(.6,1.4));
+    _shm.compose(_shp,_shq,_shs);M.setMatrixAt(shardI++%SHARD_N,_shm);}
+  M.instanceMatrix.needsUpdate=true;}
 const _sw=new THREE.Vector3();
 function shopWindowHit(a,b,splash){if(!DUSK)return;initShopWins();let snd=null;
   for(const W of SHOP_WINS){if(W.broken)continue;let hit=false;
@@ -3174,7 +3188,7 @@ function shopWindowHit(a,b,splash){if(!DUSK)return;initShopWins();let snd=null;
     if(!hit&&splash>0&&Math.abs(b.x-W.px)<splash&&Math.hypot(b.z-W.z,b.y-W.y)<splash*.8+W.w/2)hit=true;
     if(!hit)continue;W.broken=true;
     if(!SHATTER_MATS)SHATTER_MATS=[3,77,901].map(k=>new THREE.MeshBasicMaterial({map:shatterTex(k)}));const m=new THREE.Mesh(new THREE.PlaneGeometry(W.w*.96,W.h*.96),SHATTER_MATS[Math.floor(Math.random()*3)]);m.position.set(W.px+W.nx*.07,W.y,W.z);m.rotation.y=W.nx>0?Math.PI/2:-Math.PI/2;if(Math.random()<.5)m.scale.x=-1;m.userData.noAir=true;scene.add(m);
-    _sw.set(W.px+W.nx*.3,W.y,W.z);snd=snd||_sw.clone();
+    _sw.set(W.px+W.nx*.3,W.y,W.z);snd=snd||_sw.clone();{const WW=W;setTimeout(()=>scatterShards(WW),350);}   /* shards land after the burst */
     for(let k=0;k<9;k++)puff(_sw,k%3?0xcfe8ff:0xffffff,.12,.35,rand(.5,.9),W.nx*rand(1,4),rand(-1,3),rand(-2.5,2.5));}
   if(snd)glassBreak(snd);}
 function updateProjs(dt){
@@ -4290,7 +4304,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0940'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-0941'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
