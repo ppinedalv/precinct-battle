@@ -443,6 +443,9 @@ function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=HALF_X+40,H=H
   const X=x=>(x+W)*S,Z=z=>(z+H)*S,R=(x0,z0,x1,z1,col)=>{g.fillStyle=col;g.fillRect(X(x0),Z(z0),(x1-x0)*S,(z1-z0)*S);};
   R(-W,-H,W,H,'#4a3f3a');
   R(-W,TOWN_Z0,W,H,'#33482c');   /* lawns */
+  { /* grass speckles (user 2026-11-27): dark green flecks + a few lighter blades so lawns look less flat; roads/sidewalks paint over them */
+    const x0=X(-W),y0=Z(TOWN_Z0),w=X(W)-x0,h=Z(H)-y0,n=Math.round(w*h/26),dk=['#1e3118','#233a1c','#284220','#2c4723'],lt=['#3f5a34','#46613a'];
+    for(let i=0;i<n;i++){const r=Math.random(),sz=Math.max(1,S*(.12+Math.random()*.3));g.fillStyle=r<.88?dk[Math.floor(Math.random()*4)]:lt[Math.floor(Math.random()*2)];g.fillRect(x0+Math.random()*w,y0+Math.random()*h,sz,sz*(.6+Math.random()*.8));}}
   /* compound floor: steel plates with seams + hazard lines */
   R(-W,-H,W,TOWN_Z0,'#2e3035');g.strokeStyle='#202226';g.lineWidth=Math.max(1,S*.12);
   for(let x=-W;x<W;x+=6){g.beginPath();g.moveTo(X(x),Z(-H));g.lineTo(X(x),Z(TOWN_Z0));g.stroke();}
