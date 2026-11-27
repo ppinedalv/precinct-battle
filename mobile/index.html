@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1052</div>
+<div id="buildTag">BUILD 1127-1057</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1388,11 +1388,18 @@ function tScientist(x,y,z,ry,s=1){tFrame(x,y,z,ry,()=>{const CO=0xe8ecef,SK=0xd8
   tAdd('lab',USPH,SK,0,2.02*s,0,0,0,0,.42*s,.48*s,.42*s);
   tAdd('lab',torusG(1,.09,28),0x101214,0,2.06*s,0,Math.PI/2,0,0,.218*s,.218*s,.5*s);   /* head strap hugging the head (user 2026-11-27) */
   for(const g of goggleItems(.114*s,2.06*s,.22*s,1.9*s))TB.lab.push({geo:g.geo,col:g.col,m:TF.clone().multiply(g.m)});});}
+/* rivet bolts on the boss's steel piping (user 2026-11-27, like the riveted plates on the mech): rings of low-poly dome bolts + a darker seam band */
+const BOLT_G=new THREE.SphereGeometry(.5,6,4);
+function boltRingY(bin,x,y,z,r,n,bs){for(let k=0;k<n;k++){const a=k/n*Math.PI*2;tAdd(bin,BOLT_G,0xdfe3e8,x+Math.cos(a)*r,y,z+Math.sin(a)*r,0,0,0,bs,bs,bs);}tAdd(bin,torusG(r-.01,.025,24),0x8a9098,x,y-.06,z,Math.PI/2);}
+function boltRingsTube(bin,curve,R,rings,n,bs){const T=new THREE.Vector3(),N1=new THREE.Vector3(),N2=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);
+  for(let i=1;i<=rings;i++){const u=i/(rings+1),P=curve.getPointAt(u);curve.getTangentAt(u,T);N1.crossVectors(T,Math.abs(T.y)>.9?new THREE.Vector3(1,0,0):up).normalize();N2.crossVectors(T,N1).normalize();
+    for(let k=0;k<n;k++){const a=k/n*Math.PI*2,q=P.clone().addScaledVector(N1,Math.cos(a)*R).addScaledVector(N2,Math.sin(a)*R);tAdd(bin,BOLT_G,0xdfe3e8,q.x,q.y,q.z,0,0,0,bs,bs,bs);}}}
 function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowing edge strips; detailed laser cannon (user 2026-11-26) */
   const seg=[],segG=[],can=[],canG=[],m=(x,y,z,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1)=>new THREE.Matrix4().compose(new THREE.Vector3(x,y,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(rx,ry,rz)),new THREE.Vector3(sx,sy,sz));
   seg.push({geo:UCYL,col:0xc6ccd3,m:m(0,0,.85,Math.PI/2,0,0,1.5,1.55,1.5)},{geo:torusG(.78,.13),col:0xd9a21b,m:m(0,0,1.55)},{geo:torusG(.74,.08),col:0xa8aeb6,m:m(0,0,.35)},{geo:USPH,col:0x80868e,m:m(0,0,0,0,0,0,1.3,1.3,1.3)});
   for(let i=0;i<4;i++){const a=i/4*Math.PI*2+Math.PI/4;seg.push({geo:UBOX,col:0xb0b6be,m:m(Math.cos(a)*.74,Math.sin(a)*.74,.85,0,0,a,.12,.08,1.2)});segG.push({geo:UBOX,col:i%2?0x39d6ff:0xff4fd2,m:m(Math.cos(a)*.8,Math.sin(a)*.8,.85,0,0,a,.05,.05,1.25)});}
   segG.push({geo:torusG(.8,.035),col:0x39d6ff,m:m(0,0,1.42)},{geo:torusG(.8,.035),col:0x39d6ff,m:m(0,0,1.68)});
+  for(const bz of[.55,1.2]){for(let k=0;k<12;k++){const a=(k+.5)/12*Math.PI*2;if(Math.abs(Math.abs(Math.cos(a))-Math.abs(Math.sin(a)))<.3)continue;   /* keep clear of the diagonal edge strips */seg.push({geo:BOLT_G,col:0xdfe3e8,m:m(Math.cos(a)*.76,Math.sin(a)*.76,bz,0,0,0,.075,.075,.075)});}seg.push({geo:torusG(.755,.02),col:0x8a9098,m:m(0,0,bz+.08)});}   /* riveted seams on every tentacle segment */
   /* cannon: collar, housing, bands, heat-sink fins, capacitor pods, flared emitter, coils, recessed pink core + lens */
   can.push({geo:UCYL,col:0x9aa1aa,m:m(0,0,.25,Math.PI/2,0,0,1.6,.5,1.6)},{geo:UCYL,col:0xd2d7dd,m:m(0,0,1.35,Math.PI/2,0,0,1.9,2.1,1.9)},
     {geo:torusG(1.0,.11),col:0xd9a21b,m:m(0,0,.6)},{geo:torusG(1.0,.11),col:0xd9a21b,m:m(0,0,1.15)},{geo:torusG(1.0,.08),col:0x7d848d,m:m(0,0,2.35)});
@@ -1570,7 +1577,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     tCyl('metal',0x8e959e,7,1.4,0,3.6,0,0,0,0,UCYL40);for(let i=0;i<12;i++){const a=i/12*Math.PI*2;tBox('glow',0xffb02e,1.1,.3,.1,Math.sin(a)*7.02,3.6,Math.cos(a)*7.02,a);}
     for(let i=0;i<18;i++){const a=i/18*Math.PI*2;tCyl('metal',0xd9a21b,.07,1.1,Math.sin(a)*8.4,3.45,Math.cos(a)*8.4);}
     tAdd('metal',torusG(8.4,.07,48),0xd9a21b,0,4,0,Math.PI/2);
-    for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2;tCyl('metal',0xcdd2d8,.32,4.2,Math.sin(a)*3.3,6.3,Math.cos(a)*3.3);tCyl('metal',0x9aa1aa,.5,1,Math.sin(a)*3.3,4.8,Math.cos(a)*3.3);}
+    for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2;tCyl('metal',0xcdd2d8,.32,4.2,Math.sin(a)*3.3,6.3,Math.cos(a)*3.3);for(const by of[5.7,7.7])boltRingY('metal',Math.sin(a)*3.3,by,Math.cos(a)*3.3,.33,8,.07);tCyl('metal',0x9aa1aa,.5,1,Math.sin(a)*3.3,4.8,Math.cos(a)*3.3);}
     tCyl('metal',0xb4bac2,2.7,4.4,0,6.4,0,0,0,0,UCYL40);
     for(let i=0;i<6;i++){const a=i/6*Math.PI*2;tCyl('matte',0x1c3a8a,.16,3.6,Math.sin(a)*2.85,6.4,Math.cos(a)*2.85);}}));
   B.add(withBins(()=>{   /* more detail to match the reference: side staircases, cables, pistons, floodlights, glowing rims */
@@ -1583,7 +1590,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
       tCyl('metal',0xd9a21b,.05,1.1,Math.sin(a)*10.2,1.85,Math.cos(a)*10.2);const b2=a+Math.PI/32;tBox('metal',0xd9a21b,2.02,.07,.07,Math.sin(b2)*10.18,2.38,Math.cos(b2)*10.18,b2);tBox('metal',0xd9a21b,2.02,.06,.06,Math.sin(b2)*10.18,1.9,Math.cos(b2)*10.18,b2);}   /* platform railing */
     for(let i=0;i<8;i++){const a=i/8*Math.PI*2+Math.PI/8;tBox('matte',0x15171b,1.6,.9,.12,Math.sin(a)*8.85,2.1,Math.cos(a)*8.85,a);for(let k=0;k<3;k++)tBox('glow',0xff8a1e,1.3,.08,.04,Math.sin(a)*8.93,1.84+k*.26,Math.cos(a)*8.93,a);}   /* glowing vents */
     for(let i=0;i<6;i++){const a=i/6*Math.PI*2+Math.PI/6,c=new THREE.CatmullRomCurve3([new THREE.Vector3(Math.sin(a)*8.2,1.4,Math.cos(a)*8.2),new THREE.Vector3(Math.sin(a)*6.8,4.6,Math.cos(a)*6.8),new THREE.Vector3(Math.sin(a)*4.2,7.4,Math.cos(a)*4.2)]);
-      tAdd('metal',new THREE.TubeGeometry(c,14,.36,10),0xb8bec6,0,0,0);tAdd('metal',torusG(.42,.1,16),0xd9a21b,Math.sin(a)*7.6,3,Math.cos(a)*7.6,Math.PI/2);}   /* hydraulic struts */
+      tAdd('metal',new THREE.TubeGeometry(c,14,.36,10),0xb8bec6,0,0,0);boltRingsTube('metal',c,.37,4,8,.07);tAdd('metal',torusG(.42,.1,16),0xd9a21b,Math.sin(a)*7.6,3,Math.cos(a)*7.6,Math.PI/2);}   /* hydraulic struts */
     for(const [fx,fz] of[[-15,10],[15,10],[-15,-12],[15,-12]]){tCyl('metal',0xa0a6ae,.18,11,fx,5.5,fz);tBox('metal',0x80868e,1.8,1,.6,fx,11,fz,Math.atan2(-fx,-fz));tBox('glow',0xf4f7ff,1.5,.7,.06,fx-Math.sign(fx)*.3,11,fz-Math.sign(fz)*.3,Math.atan2(-fx,-fz));DUSK_GLOWS.push([fx,11,BOSS_Z+fz,0xf4f7ff,6]);}}));
   const T=new THREE.Group();T.position.y=8.2;B.add(T);BOSS_RIG.top=T;
   T.add(withBins(()=>{
@@ -4481,7 +4488,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1052'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1057'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
