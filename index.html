@@ -703,7 +703,7 @@ function buildDuskTown(){const L=duskLayout(),root=new THREE.Group();scene.add(r
     DUSK_GLOWS.push([LIQUOR.x0-1,5.4,(LIQUOR.z0+LIQUOR.z1)/2,0xff2a6a,13],[LIQUOR.x0-1,2.6,(LIQUOR.z0+LIQUOR.z1)/2+4.6,0x3dd2ff,5]);}
   /* smoke shop: lit sign board + graffiti on the side and back walls */
   buildShop(SMOKE,-Math.PI/2,0x857e72,(fz,w,d,h)=>{});
-  { const sg=new THREE.Mesh(new THREE.PlaneGeometry(10,1.5),new THREE.MeshBasicMaterial({map:signTex((g,W,H)=>{g.fillStyle='#120f14';g.fillRect(0,0,W,H);g.font='900 74px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#7cff4a';g.shadowBlur=18;g.fillStyle='#b8ff8a';g.fillText('SMOKE SHOP',W/2,H/2+4);})}));
+  { const sg=new THREE.Mesh(new THREE.PlaneGeometry(10,1.5),new THREE.MeshBasicMaterial({map:signTex((g,W,H)=>{g.fillStyle='#120f14';g.fillRect(0,0,W,H);g.font='900 54px Arial Black,Arial';g.textAlign='center';g.textBaseline='middle';g.shadowColor='#7cff4a';g.shadowBlur=18;g.fillStyle='#b8ff8a';g.fillText('SMOKE SHOP',W/2,H/2+3,W-56);})}));
     sg.position.set(SMOKE.x1+.36,5.5,(SMOKE.z0+SMOKE.z1)/2);sg.rotation.y=Math.PI/2;scene.add(sg);DUSK_GLOWS.push([SMOKE.x1+1,5.5,(SMOKE.z0+SMOKE.z1)/2,0x7cff4a,9]);
     const wl=SMOKE.z1-SMOKE.z0,dp=SMOKE.x1-SMOKE.x0;
     const gm=(seed,st,W,Hh,x,y,z,ry)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(W,Hh),new THREE.MeshStandardMaterial({map:graffitiTex(seed,st),roughness:.85,metalness:0,polygonOffset:true,polygonOffsetFactor:-2}));m.position.set(x,y,z);m.rotation.y=ry;m.receiveShadow=true;m.userData.noAir=true;scene.add(m);};
