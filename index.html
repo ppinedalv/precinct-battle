@@ -1372,7 +1372,7 @@ const FEMALE_BUFS=[];let femLoad=false;
 function updateCrowd(){if(!DUSK||!actx)return;if(!CROWD.on){if(started)crowdStart();return;}const t=actx.currentTime;
   let n=0;for(const u of THUGS)if(u.alive&&Math.hypot(u.pos.x-player.pos.x,u.pos.z-player.pos.z)<75)n++;
   const want=muted||over||!BOSS||!BOSS.alive?0:clamp(.22+n/9,.22,1);CROWD.lvl=lerp(CROWD.lvl,want,.03);CROWD.master.gain.setTargetAtTime(CROWD.lvl*.45,t,.2);
-  if(want>0&&t>(CROWD.nextYell||0)){yellOnce(.55+.45*CROWD.lvl);if(Math.random()<.3)setTimeout(()=>yellOnce(.4+.4*CROWD.lvl),rand(150,500));CROWD.nextYell=t+rand(1,2.8);}   /* someone yells every couple of seconds */
+  /* background yelling removed (user 2026-11-26): people only scream while running */
   for(const v of CROWD.voices){if(t<v.next)continue;const dur=rand(.25,.9),pk=rand(.5,1.4),f=rand(450,950);   /* one shout: formants glide like a yelled vowel */
     v.g.gain.cancelScheduledValues(t);v.g.gain.setValueAtTime(v.g.gain.value,t);v.g.gain.linearRampToValueAtTime(pk,t+.06);v.g.gain.setValueAtTime(pk*.8,t+dur);v.g.gain.linearRampToValueAtTime(0,t+dur+.25);
     v.f1.frequency.setValueAtTime(f,t);v.f1.frequency.linearRampToValueAtTime(f*rand(.75,1.25),t+dur);v.f2.frequency.setValueAtTime(f*rand(1.7,2.3),t);
