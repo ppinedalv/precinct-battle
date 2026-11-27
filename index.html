@@ -2471,7 +2471,7 @@ if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAi
     const lens=new THREE.Mesh(new THREE.SphereGeometry(.2,14,10,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0xff2a1a}));lens.position.set(x,2.5,z);lens.scale.y=1.3;g.add(lens);
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:0xff2a1a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));halo.position.set(x,2.65,z);halo.scale.setScalar(2.6);halo.userData.noAir=true;g.add(halo);
     beacons.push({lens,halo,ph:i*.18});}
-  for(const [x,z] of[[-8.6,-2],[8.6,-2],[-8.6,2],[8.6,2]]){for(let k=0;k<2;k++){const c=new THREE.Mesh(new THREE.BoxGeometry(1.6,.8,1),cm);c.position.set(x,.4+k*.8,z);c.rotation.y=k*.2;c.castShadow=true;g.add(c);}}   /* ammo crates */
+  /* green ammo crates around the pad removed (user 2026-11-27) */
   DUSK_PAD={ring,disc,beacons};}
 // ---------------- HQ wall buttons + laser hover bots (added 2026-11-22)
 // One glowing gold button on the outer wall of each HQ side block (2 per HQ). A mech touching its OWN HQ's button
