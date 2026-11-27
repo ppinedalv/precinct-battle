@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1126-2058</div>
+<div id="buildTag">BUILD 1126-2103</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1062,10 +1062,10 @@ function makeArmGeos(){   /* segment (steel tube, gold band, dark joint) + glowi
   canG.push({geo:torusG(.55,.07),col:0xff6ad8,m:m(0,0,3.36)},{geo:torusG(.36,.05),col:0xffb3ee,m:m(0,0,3.37)},{geo:new THREE.CircleGeometry(.5,28),col:0xff3fc0,m:m(0,0,3.34)},{geo:new THREE.CircleGeometry(.16,20),col:0xffffff,m:m(0,0,3.39)});
   for(let i=0;i<8;i++){const a=i/8*Math.PI*2;canG.push({geo:UBOX,col:0xff8ae6,m:m(Math.cos(a)*.8,Math.sin(a)*.8,3.36,0,0,a,.18,.03,.02)});}
   return {seg:mergeColored(seg),segG:mergeColored(segG),can:mergeColored(can),canG:mergeColored(canG)};}
-const BRAIN_FS=.75,BRAIN_O=-.04,BRAIN_CUT=-.5,BRAIN_YS=1.22,BRAIN_Y=8.45,BRAIN_S=3.4;   /* tall brain dome: lots of brain above the eyes, face low on the front, flat underside */
+const BRAIN_FS=.75,BRAIN_O=.04,BRAIN_CUT=-.3,BRAIN_YS=.95,BRAIN_Y=9.0,BRAIN_S=3.4;   /* tall brain dome: lots of brain above the eyes, face low on the front, flat underside */
 function brainShape(x,y,z,k,out=new THREE.Vector3()){   /* slightly top-heavy, less round: narrow base, wide upper lobes, flatter crown, longer front-to-back */
-  const t=clamp((y-BRAIN_CUT)/(.4-BRAIN_CUT),0,1),f=.9+.1*t*t*(3-2*t);   /* taller, not wider: top 3/4 of a brain, slight taper at the base */
-  return out.set(x*k*f*.96,y*k*BRAIN_YS,z*k*(z<0?1.14:1.1)*f);}
+  const u=clamp((y-BRAIN_CUT)/(1-BRAIN_CUT),0,1),r=Math.sqrt(Math.max(0,1-Math.pow(u,2.2))),sc=r/Math.max(Math.sqrt(Math.max(0,1-y*y)),.001);   /* mound like the reference: widest at the base, narrowing to a rounded top */
+  return out.set(x*k*sc*1.08,y*k*BRAIN_YS,z*k*sc*(z<0?1.16:1.12));}
 function brainSurf(x,yu,d){const z=Math.sqrt(Math.max(0,1-x*x-yu*yu));return brainShape(x,yu,z,1+d);}
 const brainMouthY=x=>-.22-1.5*x*x,BRAIN_MW=.2;   /* small frown; x in face units */   /* frown: corners turn down */
 function brainGeo(){   /* tall brain: deep folds, center fissure, flat cut underside, angry frowning face sculpted low on the front (original design) */
@@ -1236,7 +1236,10 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     const cap=new THREE.Mesh(new THREE.RingGeometry(0,4.06,64,8).rotateX(-Math.PI/2),LM.cap);cap.position.y=9.7;BOSS_RIG.cap=cap;
     const bm=new THREE.MeshStandardMaterial({vertexColors:true,emissive:0x5a0c26,emissiveIntensity:.3,roughness:.42,metalness:.05});
     const brain=new THREE.Mesh(brainGeo(),bm);brain.scale.setScalar(BRAIN_S);brain.position.set(0,BRAIN_Y,0);brain.castShadow=true;brainFace(brain);
-    T.add(brain,liquid,cap,glass);BOSS_RIG.brain=brain;BOSS_RIG.brainMat=bm;BOSS_RIG.glass=glass;BOSS_RIG.liquid=liquid;
+    T.add(brain,liquid,cap,glass);
+    {const cm=new THREE.MeshStandardMaterial({color:0x4a4e56,metalness:.8,roughness:.35,envMap:envTex()}),cr=new THREE.Mesh(new THREE.CylinderGeometry(3.5,2.9,2.1,40),cm);cr.position.y=6.83;T.add(cr);   /* metal cradle the brain sits in */
+      const rg=new THREE.Mesh(new THREE.TorusGeometry(3.52,.12,10,64),new THREE.MeshBasicMaterial({color:0xff4fd2}));rg.rotation.x=Math.PI/2;rg.position.y=7.86;T.add(rg);
+      for(let i=0;i<12;i++){const a=i/12*Math.PI*2,b=new THREE.Mesh(new THREE.BoxGeometry(.5,1.7,.25),new THREE.MeshStandardMaterial({color:0xd9a21b,metalness:.7,roughness:.4}));b.position.set(Math.sin(a)*3.25,6.85,Math.cos(a)*3.25);b.rotation.set(-.27*Math.cos(0),a,0);b.rotation.order='YXZ';b.rotation.x=.27;T.add(b);}}BOSS_RIG.brain=brain;BOSS_RIG.brainMat=bm;BOSS_RIG.glass=glass;BOSS_RIG.liquid=liquid;
     const n=60,pos=new Float32Array(n*3);for(let i=0;i<n;i++){pos[i*3]=rand(-3,3);pos[i*3+1]=rand(5.5,13.5);pos[i*3+2]=rand(-3,3);}
     const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(pos,3));
     const bub=new THREE.Points(bg,new THREE.PointsMaterial({color:0xffd0ea,size:.22,transparent:true,opacity:.8,depthWrite:false}));T.add(bub);BOSS_RIG.bubbles=bub;
@@ -3940,7 +3943,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2058'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1126-2103'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
