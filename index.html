@@ -301,6 +301,23 @@ function tFireTruck(x,z,ry){tFrame(x,0,z,ry,()=>{const RD=0xb3140f,CH=0xc8ccd2,G
   for(let i=0;i<6;i++)tBox('metal',i%2?0xf2b51d:0x141416,.42,.42,.04,-1.05+i*.42,1.2,-4.38,0,0,.78);
   for(const s of[-1,1])tBox('glow',0xb3140f,.3,.4,.06,s*1.05,1.9,-4.38);
   for(const s of[-1,1])for(const zz of[3.3,-2.2,-3.6]){tCyl('matte',DK,.55,.42,s*1.15,.55,zz,0,0,Math.PI/2);tCyl('metal',CH,.32,.44,s*1.15,.55,zz,0,0,Math.PI/2);tCyl('metal',0x555,.1,.46,s*1.15,.55,zz,0,0,Math.PI/2);}});}
+/* detailed doors (user 2026-11-27: "put doors on all buildings"). Built in a local frame whose +z faces out of the wall; y0 = sill height.
+   glass: aluminium storefront door(s) with push bar, kick plate, hours decal, OPEN sign and a light above; steel: service door with
+   push bar, small wired window, EXIT light; wood: house door with trim, raised panels, top lites, brass knob + mail slot */
+function tDoor(kind,x,y0,z,ry,w=1.2,h=2.3,n=1){tFrame(x,y0,z,ry,()=>{const AL=0x9aa0a6,DK=0x16171a,tw=w*n;
+  if(kind==='wood'){const TR=0xe9e4da,SL=0x3a2a20;tBox('matte',TR,tw+.28,.16,.12,0,h+.08,.02);for(const sx of[-1,1])tBox('matte',TR,.14,h+.16,.12,sx*(tw/2+.07),h/2,.02);
+    tBox('matte',SL,tw,h,.08,0,h/2,0);for(const sx of[-1,1])for(const yy of[.35,.62])tBox('matte',0x4a3628,tw*.34,h*.22,.03,sx*tw*.21,h*yy,.05);
+    for(let i=0;i<3;i++)tBox('glow',0xffd9a0,tw*.2,h*.12,.02,(i-1)*tw*.26,h*.86,.05);tAdd('metal',USPH,0xd9b24a,tw*.36,h*.47,.08,0,0,0,.09,.09,.07);tBox('metal',0xd9b24a,tw*.36,.04,.03,0,h*.5,.05);tBox('metal',0xc8ccd2,.22,.02,.01,0,h*.18,.06);return;}
+  tBox('metal',AL,tw+.24,.18,.14,0,h+.09,0);for(const sx of[-1,1])tBox('metal',AL,.12,h+.18,.14,sx*(tw/2+.06),h/2,0);tBox('metal',0x5a5e64,tw+.3,.06,.3,0,.03,.08);   /* frame + threshold */
+  for(let i=0;i<n;i++){const cx=-tw/2+w*(i+.5);
+    if(kind==='glass'){tBox('metal',AL,w-.04,h-.04,.06,cx,h/2,-.01);tBox('glow',0xcfe2f0,w-.24,h-.5,.02,cx,h/2+.12,.03);tBox('metal',AL,w-.04,.24,.08,cx,.14,.02);   /* stile + lit glass + kick plate */
+      tBox('metal',0xd8dce2,w*.7,.05,.08,cx,1.02,.1);for(const sx of[-1,1])tBox('metal',0xd8dce2,.04,.05,.08,cx+sx*w*.33,1.02,.06);   /* push bar */
+      tBox('matte',0xf4f4f0,w*.34,.24,.01,cx+(i?-1:1)*w*.18,1.55,.045);}
+    else{tBox('metal',0x5c6168,w-.04,h-.04,.06,cx,h/2,-.01);tBox('matte',0x1c232c,w*.25,h*.25,.02,cx,h*.7,.03);for(let k=1;k<3;k++)tBox('metal',AL,w*.25,.015,.01,cx,h*.7-h*.125+k*h*.083,.045);
+      tBox('metal',0xd8dce2,w*.72,.06,.08,cx,1.0,.07);tBox('metal',AL,w-.04,.04,.03,cx,h*.45,.03);}}
+  if(n>1)tBox('metal',AL,.06,h,.1,0,h/2,.02);   /* centre mullion */
+  if(kind==='glass'){tBox('glow',0xff2a3a,.5,.18,.02,tw/2-.4,h-.35,.06);tBox('metal',0x2a2c30,.4,.12,.25,0,h+.3,.15);tBox('glow',0xfff0d0,.3,.03,.2,0,h+.23,.16);}   /* OPEN sign + light */
+  else{tBox('matte',0x1a1a1c,.42,.2,.08,0,h+.32,.04);tBox('glow',0x3dff6a,.36,.14,.02,0,h+.32,.09);}});}   /* EXIT light */
 function buildSpots(){const F=SPOTS;
   /* FIRE DEPARTMENT: red brick, 3 bays facing the avenue, hose tower, truck on the apron */
   {const x0=27,x1=41,z0=F.fire.z0+1,z1=F.fire.z1-1,cz=(z0+z1)/2,h=8;addBlock((x0+x1)/2,cz,x1-x0,z1-z0,h+.5);
@@ -310,6 +327,7 @@ function buildSpots(){const F=SPOTS;
     tBox('matte',0x7a2820,4,13.5,4,x1-2,6.75,z1-2);tBox('matte',0xe9e4da,4.3,.4,4.3,x1-2,13.6,z1-2);addBlock(x1-2,z1-2,4,4,14);
     tCyl('metal',0xd8d8d2,.08,9,x0-9,4.5,z1-1);tBox('matte',0xc41f1f,.04,1.2,2,x0-9,8.3,z1-.0);
     litSign('FIRE DEPT','#ffffff','#9c1a14',9,1.3,x0-.2,7.1,cz,-Math.PI/2,0xff5a40);litSign('STATION 7','#f2b51d','#1b1b1e',4,.8,x0-.2,5.2,z0+4.5+7.2,-Math.PI/2,0);
+    tDoor('steel',x0-.06,0,z1-4,-Math.PI/2,1.1,2.3);   /* side service door */
     tFireTruck(x0-6,z0+4.5+7.2,-Math.PI/2);addBlock(x0-6,z0+11.7,9.4,2.8,3.2);}
   /* detailed fuel pump (user 2026-11-26): plinth, white body with red side panels, open frame under a branded header, screen + price readouts + keypad on both faces, holstered nozzles with looping hoses */
   function tPump(px,pz){const y0=.3,R=0xd61f26,WH=0xe9e9e4,DK=0x1a1b1e;
@@ -334,7 +352,7 @@ function buildSpots(){const F=SPOTS;
       for(const pz of[-4,4])tPump(cx+sx*3,cz+pz);}
     const mx0=-49,mx1=-38;tBox('matte',0xd9d2c0,mx1-mx0,5,22,(mx0+mx1)/2,2.5,cz);addBlock((mx0+mx1)/2,cz,mx1-mx0,22,5.4);tBox('matte',0xd61f26,mx1-mx0+.3,.8,22.3,(mx0+mx1)/2,5.1,cz);
     tBox('glow',0xe6f0ff,.06,2.4,12,mx1+.04,1.7,cz);for(let i=-3;i<=3;i++)tBox('metal',0x222,.1,2.5,.1,mx1+.08,1.7,cz+i*2);
-    litSign('MART','#ffffff','#d61f26',5,1,mx1+.1,4.2,cz,Math.PI/2,0xff6a5a);
+    litSign('MART','#ffffff','#d61f26',5,1,mx1+.1,4.2,cz,Math.PI/2,0xff6a5a);tDoor('glass',mx1+.07,0,cz+8.4,Math.PI/2,1.15,2.4,2);
     tCyl('metal',0x3a3d42,.25,6.5,-15.5,3.25,115);tBox('matte',0x1b1b1e,.4,5.8,3.6,-15.5,9.4,115);   /* pole stops under the board so it no longer pokes through the prices; board taller for the name (user 2026-11-27) */
     for(const sd of[-1,1])litSign('WaWa','#ff2a2a','#141416',3.4,1.6,-15.5+sd*.22,11.3,115,sd*Math.PI/2,0xff3a2a);   /* station name in red above the prices (user 2026-11-27) */
     for(const sd of[-1,1])litSign('GAS  3.89','#ffdf6a','#141416',3.4,1.4,-15.5+sd*.22,8.9,115,sd*Math.PI/2,0);
@@ -364,7 +382,7 @@ function buildSpots(){const F=SPOTS;
   {const x0=-82,x1=-62,z0=F.grocery.z0+1,z1=F.grocery.z1-1,cz=(z0+z1)/2,h=8;addBlock((x0+x1)/2,cz,x1-x0,z1-z0,h+.5);
     tBox('matte',0xcfc6b2,x1-x0,h,z1-z0,(x0+x1)/2,h/2,cz);tBox('matte',0x2f6a3a,x1-x0+.4,1.2,z1-z0+.4,(x0+x1)/2,h+.1,cz);
     tBox('glow',0xf2f6ff,.06,3,22,x1+.04,1.6,cz);for(let i=-5;i<=5;i++)tBox('metal',0x2a2a2a,.1,3.1,.1,x1+.08,1.6,cz+i*2.1);tBox('matte',0x2f6a3a,1.6,.25,26,x1+.8,3.4,cz);
-    litSign('GROCERY','#ffffff','#2f6a3a',14,2.2,x1+.12,6,cz,Math.PI/2,0x7dff9a);
+    litSign('GROCERY','#ffffff','#2f6a3a',14,2.2,x1+.12,6,cz,Math.PI/2,0x7dff9a);for(const dz of[-14.5,14.5])tDoor('glass',x1+.07,0,cz+dz,Math.PI/2,1.3,2.6,2);   /* IN / OUT doors either side of the window */
     let n=0;for(let z=z0+3.5;z<z1-2;z+=3.2)for(const xc of[-50.5,-33.5]){if(Math.random()<.45)continue;const ry=xc<-40?-Math.PI/2:Math.PI/2;
       DL.cars.push({x:xc+(Math.random()-.5)*.6,z:z+1.6,ry,kind:Math.floor(Math.random()*2.2)%3,col:[0x8a1c1c,0x1d3a66,0xd8d8d2,0x1b1b1e,0x6b6f75,0x2e5a3a][n++%6]});}
     for(const [lx,lz] of[[-46,cz-12],[-46,cz+12],[-25,cz]]){tCyl('metal',0x3a3d42,.15,8,lx,4,lz);tBox('metal',0x2a2c30,1.6,.3,.6,lx,8,lz);tBox('glow',0xf4f7ff,1.4,.05,.5,lx,7.84,lz);DUSK_GLOWS.push([lx,7.6,lz,0xf4f7ff,7]);}
@@ -378,13 +396,13 @@ function buildSpots(){const F=SPOTS;
      for(let i=0;i<150;i++){const u=Math.random()*Math.PI*2,v=(Math.random()<.5?-1:1)*(.45+Math.random()*1.9),R0=2.32,r0=.87,ly=(R0+r0*Math.cos(v))*Math.sin(u),lx=(R0+r0*Math.cos(v))*Math.cos(u),lz=r0*Math.sin(v);
        tBox('glow',SPR[i%SPR.length],.07,.07,.3,dx+lz,dy+ly,cz-lx,Math.random()*3,Math.random()*3,Math.random()*3);}}
     tBox('metal',0x3a3d42,.4,.8,.4,(x0+x1)/2,h+.4,cz);
-    litSign('DONUTS','#ffffff','#e0478a',7,1.2,x0-.1,4,cz,-Math.PI/2,0xff7ab8);}
+    litSign('DONUTS','#ffffff','#e0478a',7,1.2,x0-.1,4,cz,-Math.PI/2,0xff7ab8);tDoor('glass',x0-.07,0,cz+6,-Math.PI/2,1.2,2.4);}
   /* COFFEE SHOP: awning + outdoor tables, chairs and umbrellas */
   {const x0=23,x1=36,z0=F.coffee.z0+2,z1=F.coffee.z1-2,cz=(z0+z1)/2,h=5.2;addBlock((x0+x1)/2,cz,x1-x0,z1-z0,h);
     tBox('matte',0x6b4a36,x1-x0,h,z1-z0,(x0+x1)/2,h/2,cz);tBox('matte',0xeadcc4,x1-x0+.2,.6,z1-z0+.2,(x0+x1)/2,h+.3,cz);
     tBox('glow',0xffd9a0,.06,2.6,14,x0-.04,1.6,cz);for(let i=-3;i<=3;i++)tBox('metal',0x2a2a2a,.1,2.7,.1,x0-.08,1.6,cz+i*2.3);
     for(let i=0;i<10;i++)tBox('matte',i%2?0x2f6a3a:0xf0e6d2,1.8,.1,2.2,x0-.85,3.4,z0+1.6+i*2.15,0,0,-.35);
-    litSign('COFFEE','#fff4e0','#3a2418',7,1.2,x0-.1,4.4,cz,-Math.PI/2,0xffc070);
+    litSign('COFFEE','#fff4e0','#3a2418',7,1.2,x0-.1,4.4,cz,-Math.PI/2,0xffc070);tDoor('glass',x0-.07,0,cz+9,-Math.PI/2,1.2,2.4);
     for(let i=0;i<4;i++){const tx=F.coffee.x0+4.2,tz=z0+2.5+i*5.6;tCyl('metal',0xd8d2c4,.55,.06,tx,.95,tz);tCyl('metal',0x222,.06,.95,tx,.48,tz);
       tChair(tx,tz-1.05,0,0x2f6a3a);tChair(tx,tz+1.05,Math.PI,0x2f6a3a);tChair(tx-1.05,tz,-Math.PI/2,0x2f6a3a);
       if(i%2===0){tCyl('metal',0xd8d2c4,.04,2.6,tx,2.2,tz);tAdd('matte',UCONE,i?0x2f6a3a:0xb3302a,tx,3.6,tz,0,0,0,3.4,.9,3.4);}}
@@ -624,7 +642,7 @@ function tHouse(h){tFrame(h.x,0,h.z,h.face,()=>{const {w,d,h1,rh}=h,TR=0xe9e4da,
   tBox('matte',0x8a857b,1.6,.22,.7,-w*.12,.6,-d/2-.35);   /* front step */
   if(h.chim)tBox('matte',0x6b4a3a,.9,rh+1.4,.9,w*.28,.5+h1+rh*.45,d*.18);
   const fz=-d/2-.04;   /* front wall plane (front faces -z local) */
-  tBox('matte',0x3a2a20,1.05,2.1,.1,-w*.12,1.55,fz);
+  tDoor('wood',-w*.12,.5,fz-.02,Math.PI,1.05,2.1);
   if(h.porch){tBox('matte',0x6a6560,2.6,.25,1.6,-w*.12,.62,fz-.8);tBox('matte',h.roof,2.8,.15,1.8,-w*.12,2.95,fz-.8);for(const s of[-1,1])tBox('matte',TR,.14,2.3,.14,-w*.12+s*1.2,1.8,fz-1.5);}
   tBox('glow',0xffd9a0,.25,.25,.08,-w*.12+.9,2.45,fz-.05);
   const bars=((Math.floor(Math.abs(h.x*7.31+h.z*13.7))%10)<3);   /* ~30% of houses have black security bars on the windows (user 2026-11-26) */
@@ -742,7 +760,7 @@ function buildShop(S,face,wall,draw){   /* flat-roof corner store, front facing 
   tFrame(cx,0,cz,face,()=>{tBox('matte',wall,w,h,d,0,h/2,0);tBox('matte',0x2d2b29,w+.5,.6,d+.5,0,h+.3,0);tBox('matte',0x3a3836,w+.2,.5,d+.2,0,.25,0);
     const fz=-d/2-.05;tBox('glow',0xdfe9ff,w*.62,2.6,.06,0,1.9,fz);for(let i=-4;i<=4;i++)tBox('metal',0x1a1a1c,.07,2.7,.1,i*w*.07,1.9,fz-.06);
     for(let j=0;j<4;j++)tBox('metal',0x1a1a1c,w*.63,.06,.1,0,.75+j*.75,fz-.06);
-    tBox('matte',0x1d1d20,1.4,2.4,.08,w*.38,1.3,fz);tBox('matte',0x2f2d2a,w*.95,.5,.6,0,3.55,fz-.3);
+    tDoor('glass',w*.38,.1,fz-.02,Math.PI,1.3,2.35);tBox('matte',0x2f2d2a,w*.95,.5,.6,0,3.55,fz-.3);
     draw(fz,w,d,h);});}
 function buildDuskTown(){const L=duskLayout(),root=new THREE.Group();scene.add(root);root.userData.noAir=true;
   for(const h of L.houses){tHouse(h);const along=h.face===0||h.face===Math.PI;addBlock(h.x,h.z,(along?h.w:h.d)+.6,(along?h.d:h.w)+1.1,.5+h.h1+h.rh*.9);}
