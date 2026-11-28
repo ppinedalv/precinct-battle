@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-2055</div>
+<div id="buildTag">BUILD 1127-2104</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1133,18 +1133,18 @@ function labStairs(s){const X=s*LS_X,W=1.6,ST=0x2a2d33,TR=0x4a4f57,YL=0xd9a21b,R
   tBox('metal',RL,.06,1.2,.06,X+s*.95,.6,-183.4);tBox('matte',0xf2b51d,.04,.4,.6,X+s*.95,1.25,-183.4);}
 /* lab scientists (user 2026-11-26): bald, white lab coats, goggles; run around the compound and in and out of the lab doors. Instanced (5 draw calls). */
 const LAB_DOORS=[-45,-25,25,45];
-function buildLabCrew(){const N=38,crew=[];
-  const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;scene.add(m);return m;};
+function buildLabCrew(parent=scene,indoorOnly=false){const N=indoorOnly?10:38,crew=[];   /* indoorOnly: the 10 control-room / catwalk walkers only, for the City Night data centers (user 2026-11-27) */
+  const mk=(items,n)=>{const m=new THREE.InstancedMesh(mergeColored(items),new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:0}),n);m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;m.userData.noAir=true;parent.add(m);return m;};
   const torso=mk([...torsoItems(0xf2f4f6,0xf2f4f6,0xf2f4f6),...coatItems()],N);   /* long flowing lab coat (user 2026-11-27) */
   const head=mk([...headItems(0xffffff,0x5a4636,0x0e0e0e,[]),...goggleItems(.06,1.8,.13,1),{geo:torusG(1,.09,28),col:0x101010,m:_pm(0,1.8,-.005,Math.PI/2).multiply(_ps(0,0,0,.108,.12,.32))}   /* snug head strap (was 2x the head size, user 2026-11-27) */],N);
   const legs=mk(thighItems(0x2a2d33),N*2),shins=mk(shinItems(0x2a2d33,0x141414),N*2),arms=mk(upperItems(0xf2f4f6),N*2),fores=mk(foreItems(0xf2f4f6),N*2),hands=mk([{geo:USPH,col:0xffffff,m:_ps(0,-.35,.02,.075,.1,.065)}],N*2);
   const SK=[0xf0c8a0,0xe0b088,0xc89870,0xf4d2b4];const c=new THREE.Color();
   for(let i=0;i<N;i++){c.setHex(SK[i%4]);head.setColorAt(i,c);hands.setColorAt(i*2,c);hands.setColorAt(i*2+1,c);
     const s={x:rand(-40,40),z:rand(-178,-134),tx:0,tz:0,hide:0,ph:Math.random()*6,sp:rand(3,4.2),dead:false,fall:0,yaw:0,still:false,y:0};labTarget(s);
-    if(i>=34){const sd=i%2?1:-1;s.stair={path:labStairPath(sd),seg:0,t:0,dir:1,wait:rand(0,6)};const q=s.stair.path[0];s.x=q[0];s.y=q[1];s.z=q[2];s.sp=rand(1.6,2.2);}   /* stair climbers, 2 per side (user 2026-11-27) */
-    else if(i>=24){s.indoor=true;const cw=i>=31;s.y=cw?13.75:14.3;s.z=cw?DC_FRONT+1.25:DC_FRONT-3.1;s.x=rand(-42,42);s.tx=rand(-42,42);s.sp=rand(1.2,1.9);s.wait=0;}   /* walking inside the control room / along the catwalk */
+    if(!indoorOnly&&i>=34){const sd=i%2?1:-1;s.stair={path:labStairPath(sd),seg:0,t:0,dir:1,wait:rand(0,6)};const q=s.stair.path[0];s.x=q[0];s.y=q[1];s.z=q[2];s.sp=rand(1.6,2.2);}   /* stair climbers, 2 per side (user 2026-11-27) */
+    else if(indoorOnly||i>=24){s.indoor=true;const cw=indoorOnly?i>=7:i>=31;s.y=cw?13.75:14.3;s.z=cw?DC_FRONT+1.25:DC_FRONT-3.1;s.x=rand(-42,42);s.tx=rand(-42,42);s.sp=rand(1.2,1.9);s.wait=0;}   /* walking inside the control room / along the catwalk */
     crew.push(s);}
-  DUSK_DYN.lab={crew,torso,head,legs,shins,arms,fores,hands};}
+  const D={crew,torso,head,legs,shins,arms,fores,hands};if(!indoorOnly)DUSK_DYN.lab=D;return D;}
 function labOk(x,z){return Math.hypot(x,z-BOSS_Z)>12.5&&z<TOWN_Z0-3&&z>DC_FRONT+1.2&&Math.abs(x)<52;}
 function labTarget(s){for(let k=0;k<20;k++){let x,z;if(Math.random()<.3){x=LAB_DOORS[Math.floor(Math.random()*4)];z=DC_FRONT+1.3;s.door=true;}else{x=rand(-48,48);z=rand(-178,-131);s.door=false;}
     if(!labOk(x,z))continue;let ok=true;for(let t=.1;t<1;t+=.1)if(Math.hypot(s.x+(x-s.x)*t,s.z+(z-s.z)*t-BOSS_Z)<12)ok=false;if(ok){s.tx=x;s.tz=z;return;}}
@@ -1164,7 +1164,8 @@ function updateBlood(dt){if(!BLOOD)return;let any=false;for(const b of BLOODS){i
     _bm.compose(_bv.set(b.x,b.y,b.z),_bq.setFromAxisAngle(_by,b.rot),_bs.set(sz*b.sx,1,sz));BLOOD.setMatrixAt(b.i,_bm);any=true;}if(any)BLOOD.instanceMatrix.needsUpdate=true;}
 function bloodUnder(x,y,z,yaw,size){bloodAt(x-Math.sin(yaw)*1.0,y,z-Math.cos(yaw)*1.0,size);}   /* bodies fall onto their backs: torso ends up ~1 unit behind the feet */
 function labHit(p){if(p.dead)return;p.dead=true;p.fall=0;puff(_pc.set(p.x,1,p.z),0x3a2a22,.6,1.4,.5);if(DUSK)bloodUnder(p.x,p.y||0,p.z,p.yaw,rand(1.7,2.4));}
-function updateLabCrew(dt){const D=DUSK_DYN.lab;if(!D)return;const {crew,torso,head,legs,shins,arms,fores,hands}=D,P=player;
+function updateLabCrew(dt){if(DUSK_DYN.lab)updateLabCrewD(DUSK_DYN.lab,dt);for(const D of CITY_LABS)updateLabCrewD(D,dt);}
+function updateLabCrewD(D,dt){const {crew,torso,head,legs,shins,arms,fores,hands}=D,P=player;
   crew.forEach((s,i)=>{let lie=0,y0=0,sw=0,bob=0,spread=0;
     if(s.indoor){if(s.wait>0){s.wait-=dt;}else{const dx=s.tx-s.x;if(Math.abs(dx)<.3){s.wait=rand(1,4);s.tx=clamp(s.x+rand(-25,25),-44,44);s.yaw=Math.PI*.0;}else{s.x+=Math.sign(dx)*s.sp*dt;s.yaw=Math.sign(dx)*Math.PI/2;s.ph+=dt*s.sp*3.4;sw=Math.sin(s.ph)*.6;bob=Math.abs(Math.cos(s.ph))*.05;}}}
     else if(s.stair&&!s.dead){const S=s.stair,P2=S.path;
@@ -1612,7 +1613,7 @@ function liquidMats(){const vs='varying vec3 vP;varying vec3 vN;varying vec3 vV;
 /* data center / control room with the scientists behind the window (user 2026-11-27): shared by the Dusk compound and City Night.
    Batched parts follow the current tFrame; non-batched parts (window glass, logos, blinking rack LEDs) go into G; addB adds the collision block.
    The electric current tubes to the boss dome are NOT part of it (Dusk adds them separately). */
-const DC_LED_LIST=[];
+const DC_LED_LIST=[],CITY_LABS=[];
 function buildDataCenter(G,addB){
   for(const dx of[-45,-25,25,45]){tBox('matte',0x1a1c20,3.2,4,.3,dx,2,DC_FRONT+.1);tBox('glow',0xcfefff,2.6,3.5,.06,dx,1.75,DC_FRONT+.27);tBox('glow',0x39d6ff,3.3,.12,.06,dx,4.05,DC_FRONT+.27);DUSK_GLOWS.push([dx,2.2,DC_FRONT+1,0xcfefff,4]);}   /* lab doors */
   /* ---- data center / control room (40 ft class building) with a long blue-tinted window */
@@ -2865,7 +2866,8 @@ if(DUSK){bases.push(BLUE_GHOST);buildBossCompound();}
    Front glass at |z| 190.5, back wall at |z| 206.5. Collision blocks are added after the instanced city, so they are not drawn as city boxes. */
 if(!DUSK){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);
   for(const [zo,ry] of[[6.5,Math.PI],[-6.5,0]]){const G=new THREE.Group();G.position.z=zo;G.rotation.y=ry;G.userData.noAir=true;scene.add(G);
-    tFrame(0,0,zo,ry,()=>buildDataCenter(G,(x,z,w,d,h)=>addBlock(ry?-x:x,zo+(ry?-z:z),w,d,h)));}
+    tFrame(0,0,zo,ry,()=>buildDataCenter(G,(x,z,w,d,h)=>addBlock(ry?-x:x,zo+(ry?-z:z),w,d,h)));
+    CITY_LABS.push(buildLabCrew(G,true));}   /* scientists walking in the control room + on the catwalk, same as Dusk (user 2026-11-27) */
   flushBins(root,true,60);
   {const lab=mergeColored(TB.lab||[]);TB.lab=[];if(lab){const m=new THREE.Mesh(lab,LAB_MAT);m.userData.noAir=true;scene.add(m);}}
   /* 2 more HQ defense cannons on the roof corners of each data center (user 2026-11-27): same cannon, range, hits and health tag as the 2 beside the HQ */
@@ -4629,7 +4631,7 @@ function frame(now){
   updatePlayer(dt,gt);updateHeadPool();updateHoverHum();updateGunWhine();updateScanner(dt);updateBoostAudio(!!player.boosting&&player.alive);if(PVP)updatePilot(rival,dt,gt);else if(!DUSK){updateRival(rival,dt,gt);updateRivalEMP(rival,dt);}
   for(const e of ents)if(e.alive&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller'))updateUnit(e,dt);
   for(let i=ents.length-1;i>=0;i--){const e=ents[i];if(!e.alive&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller'))ents.splice(i,1);}
-  updateOutposts(dt);if(DUSK)updateDusk(dt,gt);else for(const P of DC_LED_LIST){const U=P.material.uniforms;U.t.value=gt;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}updateBases(dt,gt);updateHQButtons(dt,gt);updateHoverBots(dt,gt);updateTurrets(dt);updateProjs(dt);updateFx(dt);updateDust(dt);updateEMP(dt);updatePortals(dt,gt);
+  updateOutposts(dt);if(DUSK)updateDusk(dt,gt);else{updateLabCrew(dt);}if(!DUSK)for(const P of DC_LED_LIST){const U=P.material.uniforms;U.t.value=gt;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}updateBases(dt,gt);updateHQButtons(dt,gt);updateHoverBots(dt,gt);updateTurrets(dt);updateProjs(dt);updateFx(dt);updateDust(dt);updateEMP(dt);updatePortals(dt,gt);
   updateCamera(dt);computeAim();if(PVP){updateCamR(dt);computeAimR();}
   hudT-=dt;if(hudT<=0){hudT=.1;updateHUD();drawMinimap();if(PVP)sendGuestState();}
   updateSky(now/1000);renderer.render(scene,camera);
@@ -4713,7 +4715,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2055'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2104'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
