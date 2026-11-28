@@ -511,7 +511,7 @@ function duskLayout(){if(DL)return DL;DL={houses:[],trees:[],fences:[],dumpsters
   for(const e of DUSK_EW)for(const side of[-1,1]){DL.pedPaths.push({ax:-188,az:e.z+side*(e.w/2+1.5),bx:-12,bz:e.z+side*(e.w/2+1.5)},{ax:12,az:e.z+side*(e.w/2+1.5),bx:188,bz:e.z+side*(e.w/2+1.5)});}
   for(const s of DUSK_NS)if(s.x)for(const side of[-1,1])DL.pedPaths.push({ax:s.x+side*(s.w/2+1.5),az:-118,bx:s.x+side*(s.w/2+1.5),bz:190});
   return DL;}
-function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=HALF_X+40,H=HALF_Z+40,S=N/(2*W);
+function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=Math.max(HALF_X,HALF_Z)+40,H=W,S=N/(2*W);   /* square paint area: the texture must stay square or the painted streets drift off the buildings (bug 2026-11-27 after HALF_Z 200 -> 206) */
   const c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');
   const X=x=>(x+W)*S,Z=z=>(z+H)*S,R=(x0,z0,x1,z1,col)=>{g.fillStyle=col;g.fillRect(X(x0),Z(z0),(x1-x0)*S,(z1-z0)*S);};
   R(-W,-H,W,H,'#4a3f3a');
@@ -2109,7 +2109,7 @@ const groundShape=(()=>{const W=HALF_X+40,H=HALF_Z+40,sh=new THREE.Shape();sh.mo
     h.moveTo(T.x-TUNNEL_HW,-z2);h.lineTo(T.x+TUNNEL_HW,-z2);h.lineTo(T.x+TUNNEL_HW,-z1);h.lineTo(T.x-TUNNEL_HW,-z1);h.lineTo(T.x-TUNNEL_HW,-z2);sh.holes.push(h);}
   return sh;})();
 const ground=new THREE.Mesh(new THREE.ShapeGeometry(groundShape),new THREE.MeshStandardMaterial({map:DUSK?duskGroundTex():groundTex(),roughness:.9,metalness:.2}));
-if(DUSK){ground.material.map.repeat.set(1/(HALF_X*2+80),1/(HALF_Z*2+80));ground.material.map.offset.set(.5,.5);}else ground.material.map.repeat.set(25/(HALF_X*2+80),50/(HALF_Z*2+80));
+if(DUSK){const GM=Math.max(HALF_X,HALF_Z)*2+80;ground.material.map.repeat.set(1/GM,1/GM);ground.material.map.offset.set(.5,.5);}else ground.material.map.repeat.set(25/(HALF_X*2+80),50/(HALF_Z*2+80));
 ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
 // ---------------- sky: twinkling star field + bright glowing stars
 const sky=new THREE.Group();scene.add(sky);
