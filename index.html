@@ -4117,7 +4117,7 @@ function updateRivalEMP(R,dt){
 const SH_VS='uniform float thick;varying vec3 vN;varying vec3 vV;void main(){vec4 wp=modelMatrix*vec4(position,1.0);vec3 wn=normalize(mat3(modelMatrix)*normal);wp.xyz+=wn*thick;vec4 mv=viewMatrix*wp;vN=normalize(mat3(viewMatrix)*wn);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}';
 function shMat(col,thick,fs){return new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(col)},op:{value:1},thick:{value:thick}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexShader:SH_VS,
   fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;void main(){float d=abs(dot(normalize(vN),normalize(vV)));float f=1.0-d;'+fs+'gl_FragColor=vec4(col*a*op,1.0);}'});}
-function mkShield(M,col){const inner=shMat(col,.05,'float a=pow(f,1.5)*0.5+0.06;'),outer=shMat(col,.16,'float a=pow(d,2.0)*0.13;');const parts=[];
+function mkShield(M,col){const inner=shMat(col,.05,'float a=pow(f,1.5)*0.26+0.02;'),outer=shMat(col,.16,'float a=pow(d,2.0)*0.06;');const parts=[];
   M.rig.root.traverse(o=>{if(!o.isMesh||o.userData.shGlow||!o.geometry||!o.geometry.attributes.normal)return;const m=o.material;if(Array.isArray(m)||m.transparent||m.blending===THREE.AdditiveBlending)return;parts.push(o);});
   const glows=[];for(const o of parts)for(const mat of[outer,inner]){const g=new THREE.Mesh(o.geometry,mat);g.userData.shGlow=true;g.userData.noAir=true;g.renderOrder=5;g.frustumCulled=o.frustumCulled;g.castShadow=g.receiveShadow=false;g.visible=false;o.add(g);glows.push(g);}
   return {glows,inner,outer,hitT:0,on:false};}
