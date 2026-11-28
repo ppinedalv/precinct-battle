@@ -1653,6 +1653,14 @@ function tPlayground(cx,cz,ry){tFrame(cx,0,cz,ry,()=>{
   for(const [x,z] of[[-9.5,8],[9.5,-8]]){tBox('matte',0x6b4b30,.5,.08,2.6,x,.55,z);tBox('matte',0x6b4b30,.08,.5,2.6,x+Math.sign(x)*.25,.85,z);for(const dz of[-1,1])tBox('metal',DK,.45,.55,.08,x,.28,z+dz*1.1);}
   tCyl('metal',0x2f6e3a,.35,1,9.5,.5,12);tCyl('metal',DK,.37,.06,9.5,1.03,12);});
   addBlock(cx,cz,8,15,4.6);}
+/* red and white dead-end barricade across a street + both sidewalks (user 2026-11-27). Faces local +z (toward the town); W = total width */
+function deadEnd(cx,cz,ry,W){const n=Math.round(W/2);tFrame(cx,0,cz,ry,()=>{for(let k=0;k<=3;k++)tBox('metal',0x3a3d42,.2,1.6,.2,-W/2+1+k*(W-2)/3,.8,0);
+    for(const y of[.7,1.3])for(let k=0;k<n;k++)tBox('matte',k%2?0xf2f2ee:0xd8261e,W/n,.4,.12,-W/2+(k+.5)*W/n,y,.12);
+    for(let k=0;k<3;k++)tBox('glow',0xffa020,.3,.3,.06,-W/2+W*(k+.5)/3,1.72,.2);});
+  const ax=Math.abs(Math.sin(ry))>.5;addBlock(cx,cz,ax?1:W,ax?W:1,1.6);}
+/* every other dead end on the Dusk map edge: south ends of the north-south streets, both ends of the east-west streets */
+function duskDeadEnds(){for(const st of DUSK_NS)deadEnd(st.x,HALF_Z-2.5,Math.PI,st.w+2*DSW);
+  for(const st of DUSK_EW){deadEnd(-HALF_X+2.5,st.z,Math.PI/2,st.w+2*DSW);deadEnd(HALF_X-2.5,st.z,-Math.PI/2,st.w+2*DSW);}}
 function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);const WH=16,ST=0x5a5e66;
   /* ---- wall with a guarded gate */
   /* compound walls (user 2026-11-27): front wall ends at Mission Ave (x -150) / Willow St (x 150), side walls run back to a wall behind the
@@ -1666,9 +1674,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   for(const s of[-1,1]){wallRun(s*16,WALL_Z,s*CW_X,WALL_Z,1);   /* front wall, gate to the corner */
     wallRun(s*(CW_X-2),WALL_Z-2,s*(CW_X-2),CW_BZ+2,s);   /* side wall */
     /* dead end where the street stops at the north edge: striped barricade on posts with reflectors */
-    for(const bx of[s*93,s*160]){const bz=-HALF_Z+2.5;for(const px of[-9,-3,3,9])tBox('metal',0x3a3d42,.2,1.6,.2,bx+px,.8,bz);
-      for(const y of[.7,1.3])for(let k=0;k<10;k++)tBox('matte',k%2?0xf2f2ee:0xd8261e,2,.4,.12,bx-9+k*2,y,bz+.12);
-      for(const px of[-8,0,8])tBox('glow',0xffa020,.3,.3,.06,bx+px,1.72,bz+.2);addBlock(bx,bz,20,1,1.6);}
+    for(const bx of[s*93,s*160])deadEnd(bx,-HALF_Z+2.5,0,20);
     for(let i=0;i<8;i++)tBox('matte',i%2?0x17181b:0xf2b51d,1.5,1.1,.1,s*(16.8+i*1.5),1.6,WALL_Z+2.06);
     /* gate towers + guards */
     tBox('matte',0x50545c,6,22,7,s*13,11,WALL_Z);for(let y=3;y<22;y+=3.2)tBox('matte',0x3f434a,6.1,.18,7.1,s*13,y,WALL_Z);tBox('metal',0x4a4e55,7.6,.5,8.6,s*13,22.25,WALL_Z);addBlock(s*13,WALL_Z,6,7,22.5);
@@ -1676,6 +1682,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     tBox('glow',0xfff1c8,1.2,.6,.2,s*13,19.5,WALL_Z+3.6);DUSK_GLOWS.push([s*13,19.5,WALL_Z+4.4,0xfff1c8,9]);
 }
   wallRun(-CW_X,CW_BZ,CW_X,CW_BZ,-1);   /* back wall, right behind the data center */
+  duskDeadEnds();
   /* grass strips outside the side walls (beyond Mission Ave / Willow St): a playground in the middle of each + trees around it (user 2026-11-27) */
   for(const s of[-1,1]){const PX=s*185,PZ=-166;tPlayground(PX,PZ,0);
     for(let z=-130;z>-203;z-=dr(4.5,7))for(const x of[s*dr(172.5,175),s*dr(181,189),s*dr(195,197.5)]){if(Math.abs(x-PX)<12.5&&Math.abs(z-PZ)<18.5)continue;if(drand()<.25)continue;tTree(x,z,dr(.85,1.3),drand()<.35?1:0);}}
@@ -1904,7 +1911,7 @@ function gateBreach(e){const T=GATE_BLOCK;let i=buildings.indexOf(T);if(i>=0)bui
   setTimeout(()=>{explosion(_bt.set(0,7,WALL_Z+2),12);camShake=Math.max(camShake,1.2);},1000);
   feed('GATE BREACHED! Get in there and destroy the boss!','b');}
 function duskBegin(){const l=diffLevel;for(const a of BOSS_RIG.arms)a.ent.hitsMax=10+l;   /* stronger arms (user 2026-11-26): 15 hits at level 5 */GATE.hitsMax=12+l;   /* stronger gate (user 2026-11-26): 17 missile / cannon hits at level 5, 22 at level 10 */BOSS.hitsMax=Math.round(60+l*6);   /* boss takes more hits (user 2026-11-27): 66 at level 1, 90 at 5, 120 at 10 (was 44 / 60 / 80) */
-  const n=2+Math.floor(l/3);for(let i=0;i<n;i++)spawnVan(i);DUSK_DYN.vanN=n;
+  const n=2+Math.floor(l/3);for(let i=0;i<n;i++)spawnVan(i);DUSK_DYN.vanN=n;spawnIceTruck();   /* ice-cream truck (user 2026-11-27) */
   rival.alive=false;rival.lives=0;rival.respawn=Infinity;rival.rig.root.visible=false;
   for(let i=0,k=Math.round(thugCap()*.5);i<k;i++)spawnThug();}
 /* gang vans: drive the east-west streets, a gunman leans out of the open side door and shoots at blue units and mechs */
@@ -1990,6 +1997,79 @@ function updateVans(dt){const D=DUSK_DYN;
         _bt.x+=rand(-1.2,1.2);_bt.y+=rand(-.8,.8);_bt.z+=rand(-1.2,1.2);_bt.normalize();fire('bullet',RED,mz,_bt,3,{tracer:true,small:true});muzzleFlash(mz,_bt);gunshotSound(mz);}}}
     else v.burst=0;}
   if(D.vanRespawn&&BOSS&&BOSS.alive){for(let j=D.vanRespawn.length-1;j>=0;j--){D.vanRespawn[j]-=dt;if(D.vanRespawn[j]<=0){D.vanRespawn.splice(j,1);spawnVan();}}}}
+
+/* ---- ICE-CREAM TRUCK (user 2026-11-27, styled on the user's photo; original design): white step van, serving windows with red/white checker
+   awnings + stripe, giant waffle cone with 3 scoops on the roof. The driver (white cap, white shirt) leans out of the cab window on the side
+   facing its target and fires rockets from a bazooka. Drives the east-west streets like the gang vans; crushed if the mech lands on it. */
+const ICT_CONE=new THREE.ConeGeometry(.5,1,14,1);let ICT_PROTO=null;
+function iceTruckProto(){if(ICT_PROTO)return ICT_PROTO;const WH=0xf4f4f0,RD=0xd8261e,CH=0xc8ccd2,GL=0x0a0d12,L=5.8,W=2.2,hw=1.1;
+  const body=withBins(()=>{
+    tBox('metal',0x1c1d20,W-.3,.3,L-.6,0,.55,0);   /* frame */
+    tAdd('metal',rboxL(W,2.15,3.7,.1),WH,0,1.82,-1);   /* serving box */
+    tAdd('metal',rboxL(W,1.95,1.75,.12),WH,0,1.72,1.72);tAdd('metal',rboxL(W-.1,.85,.62,.12),WH,0,1.15,2.86);   /* cab + nose */
+    for(const sx of[-1,1])tBox('metal',GL,.95,.82,.05,sx*.5,2.15,2.6,0,-.12);tBox('metal',WH,.08,.9,.07,0,2.15,2.62,0,-.12);   /* split windshield */
+    tBox('metal',0x1a1d22,.9,.06,.12,0,1.68,2.66);for(const sx of[-1,1])tBox('metal',0x111111,.04,.04,.45,sx*.25,1.76,2.66,0,-.12);   /* wipers */
+    for(const sx of[-1,1]){const X=sx*(hw+.005);
+      tBox('metal',GL,.04,.75,.95,X,2.17,1.72);tBox('metal',0x9aa0a6,.03,1.65,.03,X,1.6,1.12);tBox('metal',0x9aa0a6,.03,1.65,.03,X,1.6,2.3);tBox('metal',CH,.04,.06,.2,sx*(hw+.02),1.62,1.32);   /* cab door: open window, seams, handle */
+      tBox('metal',0x1a1a1a,.42,.04,.04,sx*(hw+.2),2.25,2.45);tBox('metal',0x1a1a1a,.08,.45,.22,sx*(hw+.42),2.18,2.45);tBox('metal',0x6f8fa8,.02,.38,.17,sx*(hw+.47),2.18,2.45);   /* mirror */
+      tBox('metal',0x1a1d22,.04,1.05,2.65,X,2.02,-1);for(let k=-1;k<=1;k++)tBox('metal',0x0b0e14,.03,.88,.78,X+sx*.012,2.02,-1+k*.86);   /* serving window, 3 panes */
+      for(const z of[-2.33,-1.43,-.57,.33])tBox('metal',WH,.05,.95,.06,X+sx*.02,2.02,z);tBox('metal',CH,.34,.06,2.75,sx*(hw+.16),1.47,-1);   /* frame bars + serving ledge */
+      for(const z of[-2.1,.1])tBox('metal',CH,.05,.3,.05,sx*(hw+.06),1.3,z,0,0,sx*.6);
+      for(let r=0;r<2;r++)for(let c=0;c<13;c++)tBox('matte',(r+c)%2?RD:WH,.05+r*.1,.2,.21,sx*(hw+.05+r*.1),2.78-r*.17,-2.37+c*.21,0,0,sx*-.5);   /* checker awning, tilted out */
+      tBox('matte',RD,.04,.04,2.75,sx*(hw+.2),2.6,-1);
+      for(let r=0;r<2;r++)for(let c=0;c<17;c++)tBox('matte',(r+c)%2?RD:WH,.03,.19,.2,sx*(hw+.012),1.08+r*.19,-2.62+c*.2);   /* checker stripe */
+      tBox('matte',RD,.03,.07,3.7,sx*(hw+.012),2.86,-1);   /* red roof trim */
+      tBox('glow',0xff9a1a,.04,.1,.18,sx*(hw+.02),.95,2.55);tBox('glow',0xd81818,.04,.1,.18,sx*(hw+.02),.95,-2.7);   /* side markers */
+      for(const z of[2.3,-1.8]){tCyl('matte',0x111214,.48,.36,sx*(hw-.12),.48,z,0,0,Math.PI/2);tCyl('metal',CH,.28,.38,sx*(hw-.12),.48,z,0,0,Math.PI/2);tCyl('metal',0x8a8f96,.11,.42,sx*(hw-.12),.48,z,0,0,Math.PI/2);
+        for(let k=0;k<5;k++){const a=k/5*6.283;tBox('metal',0x2a2c30,.02,.05,.05,sx*(hw+.08),.48+Math.sin(a)*.19,z+Math.cos(a)*.19);}
+        tBox('metal',0x1a1b1e,.12,.55,1.25,sx*(hw-.02),.78,z,0,0,0);}}   /* wheels: tire, chrome hub, lug nuts, wheel arch */
+    tBox('metal',CH,1.02,.55,.05,0,1.12,3.18);for(let i=0;i<5;i++)tBox('metal',0x2a2c30,.92,.04,.06,0,.92+i*.1,3.19);   /* grille */
+    for(const sx of[-1,1]){tCyl('glow',0xfff6d8,.14,.06,sx*.78,1.25,3.17,Math.PI/2);tCyl('metal',CH,.18,.05,sx*.78,1.25,3.16,Math.PI/2);tBox('glow',0xff9a1a,.18,.1,.04,sx*.78,.98,3.18);}   /* headlights + signals */
+    tBox('metal',CH,W+.1,.22,.24,0,.62,3.26);tBox('metal',CH,W+.1,.22,.24,0,.62,-2.97);tBox('matte',0xf2f2ee,.5,.22,.03,0,.95,3.29);   /* bumpers + plate */
+    tBox('metal',0x9aa0a6,.03,1.9,.03,0,1.8,-2.86);tBox('metal',GL,.8,.5,.03,0,2.35,-2.86);for(const sx of[-1,1])tBox('glow',0xd81818,.16,.32,.04,sx*.9,1.25,-2.88);tBox('matte',0xf2f2ee,.5,.25,.03,0,.85,-3.1);   /* rear door, window, tail lights, plate */
+    tBox('matte',0x2a2c30,.06,.05,.06,0,2.92,2.4);tCyl('metal',CH,.12,.35,0,3.0,2.2,Math.PI/2+.3);   /* roof speaker horn */
+    /* giant waffle cone + scoops */
+    for(const z of[-2,-.2])tBox('metal',CH,.12,.35,.12,0,3.05,z);
+    {const ax=new THREE.Vector3(0,.2,-.98).normalize(),base=new THREE.Vector3(0,3.45,.55),H=3.3,rx=-Math.PI/2+.2;const c=base.clone().addScaledVector(ax,H/2);
+      tAdd('matte',ICT_CONE,0xd9a35a,c.x,c.y,c.z,rx,0,0,1.55,H,1.55);
+      for(let k=1;k<6;k++){const t=k/6,q=base.clone().addScaledVector(ax,H*t);tAdd('matte',torusG(1,.035,24),0xa8742f,q.x,q.y,q.z,.2,0,0,.78*(1-t),.78*(1-t),.78*(1-t));}   /* waffle ridges */
+      const S=[[0,.1,.25,1.6,0xf4b6c2],[.45,.55,.05,1.25,0xe8e49a],[-.42,.6,-.05,1.15,0x6b3a2a],[0,-.35,.55,.9,0xfff3d6]];
+      for(const [dx,dy,dz,r,col] of S){tAdd('matte',USPH,col,base.x+dx,base.y+dy,base.z+dz,0,0,0,r,r*.9,r);for(let k=0;k<5;k++){const a=k/5*6.283+dx;tAdd('matte',USPH,col,base.x+dx+Math.cos(a)*r*.45,base.y+dy-r*.35,base.z+dz+Math.sin(a)*r*.45,0,0,0,r*.32,r*.3,r*.32);}}   /* scoops with lumpy rims */
+      tAdd('matte',UCONE,0xffd6e0,base.x,base.y+1,base.z+.25,0,0,0,.4,.5,.4);}});
+  const driver=withBins(()=>{const SK=0xe0b088,SH=0xf6f6f2;   /* local: faces +x (out of the window) */
+    tBox('matte',SH,.4,.55,.34,0,1.85,0);tBox('matte',0x2a2d33,.42,.06,.36,0,1.58,0);tBox('matte',0xdcdcd6,.03,.35,.02,.2,1.9,0);   /* white shirt, belt, placket */
+    tAdd('matte',USPH,SK,0,2.3,0,0,0,0,.32,.36,.32);tAdd('matte',USPH,0x111111,.15,2.33,.07,0,0,0,.04,.04,.04);tAdd('matte',USPH,0x111111,.15,2.33,-.07,0,0,0,.04,.04,.04);tBox('matte',0x9a5a4a,.02,.025,.1,.16,2.2,0);
+    tCyl('matte',SH,.18,.16,0,2.5,0);tAdd('matte',USPH,SH,0,2.57,0,0,0,0,.36,.12,.36);tBox('matte',SH,.24,.03,.3,.22,2.45,0);tCyl('matte',0xd8261e,.185,.04,0,2.44,0);   /* white cap, brim, red band */
+    for(const sz of[-1,1]){tBox('matte',SH,.36,.13,.13,.2,2.02,sz*.17);tBox('matte',SK,.3,.1,.1,.48,2.0,sz*.12);}});   /* sleeves + forearms reaching the bazooka */
+  const baz=withBins(()=>{const OD=0x4b5320;   /* local +z = muzzle */
+    tCyl('metal',OD,.11,1.55,0,0,.2,Math.PI/2);tCyl('metal',0x2f3414,.15,.18,0,0,.98,Math.PI/2);tCyl('metal',0x2f3414,.16,.22,0,0,-.62,Math.PI/2);
+    tBox('matte',0xf2c418,.235,.235,.06,0,0,.55);tBox('metal',0x1a1a1a,.06,.18,.08,0,-.17,.15);tBox('metal',0x1a1a1a,.06,.16,.08,0,-.16,.45);tBox('metal',0x1a1a1a,.05,.1,.22,0,.15,.3);
+    tAdd('matte',UCONE,0xd8261e,0,0,1.12,Math.PI/2,0,0,.16,.24,.16);});
+  ICT_PROTO={body,driver,baz};return ICT_PROTO;}
+function iceTruckMesh(){const P=iceTruckProto(),g=new THREE.Group();g.add(P.body.clone());const piv=new THREE.Group();piv.position.set(0,0,1.7);g.add(piv);
+  const d=P.driver.clone();d.position.set(.45,0,0);piv.add(d);const b=P.baz.clone();b.position.set(.95,2.1,0);piv.add(b);g.userData={piv,baz:b};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
+function spawnIceTruck(){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=rand(-150,150);
+  const v={kind:'icetruck',team:RED,pos:new THREE.Vector3(x,0,e.z+dir*3),vel:V(),hp:160,maxHp:160,r:3,hy:1.6,alive:true,mesh:iceTruckMesh(),street:e,dir,cd:rand(2,4),think:0,target:null};
+  v.mesh.position.copy(v.pos);v.mesh.rotation.y=dir*Math.PI/2;scene.add(v.mesh);ents.push(v);(DUSK_DYN.trucks=DUSK_DYN.trucks||[]).push(v);}
+function updateIceTrucks(dt){const D=DUSK_DYN;if(!D.trucks)return;const lvl=DIFF.level;
+  for(let i=D.trucks.length-1;i>=0;i--){const v=D.trucks[i];if(!v.alive){D.trucks.splice(i,1);D.truckRespawn=(D.truckRespawn||[]).concat(25);continue;}
+    if(v.frozen>0){v.frozen-=dt;continue;}
+    v.think-=dt;if(v.think<=0){v.think=.4;v.target=null;let bd=85;for(const e of ents){if(!e.alive||e.team!==BLUE||e.kind==='base'||e.kind==='cannon'||e.kind==='hqturret')continue;
+      const d=Math.hypot(e.pos.x-v.pos.x,e.pos.z-v.pos.z)-(e.isPlayer?15:0);if(d<bd&&losClear(_bt.set(v.pos.x,2.4,v.pos.z),center(e,_bt2),e.r)){bd=d;v.target=e;}}}
+    const sp=v.target?4.5:9.5;
+    {const P=player,hx=2.95,hz=1.1,pr=P.r*.7;if(P.alive&&P.onGround&&P.pos.y<1.5){const dz=P.pos.z-v.pos.z,ahead=(P.pos.x-(v.pos.x+v.dir*sp*dt))*v.dir;
+       if(Math.abs(dz)<hz+pr&&ahead>-hx&&ahead<hx+pr)v.stopT=.8;const dx=P.pos.x-v.pos.x,ox=hx+pr-Math.abs(dx),oz=hz+pr-Math.abs(dz);if(ox>0&&oz>0){if(ox<oz)P.pos.x+=Math.sign(dx||1)*ox;else P.pos.z+=Math.sign(dz||1)*oz;}}}
+    if(v.stopT>0)v.stopT-=dt;else v.pos.x+=v.dir*sp*dt;
+    if(Math.abs(v.pos.x)>188){const sx=Math.sign(v.pos.x);v.pos.x=sx*188;v.dir=-sx;v.pos.z=v.street.z+v.dir*3;v.mesh.rotation.y=v.dir*Math.PI/2;}
+    v.mesh.position.copy(v.pos);v.mesh.position.y=Math.abs(Math.sin(performance.now()/110))*.03;
+    {const P=player;if(P.alive&&!P.onGround&&P.vy<=0&&P.pos.y>1.4&&P.pos.y<4.6&&Math.abs(P.pos.x-v.pos.x)<2.95+P.r*.5&&Math.abs(P.pos.z-v.pos.z)<1.1+P.r*.5){kill(v,BLUE,true);continue;}}   /* landing on it crushes it */
+    const U=v.mesh.userData,tg=v.target&&v.target.alive?v.target:null;
+    if(tg){center(tg,_bt);v.mesh.updateMatrixWorld(true);const lx=v.mesh.worldToLocal(_bt2.copy(_bt)).x;U.piv.rotation.y=lx>=0?0:Math.PI;U.piv.updateMatrixWorld(true);U.baz.lookAt(_bt);
+      v.cd-=dt;if(v.cd<=0){v.cd=lerp(4.6,2,(lvl-1)/9)*rand(.85,1.2);U.baz.updateMatrixWorld(true);const mz=U.baz.localToWorld(new THREE.Vector3(0,0,1.2)),dir=_bt.clone().sub(mz).normalize();
+        fire('missile',RED,mz,dir,18+lvl*2.5,{splash:4.5,boom:10,target:tg,life:5});const back=U.baz.localToWorld(new THREE.Vector3(0,0,-.8));puff(back,0xb8b8b8,.9,2.4,.6);puff(mz,0xffa040,.5,1.4,.12);
+        if(!playSample(missileBuf,mz,.6,1))sfx('missile',mz);}}
+    else{U.piv.rotation.y=0;U.baz.rotation.set(0,Math.PI/2,0);}}
+  if(D.truckRespawn&&BOSS&&BOSS.alive){for(let j=D.truckRespawn.length-1;j>=0;j--){D.truckRespawn[j]-=dt;if(D.truckRespawn[j]<=0){D.truckRespawn.splice(j,1);spawnIceTruck();}}}}
 
 /* ---- DUSK audio (user 2026-11-26), made in code: gunshots from people, angry riot crowd that swells with nearby armed people */
 let _gsN=0;
@@ -2107,7 +2187,7 @@ function updateDusk(dt,t){updateSeaMonster(dt);updateBossMelt(dt);updateMechZap(
   for(const d of BOSS_RIG.doors){const u=d.userData;if(u.fall>0&&u.fall<1){u.fall=Math.min(1,u.fall+dt*1.4);const e=u.fall*u.fall;d.rotation.x=e*Math.PI/2*.98;d.position.z=WALL_Z+e*1.2;d.position.x=u.s*(5+e*1.5);}}
   if(BOSS_RIG.dead>0&&BOSS_RIG.dead<2){BOSS_RIG.dead=Math.min(2,BOSS_RIG.dead+dt*.4);const k=BOSS_RIG.dead-1,e=k*k*(3-2*k);BOSS_RIG.brain.scale.set(BRAIN_S*(1+.1*e),BRAIN_S*(1-.42*e),BRAIN_S*(1+.08*e));BOSS_RIG.brain.position.y=BRAIN_Y-1.0*e;BOSS_RIG.brainMat.color.lerpColors(new THREE.Color(0x6a3a44),new THREE.Color(0x8a4a5a),e*.5);BOSS_RIG.brain.rotation.z=e*.08;   /* brain slumps and spreads as it melts */
     for(const a of BOSS_RIG.arms)a.segs.forEach(g=>{g.rotation.x=lerp(g.rotation.x,.32,dt*2);});}
-  updatePeds(dt);updateLabCrew(dt);updateVans(dt);updateThugs(dt,t);updateCars();}
+  updatePeds(dt);updateLabCrew(dt);updateVans(dt);updateIceTrucks(dt);updateThugs(dt,t);updateCars();}
 
 { /* start screen: battlefield picker (reloads the page, the world is built at load) */
   const fc=$('fCity'),fd=$('fDusk');if(fc&&fd){fc.classList.toggle('on',!DUSK);fd.classList.toggle('on',DUSK);
@@ -3907,7 +3987,7 @@ function triggerEMP(){
   P.shieldT=EMP_FREEZE;   // invisible shield: no damage for as long as the freeze lasts (user 2026-11-22)
   empVisual(o);
   empSound();
-  let n=0;for(const e of ents){if(!e.alive||e.team!==RED||(e.kind!=='tank'&&e.kind!=='roller'&&e.kind!=='hoverbot'&&e.kind!=='thug'&&e.kind!=='van'&&!(e.kind==='bossarm'&&!e.arm.dead)))continue;   // H also freezes enemy laser hover robots (user 2026-11-22)
+  let n=0;for(const e of ents){if(!e.alive||e.team!==RED||(e.kind!=='tank'&&e.kind!=='roller'&&e.kind!=='hoverbot'&&e.kind!=='thug'&&e.kind!=='van'&&e.kind!=='icetruck'&&!(e.kind==='bossarm'&&!e.arm.dead)))continue;   // H also freezes enemy laser hover robots (user 2026-11-22)
     if(Math.hypot(e.pos.x-P.pos.x,e.pos.z-P.pos.z)<=EMP_RADIUS){e.frozen=EMP_FREEZE;if(e.vel)e.vel.set(0,0,0);n++;}}   /* boss arms have no vel */
   feed(n?`EMP! ${n} enemy unit${n>1?'s':''} frozen for ${EMP_FREEZE}s`:'EMP fired: no enemy tanks, rollers or hover robots in range','b');}
 // enemy mech EMP: EMP_MAX (5) charges per match, only on HARD / VETERAN / BRUTAL (levels 5-10); freezes BLUE tanks and rollers
