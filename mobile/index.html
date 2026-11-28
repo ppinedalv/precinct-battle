@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1128-0055</div>
+<div id="buildTag">BUILD 1128-0105</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1878,8 +1878,6 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   ents.push(GATE);buildLabCrew();}
 function hbFoe(t){return DUSK&&t===BLUE&&GATE&&GATE.alive?GATE:bases[1-t];}   /* blue laser hover bots hit the gate until it's breached */
 let bossShT=0,bossFeedT=0;
-let hqcFeedT=0;function hqCannonsFirst(b){if(performance.now()-hqcFeedT>4000){hqcFeedT=performance.now();const n=ents.filter(c=>c.kind==='hqturret'&&c.team===b.team&&c.alive&&!c.turret.destroyed).length;
-  feed(`${b.team===RED?'Red':'Blue'} HQ is shielded. Destroy its defense cannons first! ${n} left`,b.team===RED?'r':'b');}}
 let armFeedT=0;function bossArmsFirst(){bossShT=.5;if(performance.now()-armFeedT>4000){armFeedT=performance.now();feed(`Destroy all the laser arms first! ${BOSS_RIG.arms.filter(a=>!a.dead).length} left`,'r');}}
 function bossShielded(){bossShT=.5;if(performance.now()-bossFeedT>4000){bossFeedT=performance.now();feed('The boss is shielded. Breach the gate first!','r');}}
 let BOSS_HAZE=null;
@@ -3905,7 +3903,7 @@ function damage(e,amt,team,byPlayer,heavy,gun){
   if(team===RED&&!PVP)amt*=DIFF.enemyMul;   /* every enemy attack gets stronger level by level: 1x on level 1 up to 1.5x on level 10, on top of the other level boosts (user 2026-11-27); not in 2-player VS mode */
   if((e.boss||e.kind==='bossarm')&&GATE&&GATE.alive){bossShielded();return;}
   if(e.boss&&BOSS_RIG.arms.some(a=>!a.dead)){bossArmsFirst();return;}
-  if(e.kind==='base'&&!e.boss&&!DUSK&&ents.some(c=>c.kind==='hqturret'&&c.team===e.team&&c.alive&&!c.turret.destroyed)){hqCannonsFirst(e);return;}   /* HQ takes no damage until all 4 of its defense cannons (2 beside it + 2 on the data center roof) are destroyed (user 2026-11-27) */   /* the brain can't be hurt until every arm is destroyed */
+  /* City Night HQ takes damage right away, cannons no longer have to be destroyed first (user 2026-11-28) */   /* the brain can't be hurt until every arm is destroyed */
   if(e.kind==='gate'&&!heavy)return;   /* gate: only missiles + cannon shells, rotary gun does nothing (user 2026-11-26) */   /* dusk: boss can't be hurt until the gate is breached */
   if(e.hitsMax){if(e.team===null)return;if(!heavy){if(!gun)return;const N=GUN_HITS_PER(e);e.gunAcc=(e.gunAcc||0)+1;if(e.gunAcc<N){e.hp=e.maxHp*(1-(e.hits+e.gunAcc/N)/e.hitsMax);return;}e.gunAcc=0;}e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-(e.hits+(e.gunAcc||0)/GUN_HITS_PER(e))/e.hitsMax);   /* health bar also counts bullets toward the next hit */
     if(e.kind==='base'&&(e.hits===Math.round(e.hitsMax*.5)||e.hits===Math.round(e.hitsMax*.8)))feed(`${e.boss?'BOSS':(e.team?'RED':'BLUE')+' HQ'} at ${e.hitsMax-e.hits} hits left`,e.team?'b':'r');
@@ -4981,7 +4979,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0055'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0105'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
