@@ -163,7 +163,7 @@ canvas#game{display:block;width:100vw;height:100vh}
       <b>Mouse</b><span>Optional: aim, left click gun, right click cannon</span>
       <b>F</b><span>Transform: Walker (armored) / Hover (fast)</span>
       <b>H</b><span>EMP shockwave (5 charges): freezes nearby enemy tanks, roller drones, laser hover robots, gang vans and ice-cream trucks for 7 s, and gives you an invisible shield (no damage) for the same 7 s. Only 5 blasts per game, no reloads</span>
-      <b>Shift</b><span>Walker: run · Hover: turbo boost (uses System Energy)</span>
+      <b>Shift</b><span>Tap once: Walker runs · Hover turbo boosts (uses System Energy). Tap again to stop</span>
       <b>M</b><span>Mute everything</span><b>N</b><span>Music on / off</span><b>- / =</b><span>Music volume down / up</span><b>P</b><span>Pause / resume</span>
     </div>
     <div id="credits">Sound credits: police radio chatter by Played N Faved (CC BY); male screams by Sound Effects Factory (soundeffectsfactory.com); Dusk Streets music: "Westcoast Rap Beat (Dishonor)" by imaboo via Pixabay; women's screams by Universfield and freesound_community via Pixabay; other effects listed in the game's sound credits file.</div>
@@ -3966,8 +3966,11 @@ function updateHUD(){
 
 // ---------------- input
 const keys={};let mouseL=false,mouseR=false,locked=false,started=false,paused=false,over=false;
-addEventListener('keydown',e=>{keys[e.code]=true;
-  if(GUEST)guestKey(e,true);
+/* Shift toggles run/boost (user 2026-11-28): tap once = on, tap again = off. Real keyboard only; the phone RUN button sends its own down/up. */
+let shiftOn=false;const isShiftKey=e=>e.isTrusted&&(e.code==='ShiftLeft'||e.code==='ShiftRight');
+function shiftOff(){shiftOn=false;keys.ShiftLeft=keys.ShiftRight=false;if(GUEST&&GK.ShiftLeft){GK.ShiftLeft=false;guestSendInput();}}
+addEventListener('keydown',e=>{if(isShiftKey(e)){if(!e.repeat){shiftOn=!shiftOn;keys.ShiftLeft=shiftOn;keys.ShiftRight=false;if(GUEST)guestKey({code:'ShiftLeft',repeat:false,preventDefault(){}},shiftOn);}}
+  else{keys[e.code]=true;if(GUEST)guestKey(e,true);}
   if(!GUEST&&e.code==='Space'&&!e.repeat&&player.alive&&started&&!paused&&!over&&player.onGround&&player.mode<.5&&!player.modeTarget){const P=player;
     // jump just high enough to land on the tallest building within reach (never higher)
     P.vy=mechJumpVel(P.pos);P.onGround=false;P.jumpDip=.25;P.crouch=.55;
@@ -3980,13 +3983,13 @@ addEventListener('keydown',e=>{keys[e.code]=true;
   if(e.code==='Minus'||e.code==='Equal'){initAudio();music.vol=clamp(Math.round((music.vol+(e.code==='Equal'?.1:-.1))*10)/10,0,1);if(music.vol>0)music.on=true;saveMusic();applyMusic();feed('Music volume '+Math.round(music.vol*100)+'%');}
   if(!GUEST&&e.code==='KeyP'&&started&&!over){paused=!paused;$('pause').style.display=paused?'flex':'none';$('musicCtl').style.display=paused?'flex':'none';if(paused)document.exitPointerLock();}
   if(e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault();});
-addEventListener('keyup',e=>{keys[e.code]=false;if(GUEST)guestKey(e,false);});
+addEventListener('keyup',e=>{if(isShiftKey(e))return;keys[e.code]=false;if(GUEST)guestKey(e,false);});
 canvas.addEventListener('mousedown',e=>{if(!locked&&started&&!over&&!DEMO){lockPointer();return;}if(e.button===0)mouseL=true;if(e.button===2)mouseR=true;});
 addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;if(e.button===2)mouseR=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=clamp(pitch+e.movementY*.0022,-.7118,.65);});
 document.addEventListener('pointerlockchange',()=>{if(GUEST)return;locked=document.pointerLockElement===canvas;
-  if(!locked&&started&&!over){paused=true;mouseL=mouseR=false;$('pause').style.display='flex';$('musicCtl').style.display='flex';}
+  if(!locked&&started&&!over){paused=true;mouseL=mouseR=false;shiftOff();$('pause').style.display='flex';$('musicCtl').style.display='flex';}
   if(locked){paused=false;$('pause').style.display='none';$('musicCtl').style.display='none';}});
 function begin(){if(started||GUEST)return;if(NET.mode==='pvp'&&!NET.ready)return;setDifficulty(diffLevel);initialSpawn();if(DUSK)duskBegin();
   if(NET.mode==='pvp'){player.maxHp=player.hp=rival.maxHp=rival.hp=DIFF.mechHp;startPvp();}   /* VS PLAYER: both mechs get the level's mech hull (400/600/900/1000) */

@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1128-0909</div>
+<div id="buildTag">BUILD 1128-0914</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -4050,8 +4050,11 @@ function updateHUD(){
 
 // ---------------- input
 const keys={},TOUCH={mx:0,my:0,ax:0,ay:0,boost:false};let mouseL=false,mouseR=false,locked=false,started=false,paused=false,over=false;
-addEventListener('keydown',e=>{keys[e.code]=true;
-  if(GUEST)guestKey(e,true);
+/* Shift toggles run/boost (user 2026-11-28): tap once = on, tap again = off. Real keyboard only; the phone RUN button sends its own down/up. */
+let shiftOn=false;const isShiftKey=e=>e.isTrusted&&(e.code==='ShiftLeft'||e.code==='ShiftRight');
+function shiftOff(){shiftOn=false;keys.ShiftLeft=keys.ShiftRight=false;if(GUEST&&GK.ShiftLeft){GK.ShiftLeft=false;guestSendInput();}}
+addEventListener('keydown',e=>{if(isShiftKey(e)){if(!e.repeat){shiftOn=!shiftOn;keys.ShiftLeft=shiftOn;keys.ShiftRight=false;if(GUEST)guestKey({code:'ShiftLeft',repeat:false,preventDefault(){}},shiftOn);}}
+  else{keys[e.code]=true;if(GUEST)guestKey(e,true);}
   if(!GUEST&&e.code==='Space'&&!e.repeat&&player.alive&&started&&!paused&&!over&&player.onGround&&player.mode<.5&&!player.modeTarget){const P=player;
     // jump just high enough to land on the tallest building within reach (never higher)
     P.vy=mechJumpVel(P.pos);P.onGround=false;P.jumpDip=.25;P.crouch=.55;
@@ -4064,13 +4067,13 @@ addEventListener('keydown',e=>{keys[e.code]=true;
   if(e.code==='Minus'||e.code==='Equal'){initAudio();music.vol=clamp(Math.round((music.vol+(e.code==='Equal'?.1:-.1))*10)/10,0,1);if(music.vol>0)music.on=true;saveMusic();applyMusic();feed('Music volume '+Math.round(music.vol*100)+'%');}
   if(!GUEST&&e.code==='KeyP'&&started&&!over){paused=!paused;$('pause').style.display=paused?'flex':'none';$('musicCtl').style.display=paused?'flex':'none';if(paused)document.exitPointerLock();}
   if(e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault();});
-addEventListener('keyup',e=>{keys[e.code]=false;if(GUEST)guestKey(e,false);});
+addEventListener('keyup',e=>{if(isShiftKey(e))return;keys[e.code]=false;if(GUEST)guestKey(e,false);});
 canvas.addEventListener('mousedown',e=>{if(!locked&&started&&!over&&!DEMO){lockPointer();return;}if(e.button===0)mouseL=true;if(e.button===2)mouseR=true;});
 addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;if(e.button===2)mouseR=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=clamp(pitch+e.movementY*.0022,-.7118,.65);});
 document.addEventListener('pointerlockchange',()=>{if(GUEST)return;locked=document.pointerLockElement===canvas;
-  if(!locked&&started&&!over){paused=true;mouseL=mouseR=false;$('pause').style.display='flex';$('musicCtl').style.display='flex';}
+  if(!locked&&started&&!over){paused=true;mouseL=mouseR=false;shiftOff();$('pause').style.display='flex';$('musicCtl').style.display='flex';}
   if(locked){paused=false;$('pause').style.display='none';$('musicCtl').style.display='none';}});
 function begin(){if(started||GUEST)return;if(NET.mode==='pvp'&&!NET.ready)return;setDifficulty(diffLevel);initialSpawn();if(DUSK)duskBegin();
   if(NET.mode==='pvp'){player.maxHp=player.hp=rival.maxHp=rival.hp=DIFF.mechHp;startPvp();}   /* VS PLAYER: both mechs get the level's mech hull (400/600/900/1000) */
@@ -4998,7 +5001,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0909'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0914'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
