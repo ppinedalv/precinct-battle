@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1553</div>
+<div id="buildTag">BUILD 1127-1859</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1801,7 +1801,7 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
     a.segs.forEach((g,j)=>{const w=Math.sin(at*3.1+j*.75+a.ph)*.2+(j===0?Math.sin(at*1.7+a.ph*2.3)*.38:0);g.rotation.y=-a.s*(j<7?.15:j<9?-.06:0)+w*.6;   /* faster whipping + whole-arm sweep: harder to hit (user 2026-11-26) */   /* longer tentacles: 11 segments, wider S-curve (user 2026-11-26) */
       g.rotation.x=(j<4?-.12*up-.06:j<8?.08*up+.03:-.05)+Math.sin(at*2.6+j*.6+a.ph*1.7)*.14+(j===0?Math.sin(at*1.3+a.ph)*.22:0);if(a.dead){g.rotation.x=.3;g.rotation.y*=.5;}});}
   R.top.parent.updateMatrixWorld(true);
-  const rate=[2.9,2.75,2.6,2.45,2.3,2.1,1.9,1.7,1.5,1.3][lvl-1],dmg=[6,7,9,11,13,16,20,24,30,36][lvl-1];   /* lasers fire more often + hit harder each level (user 2026-11-27; was every 4.2-1.8 s for 6-32) */   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
+  const rate=[2.9,2.75,2.6,2.45,2.3,2.1,1.9,1.7,1.5,1.3][lvl-1],dmg=[6,7,9,11,13,16,20,24,60,72][lvl-1];   /* levels 9-10 laser hits doubled (user 2026-11-27: 30/36 -> 60/72) */   /* lasers fire more often + hit harder each level (user 2026-11-27; was every 4.2-1.8 s for 6-32) */   /* boss lasers ramp hard from level 5 to 10 (user 2026-11-26) */
   for(const a of R.arms){a.can.localToWorld(a.ent.pos.set(0,0,1.7));
     if(a.dead){if(Math.random()<.3){a.segs[Math.min(7,a.segs.length-1)].localToWorld(_bt.set(0,0,1.6));puff(_bt,Math.random()<.3?0xff8a2a:0x2c2c30,.8,2.6,1,0,2.5,0);}continue;}
     if(a.ent.frozen>0){a.muzzle.material.opacity=.15+.1*Math.random();if(Math.random()<dt*6){a.can.localToWorld(_bt.set(rand(-1,1),rand(-1,1),rand(0,2)));puff(_bt,0x7fe8ff,.25,.6,.2);}continue;}   /* frozen: muzzle dark, cold blue sparks */
@@ -1813,7 +1813,7 @@ function updateBoss(b,dt,t){const R=BOSS_RIG,lvl=DIFF.level;
       a.can.lookAt(_bt.addScaledVector(_bt2,30).add(new THREE.Vector3(a.s*6,(a.k-1)*4+Math.sin(t+a.ph)*2,0)));}
     a.muzzle.material.opacity=.55+.45*Math.sin(t*6+a.ph)+(a.aimT>.4?1:0);}
   const bp=R.bubbles.geometry.attributes.position;for(let i=0;i<bp.count;i++){let y=bp.getY(i)+dt*rand(.8,1.8);if(y>13.6)y=5.6;bp.setY(i,y);}bp.needsUpdate=true;
-  updateLightningOrb(b,tg,dt,t,[6,7,8,9,10,13,16,20,26,32][lvl-1]);}   /* lightning keeps its old strength; only the arm lasers were boosted (user 2026-11-27) */
+  updateLightningOrb(b,tg,dt,t,[6,7,8,9,10,13,16,20,52,64][lvl-1]);   /* levels 9-10 lightning doubled (user 2026-11-27: 26/32 -> 52/64, x1.4 per bolt) */}   /* lightning keeps its old strength; only the arm lasers were boosted (user 2026-11-27) */
 function bossArmDown(e){const a=e.arm;a.dead=true;a.tag.sp.visible=false;a.muzzle.visible=false;const p=e.pos.clone();
   for(let i=0;i<6;i++)setTimeout(()=>{explosion(_bt.copy(p).add(new THREE.Vector3(rand(-1.5,1.5),rand(-1,1.5),rand(-1.5,1.5))),rand(2.5,4.5));},i*130);
   setTimeout(()=>{explosion(p,6);camShake=Math.max(camShake,.6);a.can.visible=false;for(let j=8;j<a.segs.length;j++)a.segs[j].visible=false;},700);
@@ -4691,7 +4691,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1553'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1859'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
