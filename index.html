@@ -2090,6 +2090,27 @@ function crushIceTruck(v){v.alive=false;v.hp=0;const m=v.mesh,U=m.userData,geos=
 function spawnIceTruck(){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=rand(-150,150);
   const v={kind:'icetruck',team:RED,pos:new THREE.Vector3(x,0,e.z+dir*3),vel:V(),hp:160,maxHp:160,r:3,hy:1.6,alive:true,mesh:iceTruckMesh(),street:e,dir,cd:rand(2,4),think:0,target:null};
   v.mesh.position.copy(v.pos);v.mesh.rotation.y=dir*Math.PI/2;scene.add(v.mesh);ents.push(v);(DUSK_DYN.trucks=DUSK_DYN.trucks||[]).push(v);}
+/* ICE-CREAM TRUCK MUSIC (user 2026-11-27): "Home! Sweet Home!" (Henry Bishop, 1823, public domain), the tune in the user's YouTube ref
+   BLUSTle-U4o (identified by Gemini: electronic music-box chime, ~105 BPM, C major). Played in code (no copied audio): square-wave chime
+   through a tinny speaker filter plus a bell overtone. Loud next to the truck, fades out with distance (silent past ~95 units) or when it dies. */
+const ICM={g:null,next:0,i:0,lvl:0};
+const ICM_SEQ=(()=>{const N={G4:67,A4:69,B4:71,C5:72,D5:74,E5:76,G5:79,C6:84,E4:64,F4:65};const q=[];const add=(str)=>{for(const t of str.split(' ')){const [n,b]=t.split(':');q.push([n==='R'?0:N[n],+b]);}};
+  add('G4:.5 C5:.5 E5:.5 G5:.5 C6:1 R:1');   /* short arpeggio intro */
+  const ph='E4:.5 F4:.5 G4:1 C5:.5 B4:.5 C5:.5 E5:1 D5:.5 C5:1.5';add(ph);add(ph);
+  add('D5:.5 C5:.5 B4:.5 A4:.5 G4:1 E5:1 D5:.5 C5:2 R:1.5');return q;})();
+function icmNote(midi,t,dur,v){const f=440*Math.pow(2,(midi-69)/12),o=actx.createOscillator(),o2=actx.createOscillator(),g=actx.createGain(),g2=actx.createGain();
+  o.type='square';o.frequency.value=f;o2.type='sine';o2.frequency.value=f*2.01;   /* chime body + bell overtone */
+  const L=Math.min(.75,dur*.95);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16*v,t+.006);g.gain.exponentialRampToValueAtTime(.0005,t+L);
+  g2.gain.setValueAtTime(.0001,t);g2.gain.exponentialRampToValueAtTime(.1*v,t+.004);g2.gain.exponentialRampToValueAtTime(.0003,t+L*.6);
+  o.connect(g);o2.connect(g2);g.connect(ICM.g);g2.connect(ICM.g);o.start(t);o2.start(t);o.stop(t+L+.05);o2.stop(t+L+.05);}
+function updateIceMusic(dt){if(!actx)return;const T=DUSK_DYN.trucks||[];let d=1e9;const P=player;
+  for(const v of T)if(v.alive)d=Math.min(d,Math.hypot(v.pos.x-P.pos.x,v.pos.z-P.pos.z));
+  const want=muted||over?0:clamp(1-(d-22)/72,0,1);ICM.lvl+=(want-ICM.lvl)*Math.min(1,dt*2.5);
+  if(!ICM.g){if(want<=0)return;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;lp.Q.value=.9;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=380;   /* tinny loudspeaker */
+    ICM.g=actx.createGain();ICM.g.gain.value=0;ICM.g.connect(hp);hp.connect(lp);lp.connect(actx.destination);ICM.next=actx.currentTime+.1;}
+  ICM.g.gain.setTargetAtTime(ICM.lvl*.9,actx.currentTime,.08);
+  if(ICM.lvl<.01){ICM.next=Math.max(ICM.next,actx.currentTime+.05);return;}   /* out of earshot: hold the tune, resume where it left off */
+  const beat=60/105;while(ICM.next<actx.currentTime+.3){const [m,b]=ICM_SEQ[ICM.i];if(m)icmNote(m,ICM.next,b*beat,1);ICM.next+=b*beat;ICM.i=(ICM.i+1)%ICM_SEQ.length;}}
 function updateIceTrucks(dt){const D=DUSK_DYN;if(!D.trucks)return;const lvl=DIFF.level;
   for(let i=D.trucks.length-1;i>=0;i--){const v=D.trucks[i];if(!v.alive){D.trucks.splice(i,1);D.truckRespawn=(D.truckRespawn||[]).concat(25);continue;}
     if(v.frozen>0){v.frozen-=dt;continue;}
@@ -2217,7 +2238,7 @@ function updateGlassFly(dt){const G=GLASS_FLY;if(!G)return;let any=false;
     _gq.setFromEuler(s.r);_gm.compose(s.p,_gq,_gs.set(s.s,1,s.s*rand(.95,1.05)));G.im.setMatrixAt(i,_gm);});
   G.im.instanceMatrix.needsUpdate=true;if(!any)GLASS_FLY.done=true;}
 function updateBossMelt(dt){const R=BOSS_RIG;if(!R.melt)return;R.melt.t+=dt;updateGlassFly(dt);}   /* ooze streams removed (user 2026-11-27): the melted brain stays inside the broken glass */
-function updateDusk(dt,t){updateSeaMonster(dt);updateBossMelt(dt);updateMechZap(dt);if(DC_LEDS){const U=DC_LEDS.material.uniforms;U.t.value=t;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
+function updateDusk(dt,t){updateSeaMonster(dt);updateIceMusic(dt);updateBossMelt(dt);updateMechZap(dt);if(DC_LEDS){const U=DC_LEDS.material.uniforms;U.t.value=t;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}if(DUSK_PAD&&DUSK_PAD.beacons)for(const B of DUSK_PAD.beacons){const k=Math.pow(.5+.5*Math.sin((t+B.ph)*2.6),2.2);B.lens.material.color.setRGB(.25+.75*k,.03+.14*k,.02+.08*k);B.halo.material.opacity=.08+.92*k;B.halo.scale.setScalar(1.6+2.4*k);}   /* slow red pulse, ~2.4 s */
   updateCrowd();updateLightningBolts(dt);const ph=t%16,on={r:0xff2a1a,y:0xffc21a,g:0x2aff6a},off={r:0x3a1210,y:0x3a3010,g:0x103a1c};
   const st=(p,c)=>{const m=TL_MAT[p+c];if(m)m.color.setHex(on[c]&&((p==='A'&&((c==='g'&&ph<6)||(c==='y'&&ph>=6&&ph<8)||(c==='r'&&ph>=8)))||(p==='B'&&((c==='r'&&ph<8)||(c==='g'&&ph>=8&&ph<14)||(c==='y'&&ph>=14))))?on[c]:off[c]);};
   for(const p of['A','B'])for(const c of['r','y','g'])st(p,c);
@@ -4779,7 +4800,7 @@ function scanAirSolids(){scene.updateMatrixWorld(true);const skip=new Set([playe
   AIR_SOLIDS=buildings.concat(extra);return extra;}
 const AIR_EXTRA=scanAirSolids();
 if(DUSK&&/[?&]bossdie=/.test(location.search)){const sec=+(location.search.match(/bossdie=(\d+)/)||[0,20])[1];setTimeout(()=>{window.__game.bossDie();console.log('BOSSDIE');for(const w of[3,6,10,18])setTimeout(()=>console.log('MELT '+w+' '+JSON.stringify(window.__game.meltInfo())),w*1000);},sec*1000);}   /* test hook: ?bossdie=N kills the boss after N s */
-window.__game={crushTruck:()=>{const t=DUSK_DYN.trucks&&DUSK_DYN.trucks.find(v=>v.alive);if(t)crushIceTruck(t);return t?{x:t.pos.x,z:t.pos.z}:null;},bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
+window.__game={icm:()=>({i:ICM.i,lvl:+ICM.lvl.toFixed(2),ctx:!!actx}),crushTruck:()=>{const t=DUSK_DYN.trucks&&DUSK_DYN.trucks.find(v=>v.alive);if(t)crushIceTruck(t);return t?{x:t.pos.x,z:t.pos.z}:null;},bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 </script>
 </body>
