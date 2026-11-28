@@ -1693,6 +1693,8 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   ents.push(GATE);buildLabCrew();}
 function hbFoe(t){return DUSK&&t===BLUE&&GATE&&GATE.alive?GATE:bases[1-t];}   /* blue laser hover bots hit the gate until it's breached */
 let bossShT=0,bossFeedT=0;
+let hqcFeedT=0;function hqCannonsFirst(b){if(performance.now()-hqcFeedT>4000){hqcFeedT=performance.now();const n=ents.filter(c=>c.kind==='hqturret'&&c.team===b.team&&c.alive&&!c.turret.destroyed).length;
+  feed(`${b.team===RED?'Red':'Blue'} HQ is shielded. Destroy its defense cannons first! ${n} left`,b.team===RED?'r':'b');}}
 let armFeedT=0;function bossArmsFirst(){bossShT=.5;if(performance.now()-armFeedT>4000){armFeedT=performance.now();feed(`Destroy all the laser arms first! ${BOSS_RIG.arms.filter(a=>!a.dead).length} left`,'r');}}
 function bossShielded(){bossShT=.5;if(performance.now()-bossFeedT>4000){bossFeedT=performance.now();feed('The boss is shielded. Breach the gate first!','r');}}
 let BOSS_HAZE=null;
@@ -2781,7 +2783,12 @@ if(!DUSK){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);
   for(const [zo,ry] of[[6.5,Math.PI],[-6.5,0]]){const G=new THREE.Group();G.position.z=zo;G.rotation.y=ry;G.userData.noAir=true;scene.add(G);
     tFrame(0,0,zo,ry,()=>buildDataCenter(G,(x,z,w,d,h)=>addBlock(ry?-x:x,zo+(ry?-z:z),w,d,h)));}
   flushBins(root,true,60);
-  {const lab=mergeColored(TB.lab||[]);TB.lab=[];if(lab){const m=new THREE.Mesh(lab,LAB_MAT);m.userData.noAir=true;scene.add(m);}}}   /* dusk: no Blue HQ; bases[1] = the boss */
+  {const lab=mergeColored(TB.lab||[]);TB.lab=[];if(lab){const m=new THREE.Mesh(lab,LAB_MAT);m.userData.noAir=true;scene.add(m);}}
+  /* 2 more HQ defense cannons on the roof corners of each data center (user 2026-11-27): same cannon, range, hits and health tag as the 2 beside the HQ */
+  for(const b of bases){if(b.ghost||b.boss)continue;const team=b.team,zr=Math.sign(b.pos.z)*192.5,y=26;
+    for(const s of[-1,1]){let tu=null;tu=makeTurret(new THREE.Vector3(s*46,y,zr),()=>b.alive&&!tu.destroyed?team:null,64,b);
+      tu.ent={kind:'hqturret',team,pos:new THREE.Vector3(s*46,y,zr),hp:100,maxHp:100,hits:0,hitsMax:HQT_HITS,r:3.0,hy:2.0,alive:true,turret:tu};ents.push(tu.ent);
+      tu.tag=makeHealthTag(.1,.028);tu.tag.sp.position.set(s*46,y+5.5,zr);scene.add(tu.tag.sp);}}}   /* dusk: no Blue HQ; bases[1] = the boss */
 /* dusk ammo recharge pad at the south end of the main avenue (user 2026-11-26): reloads gun, cannon and missiles and repairs the hull (hull repair added user 2026-11-27) */
 const DUSK_PAD_POS=new THREE.Vector3(0,0,186);let DUSK_PAD=null;
 if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAir=true;scene.add(g);
@@ -3551,7 +3558,8 @@ function damage(e,amt,team,byPlayer,heavy,gun){
   amt*=DIFF.dmgMul;   // levels 9-10 hit harder (both teams equally)
   if(team===RED&&!PVP)amt*=DIFF.enemyMul;   /* every enemy attack gets stronger level by level: 1x on level 1 up to 1.5x on level 10, on top of the other level boosts (user 2026-11-27); not in 2-player VS mode */
   if((e.boss||e.kind==='bossarm')&&GATE&&GATE.alive){bossShielded();return;}
-  if(e.boss&&BOSS_RIG.arms.some(a=>!a.dead)){bossArmsFirst();return;}   /* the brain can't be hurt until every arm is destroyed */
+  if(e.boss&&BOSS_RIG.arms.some(a=>!a.dead)){bossArmsFirst();return;}
+  if(e.kind==='base'&&!e.boss&&!DUSK&&ents.some(c=>c.kind==='hqturret'&&c.team===e.team&&c.alive&&!c.turret.destroyed)){hqCannonsFirst(e);return;}   /* HQ takes no damage until all 4 of its defense cannons (2 beside it + 2 on the data center roof) are destroyed (user 2026-11-27) */   /* the brain can't be hurt until every arm is destroyed */
   if(e.kind==='gate'&&!heavy)return;   /* gate: only missiles + cannon shells, rotary gun does nothing (user 2026-11-26) */   /* dusk: boss can't be hurt until the gate is breached */
   if(e.hitsMax){if(e.team===null)return;if(!heavy){if(!gun)return;const N=GUN_HITS_PER(e);e.gunAcc=(e.gunAcc||0)+1;if(e.gunAcc<N){e.hp=e.maxHp*(1-(e.hits+e.gunAcc/N)/e.hitsMax);return;}e.gunAcc=0;}e.hits++;if(e.kind==='base')e.flashT=.45;e.hp=e.maxHp*(1-(e.hits+(e.gunAcc||0)/GUN_HITS_PER(e))/e.hitsMax);   /* health bar also counts bullets toward the next hit */
     if(e.kind==='base'&&(e.hits===Math.round(e.hitsMax*.5)||e.hits===Math.round(e.hitsMax*.8)))feed(`${e.boss?'BOSS':(e.team?'RED':'BLUE')+' HQ'} at ${e.hitsMax-e.hits} hits left`,e.team?'b':'r');
