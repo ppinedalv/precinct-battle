@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-1859</div>
+<div id="buildTag">BUILD 1127-2044</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -274,7 +274,7 @@ const BLUE=0,RED=1;
 const TEAMCOL=[0x2fa8ff,0xff4a3d];
 const FIELD=(()=>{const q=new URLSearchParams(location.search).get('field');if(q==='dusk'||q==='city')return q;try{return localStorage.getItem('pb_field')==='dusk'?'dusk':'city';}catch(e){return 'city';}})();
 const DUSK=FIELD==='dusk';   /* optional DUSK STREETS battlefield with the final boss (user 2026-11-26); picked on the start screen */
-const HALF_X=DUSK?200:100,HALF_Z=200;   /* dusk field: twice the ground area */
+const HALF_X=DUSK?200:100,HALF_Z=DUSK?200:210;   /* city: back walls pushed out 200 -> 210 so the data centers fit behind the HQs (user 2026-11-27) */   /* dusk field: twice the ground area */
 const OUTPOST_POS=DUSK?[]:[{x:-45,z:95},{x:45,z:95},{x:-45,z:-95},{x:45,z:-95}];
 const BASE_Z=DUSK?[160,-108]:[172,-172];   /* dusk: red base z = the red staging area in front of the compound gate */
 const DEMO=location.search.includes('demo');
@@ -1609,32 +1609,14 @@ function liquidMats(){const vs='varying vec3 vP;varying vec3 vN;varying vec3 vV;
   const cap=new THREE.ShaderMaterial({uniforms:LIQ_U,transparent:true,depthWrite:false,side:THREE.DoubleSide,vertexShader:vs.replace('#CAP#','p.y=4.55*(lvl+.05*sin(p.x/4.55*5.+t*1.7)+.04*sin(p.z/4.55*6.-t*1.3));'),fragmentShader:fs.replace('#DISC#','').replace('#A#','.42')});
   return {body,cap};}
 
-function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);const WH=16,ST=0x5a5e66;
-  /* ---- wall with a guarded gate */
-  for(const s of[-1,1]){tBox('matte',ST,184,WH,4,s*108,WH/2,WALL_Z);tBox('metal',0x55595f,184.4,.7,4.6,s*108,WH+.35,WALL_Z);addBlock(s*108,WALL_Z,184,4,WH);
-    for(let x=s*22;Math.abs(x)<198;x+=s*12){tBox('matte',0x4a4e56,1.6,WH,4.8,x,WH/2,WALL_Z);tBox('glow',0xff3a2a,.5,.35,.2,x,WH-1.2,WALL_Z+2.45);}
-    for(let x=s*16.5;Math.abs(x)<198;x+=s*1.1){tBox('metal',0x6f747b,.08,1.1,.08,x,WH+1.2,WALL_Z,0,0,.5);}
-    tBox('metal',0x6f747b,184,.06,.06,s*108,WH+1.55,WALL_Z);tBox('metal',0x6f747b,184,.06,.06,s*108,WH+.9,WALL_Z);
-    for(let i=0;i<8;i++)tBox('matte',i%2?0x17181b:0xf2b51d,1.5,1.1,.1,s*(16.8+i*1.5),1.6,WALL_Z+2.06);
-    /* gate towers + guards */
-    tBox('matte',0x50545c,6,22,7,s*13,11,WALL_Z);for(let y=3;y<22;y+=3.2)tBox('matte',0x3f434a,6.1,.18,7.1,s*13,y,WALL_Z);tBox('metal',0x4a4e55,7.6,.5,8.6,s*13,22.25,WALL_Z);addBlock(s*13,WALL_Z,6,7,22.5);
-    for(const [dx,dz] of[[-3.6,0],[3.6,0],[0,-4.1],[0,4.1]])tBox('metal',0xd9a21b,dx?.08:7.6,.9,dz?.08:8.6,s*13+dx,23,WALL_Z+dz);
-    tBox('glow',0xfff1c8,1.2,.6,.2,s*13,19.5,WALL_Z+3.6);DUSK_GLOWS.push([s*13,19.5,WALL_Z+4.4,0xfff1c8,9]);
-}
-  for(const s of[-1,1])tBox('glow',0xff3a2a,.8,.4,.2,s*10.4,15.2,WALL_Z+2.1);
-  for(const s of[-1,1])for(const dx of[-1.4,1.4]){const wx=s*13+dx,fz=WALL_Z+3.52;   /* gate tower windows (guards stand in them) */
-    tBox('matte',0x0e0f12,1.9,1.8,.1,wx,12.4,fz);tBox('glow',0x6a4a2a,1.7,1.6,.04,wx,12.4,fz-.04);tBox('metal',0x3a3e45,2.2,.18,.5,wx,11.1,fz+.2);tBox('metal',0x3a3e45,2.2,.14,.2,wx,13.4,fz+.05);
-    for(const ex of[-1,1])tBox('metal',0x3a3e45,.14,1.9,.2,wx+ex*1.03,12.4,fz+.05);}
+/* data center / control room with the scientists behind the window (user 2026-11-27): shared by the Dusk compound and City Night.
+   Batched parts follow the current tFrame; non-batched parts (window glass, logos, blinking rack LEDs) go into G; addB adds the collision block.
+   The electric current tubes to the boss dome are NOT part of it (Dusk adds them separately). */
+const DC_LED_LIST=[];
+function buildDataCenter(G,addB){
   for(const dx of[-45,-25,25,45]){tBox('matte',0x1a1c20,3.2,4,.3,dx,2,DC_FRONT+.1);tBox('glow',0xcfefff,2.6,3.5,.06,dx,1.75,DC_FRONT+.27);tBox('glow',0x39d6ff,3.3,.12,.06,dx,4.05,DC_FRONT+.27);DUSK_GLOWS.push([dx,2.2,DC_FRONT+1,0xcfefff,4]);}   /* lab doors */
-  addBlock(0,WALL_Z,20,3,15);GATE_BLOCK=buildings[buildings.length-1];
-  { const doorMat=M(0x4a4f58,{roughness:.45,metalness:.75,map:PANEL}),haz=new THREE.MeshStandardMaterial({map:HAZ,roughness:.5,metalness:.2});
-    for(const s of[-1,1]){const d=new THREE.Group();d.position.set(s*5,0,WALL_Z);scene.add(d);
-      const p=new THREE.Mesh(new THREE.BoxGeometry(9.9,15,1.2),doorMat);p.position.y=7.5;p.castShadow=p.receiveShadow=true;d.add(p);
-      for(const y of[2,13]){const h=new THREE.Mesh(new THREE.BoxGeometry(9.9,1.1,.05),haz);h.position.set(0,y,.63);d.add(h);}
-      for(const y of[5,10]){const r=new THREE.Mesh(new THREE.BoxGeometry(9.4,.5,.4),doorMat);r.position.set(0,y,.75);d.add(r);}
-      d.userData={s,fall:0,noAir:true};BOSS_RIG.doors.push(d);}}
   /* ---- data center / control room (40 ft class building) with a long blue-tinted window */
-  const DW=110,DH=26,DD=16;addBlock(0,DC_Z,DW,DD,DH);
+  const DW=110,DH=26,DD=16;addB(0,DC_Z,DW,DD,DH);
   tBox('matte',0x5d626c,DW,14,DD,0,7,DC_Z);tBox('matte',0x5d626c,DW,DH-19.6,DD,0,19.6+(DH-19.6)/2,DC_Z);for(let y=2.3;y<13;y+=2.3)tBox('matte',0x464a52,DW+.12,.16,DD+.12,0,y,DC_Z);for(let x=-52;x<=52;x+=6.5)tBox('matte',0x4c5058,.18,13.8,DD+.14,x,7,DC_Z);tBox('matte',0x464a52,DW+.12,.2,DD+.12,0,23,DC_Z);
   for(const s of[-1,1])tBox('matte',0x5d626c,7,5.6,DD,s*51.5,16.8,DC_Z);
   tBox('metal',0x1b1d22,96,5.6,.3,0,16.8,DC_FRONT-6.2);tBox('glow',0x0b2238,95,5,.1,0,16.8,DC_FRONT-6);
@@ -1652,7 +1634,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   const m=new THREE.ShaderMaterial({uniforms:{t:{value:0},sc:{value:600}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
     vertexShader:'attribute vec3 col;attribute vec3 ph;uniform float t;uniform float sc;varying vec3 vC;varying float vA;void main(){float s=sin(t*ph.y+ph.x);vA=ph.y<.01?1.:(s>ph.z?1.:.12);vC=col;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=max(1.5,.16*sc/-mv.z);gl_Position=projectionMatrix*mv;}',
     fragmentShader:'varying vec3 vC;varying float vA;void main(){float d=length(gl_PointCoord-.5);float a=smoothstep(.5,.08,d);gl_FragColor=vec4(vC*a*vA*1.7,1.);}'});
-  DC_LEDS=new THREE.Points(g,m);DC_LEDS.frustumCulled=false;DC_LEDS.userData.noAir=true;scene.add(DC_LEDS);}
+  const leds=new THREE.Points(g,m);leds.frustumCulled=false;leds.userData.noAir=true;G.add(leds);DC_LED_LIST.push(leds);}
   for(let x=-40;x<=40;x+=10){tBox('matte',0x22262c,3.4,1,1,x,14.8,DC_FRONT-1.4);tBox('glow',0x4fc3ff,1.3,.8,.06,x-.8,15.85,DC_FRONT-1.75);tBox('glow',0x6dffb0,1.1,.7,.06,x+.8,15.8,DC_FRONT-1.75);}
   for(let x=-45;x<=45;x+=7.5)tBox('metal',0x1b1d22,.35,5.6,.4,x,16.8,DC_FRONT+.15);
   tBox('metal',0x1b1d22,96,.4,.5,0,14.1,DC_FRONT+.2);tBox('metal',0x1b1d22,96,.4,.5,0,19.5,DC_FRONT+.2);
@@ -1665,8 +1647,8 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
   for(let x=-52;x<=52;x+=8)tBox('glow',0xffe3a8,.6,.25,.2,x,DH-.6,DC_FRONT+.12);
   for(let x=-52;x<=52;x+=26)DUSK_GLOWS.push([x,DH-.7,DC_FRONT+.8,0xffe3a8,5]);
   { const gl=new THREE.Mesh(new THREE.PlaneGeometry(96,5.6),new THREE.MeshStandardMaterial({color:0x3f9be8,transparent:true,opacity:.24,metalness:.9,roughness:.04,envMap:envTex(),depthWrite:false}));
-    gl.position.set(0,16.8,DC_FRONT+.06);gl.userData.noAir=true;scene.add(gl);
-    const logo=labLogoTex();for(const s of[-1,1]){const l=new THREE.Mesh(new THREE.PlaneGeometry(5.6,5.6),new THREE.MeshBasicMaterial({map:logo,transparent:true,color:0xd9b070}));l.position.set(s*42,22.8,DC_FRONT+.06);scene.add(l);}}
+    gl.position.set(0,16.8,DC_FRONT+.06);gl.userData.noAir=true;G.add(gl);
+    const logo=labLogoTex();for(const s of[-1,1]){const l=new THREE.Mesh(new THREE.PlaneGeometry(5.6,5.6),new THREE.MeshBasicMaterial({map:logo,transparent:true,color:0xd9b070}));l.position.set(s*42,22.8,DC_FRONT+.06);G.add(l);}}
   /* ---- more data center detail (user 2026-11-26): catwalk under the window, X-braced scaffolds, facade pipes, roof units, floodlights */
   tBox('metal',0x2a2d33,98,.3,2.2,0,13.6,DC_FRONT+1.1);for(let x=-48;x<=48;x+=2){tCyl('metal',0xd9a21b,.05,1.1,x,14.3,DC_FRONT+2.1);}
   tBox('metal',0xd9a21b,98,.07,.07,0,14.85,DC_FRONT+2.1);tBox('metal',0xd9a21b,98,.06,.06,0,14.3,DC_FRONT+2.1);for(let x=-46;x<=46;x+=8)tBox('metal',0x3a3d42,.2,.9,1.6,x,13.1,DC_FRONT+.9,0,-.5,0);
@@ -1675,7 +1657,32 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     tBox('metal',0x2a2c30,2,1,.7,s*54,DH+1.2,DC_FRONT+.4);tBox('glow',0xf4f7ff,1.7,.7,.06,s*54,DH+1.2,DC_FRONT+.78);tCyl('metal',0x3a3d42,.15,1.4,s*54,DH+.4,DC_FRONT+.2);DUSK_GLOWS.push([s*54,DH+1.2,DC_FRONT+1.4,0xf4f7ff,8]);}
   for(let x=-40;x<=40;x+=16){tBox('metal',0x6f747b,5,2,4,x,DH+1,DC_Z+2);for(const dx of[-1.2,1.2])tCyl('metal',0x2a2c30,.85,.2,x+dx,DH+2.05,DC_Z+2);}
   for(const x of[-30,30]){tCyl('metal',0x8f969f,.08,6,x,DH+3,DC_Z-3);tBox('glow',0xff3a2a,.2,.2,.2,x,DH+6,DC_Z-3);}
-  for(let y=1;y<13;y+=3.4)tBox('metal',0x6a6f77,98,.22,.3,0,y,DC_FRONT+.25);
+  for(let y=1;y<13;y+=3.4)tBox('metal',0x6a6f77,98,.22,.3,0,y,DC_FRONT+.25);}
+function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);const WH=16,ST=0x5a5e66;
+  /* ---- wall with a guarded gate */
+  for(const s of[-1,1]){tBox('matte',ST,184,WH,4,s*108,WH/2,WALL_Z);tBox('metal',0x55595f,184.4,.7,4.6,s*108,WH+.35,WALL_Z);addBlock(s*108,WALL_Z,184,4,WH);
+    for(let x=s*22;Math.abs(x)<198;x+=s*12){tBox('matte',0x4a4e56,1.6,WH,4.8,x,WH/2,WALL_Z);tBox('glow',0xff3a2a,.5,.35,.2,x,WH-1.2,WALL_Z+2.45);}
+    for(let x=s*16.5;Math.abs(x)<198;x+=s*1.1){tBox('metal',0x6f747b,.08,1.1,.08,x,WH+1.2,WALL_Z,0,0,.5);}
+    tBox('metal',0x6f747b,184,.06,.06,s*108,WH+1.55,WALL_Z);tBox('metal',0x6f747b,184,.06,.06,s*108,WH+.9,WALL_Z);
+    for(let i=0;i<8;i++)tBox('matte',i%2?0x17181b:0xf2b51d,1.5,1.1,.1,s*(16.8+i*1.5),1.6,WALL_Z+2.06);
+    /* gate towers + guards */
+    tBox('matte',0x50545c,6,22,7,s*13,11,WALL_Z);for(let y=3;y<22;y+=3.2)tBox('matte',0x3f434a,6.1,.18,7.1,s*13,y,WALL_Z);tBox('metal',0x4a4e55,7.6,.5,8.6,s*13,22.25,WALL_Z);addBlock(s*13,WALL_Z,6,7,22.5);
+    for(const [dx,dz] of[[-3.6,0],[3.6,0],[0,-4.1],[0,4.1]])tBox('metal',0xd9a21b,dx?.08:7.6,.9,dz?.08:8.6,s*13+dx,23,WALL_Z+dz);
+    tBox('glow',0xfff1c8,1.2,.6,.2,s*13,19.5,WALL_Z+3.6);DUSK_GLOWS.push([s*13,19.5,WALL_Z+4.4,0xfff1c8,9]);
+}
+  for(const s of[-1,1])tBox('glow',0xff3a2a,.8,.4,.2,s*10.4,15.2,WALL_Z+2.1);
+  for(const s of[-1,1])for(const dx of[-1.4,1.4]){const wx=s*13+dx,fz=WALL_Z+3.52;   /* gate tower windows (guards stand in them) */
+    tBox('matte',0x0e0f12,1.9,1.8,.1,wx,12.4,fz);tBox('glow',0x6a4a2a,1.7,1.6,.04,wx,12.4,fz-.04);tBox('metal',0x3a3e45,2.2,.18,.5,wx,11.1,fz+.2);tBox('metal',0x3a3e45,2.2,.14,.2,wx,13.4,fz+.05);
+    for(const ex of[-1,1])tBox('metal',0x3a3e45,.14,1.9,.2,wx+ex*1.03,12.4,fz+.05);}
+  /* lab doors are built by buildDataCenter() */
+  addBlock(0,WALL_Z,20,3,15);GATE_BLOCK=buildings[buildings.length-1];
+  { const doorMat=M(0x4a4f58,{roughness:.45,metalness:.75,map:PANEL}),haz=new THREE.MeshStandardMaterial({map:HAZ,roughness:.5,metalness:.2});
+    for(const s of[-1,1]){const d=new THREE.Group();d.position.set(s*5,0,WALL_Z);scene.add(d);
+      const p=new THREE.Mesh(new THREE.BoxGeometry(9.9,15,1.2),doorMat);p.position.y=7.5;p.castShadow=p.receiveShadow=true;d.add(p);
+      for(const y of[2,13]){const h=new THREE.Mesh(new THREE.BoxGeometry(9.9,1.1,.05),haz);h.position.set(0,y,.63);d.add(h);}
+      for(const y of[5,10]){const r=new THREE.Mesh(new THREE.BoxGeometry(9.4,.5,.4),doorMat);r.position.set(0,y,.75);d.add(r);}
+      d.userData={s,fall:0,noAir:true};BOSS_RIG.doors.push(d);}}
+  buildDataCenter(scene,addBlock);DC_LEDS=DC_LED_LIST[0];
   /* ---- electric current tubes: building -> crown of the dome (crown sits on the rotation axis, so the tubes stay attached while the boss turns) */
   const CROWN_Y=23.1,BT=boltTex();
   for(const [sx,cx] of[[-17,-.9],[-7,-.35],[7,.35],[17,.9]]){
@@ -2851,7 +2858,14 @@ for(const team of(DUSK?[]:[BLUE,RED])){
     tu.ent={kind:'hqturret',team,pos:new THREE.Vector3(s*14,6,z),hp:100,maxHp:100,hits:0,hitsMax:HQT_HITS,r:3.0,hy:2.0,alive:true,turret:tu};ents.push(tu.ent);
     tu.tag=makeHealthTag(.1,.028);tu.tag.sp.position.set(s*14,11.5,z);scene.add(tu.tag.sp);}
 }
-if(DUSK){bases.push(BLUE_GHOST);buildBossCompound();}   /* dusk: no Blue HQ; bases[1] = the boss */
+if(DUSK){bases.push(BLUE_GHOST);buildBossCompound();}
+/* City Night: the Dusk data center (scientists at the window, no electric tubes) behind each HQ, front facing its HQ (user 2026-11-27).
+   Front glass at |z| 190.5, back wall at |z| 206.5. Collision blocks are added after the instanced city, so they are not drawn as city boxes. */
+if(!DUSK){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);
+  for(const [zo,ry] of[[6.5,Math.PI],[-6.5,0]]){const G=new THREE.Group();G.position.z=zo;G.rotation.y=ry;G.userData.noAir=true;scene.add(G);
+    tFrame(0,0,zo,ry,()=>buildDataCenter(G,(x,z,w,d,h)=>addBlock(ry?-x:x,zo+(ry?-z:z),w,d,h)));}
+  flushBins(root,true,60);
+  {const lab=mergeColored(TB.lab||[]);TB.lab=[];if(lab){const m=new THREE.Mesh(lab,LAB_MAT);m.userData.noAir=true;scene.add(m);}}}   /* dusk: no Blue HQ; bases[1] = the boss */
 /* dusk ammo recharge pad at the south end of the main avenue (user 2026-11-26): reloads gun, cannon and missiles and repairs the hull (hull repair added user 2026-11-27) */
 const DUSK_PAD_POS=new THREE.Vector3(0,0,186);let DUSK_PAD=null;
 if(DUSK){const g=new THREE.Group();g.position.copy(DUSK_PAD_POS);g.userData.noAir=true;scene.add(g);
@@ -4607,7 +4621,7 @@ function frame(now){
   updatePlayer(dt,gt);updateHeadPool();updateHoverHum();updateGunWhine();updateScanner(dt);updateBoostAudio(!!player.boosting&&player.alive);if(PVP)updatePilot(rival,dt,gt);else if(!DUSK){updateRival(rival,dt,gt);updateRivalEMP(rival,dt);}
   for(const e of ents)if(e.alive&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller'))updateUnit(e,dt);
   for(let i=ents.length-1;i>=0;i--){const e=ents[i];if(!e.alive&&(e.kind==='tank'||e.kind==='drone'||e.kind==='roller'))ents.splice(i,1);}
-  updateOutposts(dt);if(DUSK)updateDusk(dt,gt);updateBases(dt,gt);updateHQButtons(dt,gt);updateHoverBots(dt,gt);updateTurrets(dt);updateProjs(dt);updateFx(dt);updateDust(dt);updateEMP(dt);updatePortals(dt,gt);
+  updateOutposts(dt);if(DUSK)updateDusk(dt,gt);else for(const P of DC_LED_LIST){const U=P.material.uniforms;U.t.value=gt;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}updateBases(dt,gt);updateHQButtons(dt,gt);updateHoverBots(dt,gt);updateTurrets(dt);updateProjs(dt);updateFx(dt);updateDust(dt);updateEMP(dt);updatePortals(dt,gt);
   updateCamera(dt);computeAim();if(PVP){updateCamR(dt);computeAimR();}
   hudT-=dt;if(hudT<=0){hudT=.1;updateHUD();drawMinimap();if(PVP)sendGuestState();}
   updateSky(now/1000);renderer.render(scene,camera);
@@ -4691,7 +4705,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-1859'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2044'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
