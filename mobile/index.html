@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1128-0018</div>
+<div id="buildTag">BUILD 1128-0031</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -2141,7 +2141,7 @@ function iceTruckProto(){if(ICT_PROTO)return ICT_PROTO;const WH=0xf4f4f0,RD=0xd8
 function iceTruckMesh(){const P=iceTruckProto(),g=new THREE.Group();const bd=P.body.clone(),cn=P.cone.clone(),sc=P.scoops.clone();g.add(bd,cn,sc);const piv=new THREE.Group();piv.position.set(0,0,1.7);g.add(piv);
   const d=P.driver.clone();d.position.set(.45,0,0);piv.add(d);const b=P.baz.clone();b.position.set(.95,2.1,0);piv.add(b);g.userData={piv,baz:b,body:bd,cone:cn,scoops:sc,driver:d};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 /* jumped on (user 2026-11-27): body crumpled + flattened, doors torn off and lying around it, the giant cone on its side next to the truck,
-   scoops splattered and melting on the road, the bazooka dropped. The wreck stays 45 s. */
+   plastic scoops shattered on the road beside it (user 2026-11-28), the bazooka dropped. The wreck stays 45 s. */
 function crushIceTruck(v){v.alive=false;v.hp=0;const m=v.mesh,U=m.userData,geos=[],mats=[];
   const dents=[];for(let k=0;k<6;k++)dents.push([rand(-1,1),rand(1.2,2.9),rand(-2.6,2.6),rand(.6,1),rand(.3,.55)]);
   U.body.traverse(o=>{if(!o.isMesh)return;const g=crumple(o.geometry.clone(),5.8,3),q=g.attributes.position;
@@ -2164,18 +2164,25 @@ function crushIceTruck(v){v.alive=false;v.hp=0;const m=v.mesh,U=m.userData,geos=
   flat(1.15,1.6,2.5+rand(0,.5),2.6,rand(1.2,1.9),0,true,false);   /* passenger cab door, far out on the road */
   flat(1.9,2.0,rand(-.6,.6),-4.4,rand(-.3,.3),.25,true,false);   /* rear door, leaning on the back bumper */
   flat(2.7,1.1,-2.6,-1.3,rand(-.2,.2),0,false,true);   /* serving-window shutter with the checker stripe */
-  /* the giant cone on its side next to the truck + the scoops splattered in front of it */
+  /* the giant cone lying on its side next to the truck */
   const side=Math.random()<.5?-1:1,cone=ICT_PROTO.cone.clone();cone.rotation.set(-.2,0,0);cone.position.set(0,-2.71,0);   /* axis level, waffle side resting on the road */
   const cg=new THREE.Group();cg.position.set(side*3.4,0,1.8);cg.rotation.y=side*rand(.2,.6);cg.add(cone);W.add(cg);
-  const SC=ICT_PROTO.SC;for(const [k,[dx,dy,dz,r,col]] of SC.entries()){const sm=new THREE.MeshStandardMaterial({color:col,roughness:.35});mats.push(sm);
-    const sx=side*(3.2+k*.9+rand(-.3,.3)),sz=3.8+rand(-1.4,1.4),sp=new THREE.Mesh(new THREE.SphereGeometry(r*.5,14,10),sm);geos.push(sp.geometry);sp.scale.set(1.15,.42,1.05);sp.position.set(sx,r*.18,sz);sp.castShadow=true;W.add(sp);   /* squashed scoop */
-    const pd=new THREE.Mesh(new THREE.CircleGeometry(r*.85,20),sm);geos.push(pd.geometry);pd.rotation.x=-Math.PI/2;pd.scale.set(1.3,1,1);pd.position.set(sx+rand(-.2,.2),.03+k*.002,sz+rand(-.2,.2));W.add(pd);   /* melting puddle */
-    for(let i=0;i<4;i++){const dr=new THREE.Mesh(new THREE.CircleGeometry(rand(.08,.2),10),sm);geos.push(dr.geometry);dr.rotation.x=-Math.PI/2;dr.position.set(sx+rand(-1.2,1.2),.035,sz+rand(-1.2,1.2));W.add(dr);}}   /* drips */
+  /* cone lies flat on its side (user 2026-11-28): extra tilt by the cone's half-angle puts its lower side line on the road; exact vertex fit so it never floats */
+  cone.rotation.set(-.2-.23,0,0);W.updateMatrixWorld(true);{const bb=new THREE.Box3().setFromObject(cg,true);cg.position.y-=bb.min.y-.01;}
+  /* the scoops are hard plastic (user 2026-11-28): shattered into broken shell pieces, curved shards and chips on the road by the cone's mouth, no melting */
+  {W.updateMatrixWorld(true);const mo=W.worldToLocal(cone.localToWorld(new THREE.Vector3(0,3.45,.55))),tp=W.worldToLocal(cone.localToWorld(new THREE.Vector3(0,3.45,.55).addScaledVector(new THREE.Vector3(0,.2,-.98).normalize(),3.3)));
+   const dx=mo.x-tp.x,dz=mo.z-tp.z,dl=Math.hypot(dx,dz)||1,ux=dx/dl,uz=dz/dl;
+   const piece=(geo,mat,x,z,rx,ry,rz)=>{geos.push(geo);const m=new THREE.Mesh(geo,mat);m.rotation.set(rx,ry,rz);m.position.set(x,0,z);m.castShadow=m.receiveShadow=true;W.add(m);
+     m.updateMatrixWorld(true);const bb=new THREE.Box3().setFromObject(m,true);m.position.y-=bb.min.y-.005;};
+   for(const [k,[,,,r,col]] of ICT_PROTO.SC.entries()){const pm=new THREE.MeshStandardMaterial({color:col,roughness:.3,metalness:.08,side:THREE.DoubleSide});mats.push(pm);const R=r*.5;
+     const a0=k*1.57+rand(-.4,.4),cx=mo.x+ux*(.9+R)+Math.cos(a0)*rand(.6,1.4),cz=mo.z+uz*(.9+R)+Math.sin(a0)*rand(.6,1.4);
+     piece(new THREE.SphereGeometry(R,14,8,rand(0,6),rand(2.6,3.6),0,rand(1.1,1.5)),pm,cx,cz,rand(-.25,.25),rand(0,6.28),rand(-.25,.25));   /* broken half shell, dome up */
+     for(let i=0;i<3;i++){const ang=rand(0,6.28),d=rand(.8,2.2);piece(new THREE.SphereGeometry(R*rand(.9,1),8,5,rand(0,6),rand(.6,1.2),rand(.3,1.2),rand(.5,.9)),pm,cx+Math.cos(ang)*d,cz+Math.sin(ang)*d,rand(-1,1),rand(0,6.28),rand(-1,1));}   /* curved shards */
+     for(let i=0;i<5;i++){const ang=rand(0,6.28),d=rand(.6,3);piece(new THREE.TetrahedronGeometry(rand(.07,.16)),pm,cx+Math.cos(ang)*d,cz+Math.sin(ang)*d,rand(0,6),rand(0,6),rand(0,6));}}}   /* chips */
   const bz=ICT_PROTO.baz.clone();bz.position.set(-side*2.4,.15,-.5);bz.rotation.set(0,rand(0,6.28),Math.PI/2);W.add(bz);   /* bazooka dropped on the road */
   W.traverse(o=>{if(o.isMesh)o.userData.noAir=true;});
   for(const nx of[-1,1])scatterShards({px:v.pos.x,nx,z:v.pos.z,w:4,y:1,h:1});
   for(let i=0;i<10;i++)dustP(v.pos.x+rand(-2,2),rand(.3,1),v.pos.z+rand(-2,2),{color:0x1c1a18,life:rand(1.2,2),a:rand(.8,1.4),b:rand(3,5),drag:.8,rot:rand(-.6,.6),alpha:.55,vx:rand(-1.5,1.5),vy:rand(1,2.5),vz:rand(-1.5,1.5)});
-  for(let i=0;i<22;i++)puff(_c.set(v.pos.x+rand(-2,2),rand(1,2.5),v.pos.z+rand(-1,1)),[0xf4b6c2,0xe8e49a,0x6b3a2a,0xfff3d6][i%4],rand(.15,.3),.1,rand(.5,.9),rand(-7,7),rand(3,7),rand(-7,7));   /* ice cream flying */
   dustBurst(v.pos.x,0,v.pos.z,.9);sfx('hit',_c.set(v.pos.x,1,v.pos.z),2);playBoom(_c,3)||sfx('boom',_c,.4);camShake=Math.max(camShake,.45);feed('Ice-cream truck crushed!','b');
   setTimeout(()=>{scene.remove(m);scene.remove(W);for(const g of geos)g.dispose();for(const t of mats)t.dispose();},45000);}
 function spawnIceTruck(){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=rand(-150,150);
@@ -4974,7 +4981,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0018'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0031'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
