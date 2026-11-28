@@ -162,7 +162,7 @@ canvas#game{display:block;width:100vw;height:100vh}
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
       <b>Mouse</b><span>Optional: aim, left click gun, right click cannon</span>
       <b>F</b><span>Transform: Walker (armored) / Hover (fast)</span>
-      <b>H</b><span>EMP shockwave (5 charges): freezes nearby enemy tanks, roller drones, laser hover robots, gang vans and ice-cream trucks for 7 s, and puts a glowing shield bubble around your mech for the same 7 s: no damage from any enemy weapon, including the red mech and the final boss (it blinks just before it drops). Only 5 blasts per game, no reloads</span>
+      <b>H</b><span>EMP shockwave (5 charges): freezes nearby enemy tanks, roller drones, laser hover robots, gang vans and ice-cream trucks for 7 s, and makes your mech glow light green (a shield) for the same 7 s: no damage from any enemy weapon, including the red mech and the final boss (it blinks just before it drops). Only 5 blasts per game, no reloads</span>
       <b>Shift</b><span>Tap once: Walker runs · Hover turbo boosts (uses System Energy). Tap again to stop</span>
       <b>M</b><span>Mute everything</span><b>N</b><span>Music on / off</span><b>- / =</b><span>Music volume down / up</span><b>P</b><span>Pause / resume</span>
     </div>
@@ -4112,21 +4112,22 @@ function updateRivalEMP(R,dt){
   if(n>=2)rivalEMP(R);}   // fires when 2+ of your tanks/rollers are close
 /* visible EMP shield (user 2026-11-28): energy bubble around the mech for the whole no-damage time (blocks every enemy weapon: tanks,
    drones, robots, cannons, the red mech and the final boss), flashes when it stops a hit, blinks in the last 1.5 s before it drops. */
-const _shBox=new THREE.Box3(),_shV=new THREE.Vector3();
-function mkShield(col){const g=new THREE.Group();g.userData.noAir=true;
-  const shell=new THREE.Mesh(new THREE.SphereGeometry(1,32,20),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.14,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending}));
-  const hex=new THREE.Mesh(new THREE.IcosahedronGeometry(1.015,2),new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:.35,depthWrite:false,blending:THREE.AdditiveBlending}));
-  shell.renderOrder=hex.renderOrder=5;g.add(shell,hex);g.visible=false;scene.add(g);return {g,shell,hex,hitT:0,fitT:0,c:new THREE.Vector3(),rH:3,rV:4};}
+/* the mech itself glows light green (user 2026-11-28, replaces the bubble): a slightly inflated glowing copy of every mech part,
+   parented to that part so it follows the walker and hover shapes and every moving limb; soft rim + faint outer haze that fades to nothing. */
+const SH_VS='uniform float thick;varying vec3 vN;varying vec3 vV;void main(){vec4 wp=modelMatrix*vec4(position,1.0);vec3 wn=normalize(mat3(modelMatrix)*normal);wp.xyz+=wn*thick;vec4 mv=viewMatrix*wp;vN=normalize(mat3(viewMatrix)*wn);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}';
+function shMat(col,thick,fs){return new THREE.ShaderMaterial({uniforms:{col:{value:new THREE.Color(col)},op:{value:1},thick:{value:thick}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexShader:SH_VS,
+  fragmentShader:'uniform vec3 col;uniform float op;varying vec3 vN;varying vec3 vV;void main(){float d=abs(dot(normalize(vN),normalize(vV)));float f=1.0-d;'+fs+'gl_FragColor=vec4(col*a*op,1.0);}'});}
+function mkShield(M,col){const inner=shMat(col,.05,'float a=pow(f,1.5)*0.5+0.06;'),outer=shMat(col,.16,'float a=pow(d,2.0)*0.13;');const parts=[];
+  M.rig.root.traverse(o=>{if(!o.isMesh||o.userData.shGlow||!o.geometry||!o.geometry.attributes.normal)return;const m=o.material;if(Array.isArray(m)||m.transparent||m.blending===THREE.AdditiveBlending)return;parts.push(o);});
+  const glows=[];for(const o of parts)for(const mat of[outer,inner]){const g=new THREE.Mesh(o.geometry,mat);g.userData.shGlow=true;g.userData.noAir=true;g.renderOrder=5;g.frustumCulled=o.frustumCulled;g.castShadow=g.receiveShadow=false;g.visible=false;o.add(g);glows.push(g);}
+  return {glows,inner,outer,hitT:0,on:false};}
 function shieldHit(M){if(M.shB)M.shB.hitT=.35;}
-function updShield(M,col,dt,t){const on=M.alive&&M.shieldT>0&&M.rig;if(!on){if(M.shB)M.shB.g.visible=false;return;}
-  const B=M.shB||(M.shB=mkShield(col));if(!B.g.visible)B.fitT=0;B.g.visible=true;
-  B.fitT-=dt;if(B.fitT<=0){B.fitT=.4;_shBox.setFromObject(M.rig.root);_shBox.getCenter(B.c).sub(M.rig.root.position);_shBox.getSize(_shV);   /* refit: walker and hover differ */
-    B.rH=Math.max(_shV.x,_shV.z)*.5*1.3+.6;B.rV=_shV.y*.5*1.18+.4;}
-  B.g.position.copy(M.rig.root.position).add(B.c);B.g.scale.set(B.rH,B.rV,B.rH);B.hex.rotation.y+=dt*.6;
-  B.hitT=Math.max(0,B.hitT-dt);const blink=M.shieldT<1.5?(Math.sin(t*26)>0?1:.2):1;
-  B.shell.material.opacity=(.11+.035*Math.sin(t*5)+B.hitT*1.2)*blink;B.hex.material.opacity=(.3+.08*Math.sin(t*7)+B.hitT*1.6)*blink;}
+function updShield(M,col,dt,t){const on=!!(M.alive&&M.shieldT>0&&M.rig);if(!on&&!M.shB)return;
+  const B=M.shB||(M.shB=mkShield(M,col));if(on!==B.on){B.on=on;for(const g of B.glows)g.visible=on;}if(!on)return;
+  B.hitT=Math.max(0,B.hitT-dt);const blink=M.shieldT<1.5?(Math.sin(t*26)>0?1:.2):1;   /* blinks in the last 1.5 s before it drops */
+  B.inner.uniforms.op.value=(.85+.15*Math.sin(t*4)+B.hitT*2)*blink;B.outer.uniforms.op.value=(.85+.15*Math.sin(t*4)+B.hitT*2)*blink;}
 function updateEMP(dt){if(player.shieldT>0)player.shieldT=Math.max(0,player.shieldT-dt);if(rival.shieldT>0)rival.shieldT=Math.max(0,rival.shieldT-dt);
-  {const t=performance.now()/1000;updShield(player,0x6fd8ff,dt,t);updShield(rival,0xff8a7a,dt,t);}
+  {const t=performance.now()/1000;updShield(player,0x8dff9a,dt,t);updShield(rival,0x8dff9a,dt,t);   /* same light green for both mechs (user 2026-11-28) */}
   empCD=Math.max(0,empCD-dt);
   for(let i=empFx.length-1;i>=0;i--){const f=empFx[i];f.t+=dt;const k=Math.min(1,f.t/.7),r=1+EMP_RADIUS*(1-Math.pow(1-k,2.2));
     f.ring.scale.set(r,r,r);f.ring.material.opacity=1-k;f.dome.scale.setScalar(r*.9);f.dome.material.opacity=.35*(1-k);
