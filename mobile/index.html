@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1128-0031</div>
+<div id="buildTag">BUILD 1128-0055</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1746,12 +1746,12 @@ function deadEnd(cx,cz,ry,W){const n=Math.round(W/2);tFrame(cx,0,cz,ry,()=>{for(
 /* every other dead end on the Dusk map edge: south ends of the north-south streets, both ends of the east-west streets */
 function duskDeadEnds(){for(const st of DUSK_NS)deadEnd(st.x,HALF_Z-2.5,Math.PI,st.w+2*DSW);
   for(const st of DUSK_EW){deadEnd(-HALF_X+2.5,st.z,Math.PI/2,st.w+2*DSW);deadEnd(HALF_X-2.5,st.z,-Math.PI/2,st.w+2*DSW);}}
-function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);const WH=16,ST=0x5a5e66;
+function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=true;scene.add(root);const WH=20,ST=0x5a5e66;   /* walls 16 -> 20 so the mech can't jump over (user 2026-11-28) */
   /* ---- wall with a guarded gate */
   /* compound walls (user 2026-11-27): front wall ends at Mission Ave (x -150) / Willow St (x 150), side walls run back to a wall behind the
      data center, so the compound is fully closed; Mission Ave and Willow St run on past it to a dead end at the north edge */
   const wallRun=(x0,z0,x1,z1,out)=>{const ax=z0===z1,L=Math.abs(ax?x1-x0:z1-z0),cx=(x0+x1)/2,cz=(z0+z1)/2,dx=ax?Math.sign(x1-x0):0,dz=ax?0:Math.sign(z1-z0);
-    tBox('matte',ST,ax?L:4,WH,ax?4:L,cx,WH/2,cz);tBox('metal',0x55595f,ax?L+.4:4.6,.7,ax?4.6:L+.4,cx,WH+.35,cz);addBlock(cx,cz,ax?L:4,ax?4:L,WH);
+    tBox('matte',ST,ax?L:4,WH,ax?4:L,cx,WH/2,cz);tBox('metal',0x55595f,ax?L+.4:4.6,.7,ax?4.6:L+.4,cx,WH+.35,cz);addBlock(cx,cz,ax?L:4,ax?4:L,WH,true);
     for(let d=6;d<L-1;d+=12){const x=x0+dx*d,z=z0+dz*d;tBox('matte',0x4a4e56,ax?1.6:4.8,WH,ax?4.8:1.6,x,WH/2,z);tBox('glow',0xff3a2a,ax?.5:.2,.35,ax?.2:.5,x+(ax?0:out*2.45),WH-1.2,z+(ax?out*2.45:0));}
     for(let d=.5;d<L;d+=1.1)tBox('metal',0x6f747b,.08,1.1,.08,x0+dx*d,WH+1.2,z0+dz*d,0,ax?0:.5,ax?.5:0);
     for(const y of[WH+1.55,WH+.9])tBox('metal',0x6f747b,ax?L:.06,.06,ax?.06:L,cx,y,cz);};
@@ -1762,7 +1762,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     for(const bx of[s*93,s*160])deadEnd(bx,-HALF_Z+2.5,0,20);
     for(let i=0;i<8;i++)tBox('matte',i%2?0x17181b:0xf2b51d,1.5,1.1,.1,s*(16.8+i*1.5),1.6,WALL_Z+2.06);
     /* gate towers + guards */
-    tBox('matte',0x50545c,6,22,7,s*13,11,WALL_Z);for(let y=3;y<22;y+=3.2)tBox('matte',0x3f434a,6.1,.18,7.1,s*13,y,WALL_Z);tBox('metal',0x4a4e55,7.6,.5,8.6,s*13,22.25,WALL_Z);addBlock(s*13,WALL_Z,6,7,22.5);
+    tBox('matte',0x50545c,6,22,7,s*13,11,WALL_Z);for(let y=3;y<22;y+=3.2)tBox('matte',0x3f434a,6.1,.18,7.1,s*13,y,WALL_Z);tBox('metal',0x4a4e55,7.6,.5,8.6,s*13,22.25,WALL_Z);addBlock(s*13,WALL_Z,6,7,22.5,true);
     for(const [dx,dz] of[[-3.6,0],[3.6,0],[0,-4.1],[0,4.1]])tBox('metal',0xd9a21b,dx?.08:7.6,.9,dz?.08:8.6,s*13+dx,23,WALL_Z+dz);
     tBox('glow',0xfff1c8,1.2,.6,.2,s*13,19.5,WALL_Z+3.6);DUSK_GLOWS.push([s*13,19.5,WALL_Z+4.4,0xfff1c8,9]);
 }
@@ -1776,7 +1776,7 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     tBox('matte',0x0e0f12,1.9,1.8,.1,wx,12.4,fz);tBox('glow',0x6a4a2a,1.7,1.6,.04,wx,12.4,fz-.04);tBox('metal',0x3a3e45,2.2,.18,.5,wx,11.1,fz+.2);tBox('metal',0x3a3e45,2.2,.14,.2,wx,13.4,fz+.05);
     for(const ex of[-1,1])tBox('metal',0x3a3e45,.14,1.9,.2,wx+ex*1.03,12.4,fz+.05);}
   /* lab doors are built by buildDataCenter() */
-  addBlock(0,WALL_Z,20,3,15);GATE_BLOCK=buildings[buildings.length-1];
+  addBlock(0,WALL_Z,20,3,15,true);GATE_BLOCK=buildings[buildings.length-1];
   { const doorMat=M(0x4a4f58,{roughness:.45,metalness:.75,map:PANEL}),haz=new THREE.MeshStandardMaterial({map:HAZ,roughness:.5,metalness:.2});
     for(const s of[-1,1]){const d=new THREE.Group();d.position.set(s*5,0,WALL_Z);scene.add(d);
       const p=new THREE.Mesh(new THREE.BoxGeometry(9.9,15,1.2),doorMat);p.position.y=7.5;p.castShadow=p.receiveShadow=true;d.add(p);
@@ -2387,7 +2387,7 @@ function updateSky(t){sky.position.copy(camera.position);starMat.uniforms.uTime.
   for(const b of brightStars){const k=1+Math.sin(t*b.sp+b.ph)*.12+Math.sin(t*b.sp*2.7+b.ph)*.05;
     b.halo.scale.setScalar(b.base*2.2*k);b.halo.material.opacity=.45+.15*k;b.core.scale.setScalar(b.base*.55*k);if(b.flare){b.flare.scale.setScalar(b.base*3.2*k);b.flare.material.rotation=Math.sin(t*.1+b.ph)*.05;}}}
 const buildings=[];
-function addBlock(x,z,w,d,h){buildings.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h,x,z,w,d});}
+function addBlock(x,z,w,d,h,noJump){buildings.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2,h,x,z,w,d,noJump:!!noJump});}   /* noJump: the jump boost ignores it, so the mech can't hop over (compound walls, user 2026-11-28) */
 function clearZone(x,z,w,d){
   const r=Math.max(w,d)/2;
   for(const o of OUTPOST_POS)if(Math.hypot(x-o.x,z-o.z)<20+r)return false;
@@ -4347,7 +4347,7 @@ function updatePlayer(dt,t){
 
 // shared mech jump (user 2026-11-22: make SS-07 and RX-13 jump the same height): at least ~9 units high (old RX-13 jump),
 // or just enough to land on the tallest roof within 10 (under 26 high) if that's higher. Same rule for both mechs.
-function mechJumpVel(pos){let H=0;for(const b of buildings){if(b.h>=26)continue;const dx=Math.max(b.x0-pos.x,0,pos.x-b.x1),dz=Math.max(b.z0-pos.z,0,pos.z-b.z1);if(Math.hypot(dx,dz)<10&&b.h>H)H=b.h;}
+function mechJumpVel(pos){let H=0;for(const b of buildings){if(b.h>=26||b.noJump)continue;const dx=Math.max(b.x0-pos.x,0,pos.x-b.x1),dz=Math.max(b.z0-pos.z,0,pos.z-b.z1);if(Math.hypot(dx,dz)<10&&b.h>H)H=b.h;}
   const apex=Math.max(22.5*22.5/56,H-pos.y+1.4);return Math.sqrt(2*28*apex);}
 function updateRival(R,dt,t){
   if(!R.alive){R.respawn-=dt;if(R.respawn<=0&&bases[1].alive){R.alive=true;R.hp=R.maxHp;R.pos.set(0,0,BASE_Z[RED]+18);R.vel.set(0,0,0);R.vy=0;R.onGround=true;R.mode=R.modeTarget=0;R.rig.root.visible=true;R.mg=Math.max(R.mg??0,MG_MAX/2);R.sh=Math.max(R.sh??0,SH_MAX/2);R.reloading=false;feed('Enemy mech has redeployed','r');}return;}
@@ -4981,7 +4981,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0031'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0055'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
