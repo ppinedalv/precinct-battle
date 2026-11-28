@@ -215,7 +215,8 @@ renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.44;   // 25% brighter (was 1.15)
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;renderer.shadowMap.autoUpdate=false;   /* lag fix (user 2026-11-27): plain PCF (soft PCF did many more shadow lookups per pixel); shadow map redrawn every 2nd frame */
+const RQ={f:0,acc:0,n:0};   /* render-quality governor state */
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x070a12);
 scene.fog=new THREE.Fog(0x070a12,70,280);
@@ -606,7 +607,7 @@ const GABLE_G=(()=>{const P=[-.5,0,-.5,-.5,0,.5,-.5,1,0, .5,0,-.5,.5,1,0,.5,0,.5
 const DMAT={roof:new THREE.MeshStandardMaterial({vertexColors:true,map:SHINGLE_TEX,roughness:.9,metalness:0}),stop:new THREE.MeshStandardMaterial({map:STOP_TEX,roughness:.5,metalness:.1}),matte:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85,metalness:.05}),metal:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.35,metalness:.6}),glow:new THREE.MeshBasicMaterial({vertexColors:true})};
 function flushBins(parent,shadow=true,tile=0){const out=[];for(const k of['matte','metal','glow','stop','roof']){const items=TB[k];TB[k]=[];if(!items.length)continue;
   const groups=new Map();if(tile)for(const it of items){const key=Math.floor(it.m.elements[12]/tile)+','+Math.floor(it.m.elements[14]/tile);let l=groups.get(key);if(!l)groups.set(key,l=[]);l.push(it);}else groups.set('all',items);   /* map tiles: off-screen / out-of-shadow tiles are skipped (lag fix 2026-11-26) */
-  for(const list of groups.values()){const g=mergeColored(list);if(!g)continue;const m=new THREE.Mesh(g,DMAT[k]);m.castShadow=shadow&&k!=='glow';m.receiveShadow=k!=='glow';m.userData.noAir=true;parent.add(m);out.push(m);}}return out;}
+  for(const list of groups.values()){const g=mergeColored(list);if(!g)continue;const m=new THREE.Mesh(g,DMAT[k]);m.castShadow=shadow&&k!=='glow';m.receiveShadow=k!=='glow';m.userData.noAir=true;m.matrixAutoUpdate=false;parent.add(m);out.push(m);}}return out;}   /* merged scenery never moves on its own: skip the per-frame matrix rebuild */
 function withBins(fn){const old=TB;TB={matte:[],metal:[],glow:[],stop:[],lab:[],roof:[]};fn();const g=new THREE.Group();flushBins(g);TB=old;return g;}
 
 /* vehicles: kind 0 sedan, 1 pickup, 2 van. Local +z = front. */
@@ -3623,7 +3624,16 @@ function loadUserTrack(file){
 $('mToggle').onclick=()=>{initAudio();music.on=!music.on;saveMusic();applyMusic();};
 $('mVol').oninput=e=>{initAudio();music.vol=e.target.value/100;saveMusic();applyMusic();};
 $('mFile').onchange=e=>{const f=e.target.files[0];if(f)loadUserTrack(f);};
-function initAudio(){if(actx)return;try{actx=new AudioContext();setTimeout(loadSamples,0);const n=actx.sampleRate;noise=actx.createBuffer(1,n,n);const d=noise.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;}catch(e){actx=null;}}
+/* audio safety (user 2026-11-27: audio cut out during the boss fight): every sound goes through a master limiter (the mix peaked near 2x full scale),
+   at most AUD_VMAX one-shot voices play at once (extra ones are skipped, loops never are), and a watchdog resumes the context if the browser stops it. */
+const AUD_VMAX=90;let audVoices=0;
+function audGuard(ctx){const real=ctx.destination,mg=ctx.createGain(),lim=ctx.createDynamicsCompressor();mg.gain.value=.85;lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=14;lim.attack.value=.002;lim.release.value=.18;
+  mg.connect(lim);lim.connect(real);Object.defineProperty(ctx,'destination',{value:mg,configurable:true});
+  for(const C of[AudioBufferSourceNode,OscillatorNode]){const st=C.prototype.start,sp=C.prototype.stop;if(st.__g)continue;
+    C.prototype.start=function(...a){if(!this.loop&&audVoices>=AUD_VMAX){this.__skip=true;return;}this.__on=true;audVoices++;this.addEventListener('ended',()=>{audVoices=Math.max(0,audVoices-1);},{once:true});return st.apply(this,a);};C.prototype.start.__g=1;
+    C.prototype.stop=function(...a){if(this.__skip||!this.__on)return;try{return sp.apply(this,a);}catch(e){}};}
+  setInterval(()=>{if(ctx.state!=='running'&&ctx.state!=='closed'&&!document.hidden)ctx.resume().catch(()=>{});},1000);}
+function initAudio(){if(actx)return;try{actx=new AudioContext();audGuard(actx);setTimeout(loadSamples,0);const n=actx.sampleRate;noise=actx.createBuffer(1,n,n);const d=noise.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;}catch(e){actx=null;}}
 const SND={mg:[.05,3200,.12],cannon:[.22,900,.3],boom:[.9,260,.6],missile:[.35,1600,.18],flak:[.12,1400,.12],hit:[.04,5000,.08]};
 // turbo boost audio (original synth): ignition whoosh + sustained jet whine
 let boostAud=null,wasBoosting=false;
@@ -4788,7 +4798,13 @@ function frame(now){
   updateOutposts(dt);if(DUSK)updateDusk(dt,gt);else{updateLabCrew(dt);}if(!DUSK)for(const P of DC_LED_LIST){const U=P.material.uniforms;U.t.value=gt;U.sc.value=renderer.domElement.height/(2*Math.tan(camera.fov*Math.PI/360));}updateBases(dt,gt);updateHQButtons(dt,gt);updateHoverBots(dt,gt);updateTurrets(dt);updateProjs(dt);updateFx(dt);updateDust(dt);updateEMP(dt);updatePortals(dt,gt);
   updateCamera(dt);computeAim();if(PVP){updateCamR(dt);computeAimR();}
   hudT-=dt;if(hudT<=0){hudT=.1;updateHUD();drawMinimap();if(PVP)sendGuestState();}
-  updateSky(now/1000);renderer.render(scene,camera);
+  updateSky(now/1000);
+  /* lag fix (user 2026-11-27): shadow map every 2nd frame + automatic resolution. Every ~1.5 s the average frame time is checked: slower than
+     ~42 fps drops the pixel ratio a step (down to 0.7), faster than ~55 fps raises it back (up to the normal max of 1.5). */
+  RQ.f++;if(RQ.f&1)renderer.shadowMap.needsUpdate=true;
+  {RQ.acc+=Math.min(.25,(now-(RQ.lt||now))/1000);RQ.lt=now;RQ.n++;if(RQ.acc>=1.5){const ms=RQ.acc/RQ.n*1000,mx=Math.min(devicePixelRatio,1.5);let pr=renderer.getPixelRatio();
+     if(ms>24&&pr>.7)pr=Math.max(.7,pr-.1);else if(ms<18&&pr<mx)pr=Math.min(mx,pr+.05);if(Math.abs(pr-renderer.getPixelRatio())>.001){renderer.setPixelRatio(pr);renderer.setSize(innerWidth,innerHeight);}RQ.acc=0;RQ.n=0;}}
+  renderer.render(scene,camera);
   if(PVP)renderGuestView(now);}
 updateCamera(0);updateMusicUI();netInit();
 requestAnimationFrame(frame);
