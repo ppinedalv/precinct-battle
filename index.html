@@ -3749,6 +3749,7 @@ function shopWindowHit(a,b,splash){if(!DUSK)return;initShopWins();let snd=null;
     _sw.set(W.px+W.nx*.3,W.y,W.z);snd=snd||_sw.clone();{const WW=W;setTimeout(()=>scatterShards(WW),350);}   /* shards land after the burst */
     for(let k=0;k<9;k++)puff(_sw,k%3?0xcfe8ff:0xffffff,.12,.35,rand(.5,.9),W.nx*rand(1,4),rand(-1,3),rand(-2.5,2.5));}
   if(snd)glassBreak(snd);}
+const _pw=new THREE.Vector3(),_sp=new THREE.Vector3();
 function updateProjs(dt){
   for(let i=projs.length-1;i>=0;i--){
     const p=projs[i];p.prev.copy(p.pos);
@@ -3759,12 +3760,16 @@ function updateProjs(dt){
       p.smokeT-=dt;if(p.smokeT<=0){p.smokeT=.03;puff(p.pos,0xff7a22,.55,1.3,.2);puff(p.pos,0x4a3a32,.5,1.9,.75);}}
     if(p.grav){p.vel.y-=p.grav*dt;p.smokeT-=dt;if(p.smokeT<=0){p.smokeT=.04;puff(p.pos,0xff8a2a,.4,1.1,.18);puff(p.pos,0x4a3a32,.35,1.5,.6);}}
     p.pos.addScaledVector(p.vel,dt);p.life-=dt;
-    let hitEnt=null,boom=false;
+    let hitEnt=null,boom=false,wallHit=false;
+    {const L=p.prev.distanceTo(p.pos);if(L>1e-4){_pw.copy(p.pos).sub(p.prev).divideScalar(L);let best=L;   /* walls stop shots along the whole path, so nothing fires through a building (user 2026-11-27) */
+      const x0=Math.min(p.prev.x,p.pos.x),x1=Math.max(p.prev.x,p.pos.x),z0=Math.min(p.prev.z,p.pos.z),z1=Math.max(p.prev.z,p.pos.z),y0=Math.min(p.prev.y,p.pos.y);
+      for(const k of buildings){if(x1<k.x0||x0>k.x1||z1<k.z0||z0>k.z1||y0>k.h)continue;const t=rayBox(p.prev,_pw,k,best);if(t>0&&t<best)best=t;}
+      if(best<L){p.pos.copy(p.prev).addScaledVector(_pw,Math.max(0,best-.05));wallHit=true;}}}
     for(const e of ents){if(!e.alive||e.team===p.team)continue;
       center(e,_t2);
       if(p.type==='flak'&&e.air&&p.pos.distanceToSquared(_t2)<16){boom=true;break;}
       if(segHit(p.prev,p.pos,_t2,e.r)){hitEnt=e;break;}}
-    if(!hitEnt&&!boom&&insideBuilding(p.pos))boom=true;
+    if(!hitEnt&&!boom&&(wallHit||insideBuilding(p.pos)))boom=true;
     if(p.type==='flak'&&p.life<=0)boom=true;
     if(p.type==='missile'&&p.byPlayer&&p.life<=0)boom=true;   // player missiles detonate (with damage) at max range instead of vanishing
     if(hitEnt||boom){
@@ -3781,7 +3786,7 @@ function updateProjs(dt){
     if(p.life<=0){scene.remove(p.mesh);projs.splice(i,1);continue;}
     if(p.tracer){p.trav+=SPEED.bullet*dt;p.mesh.scale.z=Math.min(p.small?.3:1,p.trav/TRACER_LEN);}
     p.mesh.position.copy(p.pos);_t.copy(p.pos).add(p.vel);p.mesh.lookAt(_t);}}
-function splashDamage(pos,r,dmg,team,byPlayer,heavy){if(DUSK&&team===BLUE)pedBlast(pos,r);for(const e of ents){if(!e.alive||e.team===team)continue;center(e,_t2);const d=_t2.distanceTo(pos)-e.r;if(d<r)damage(e,dmg*(d<=0?1:1-d/r*.6),team,byPlayer,heavy);}}
+function splashDamage(pos,r,dmg,team,byPlayer,heavy){if(DUSK&&team===BLUE)pedBlast(pos,r);for(const e of ents){if(!e.alive||e.team===team)continue;center(e,_t2);const d=_t2.distanceTo(pos)-e.r;if(d<r&&losClear(_sp.copy(pos),_t2,e.r))damage(e,dmg*(d<=0?1:1-d/r*.6),team,byPlayer,heavy);}}
 
 // ---------------- damage
 const stats={kills:0,start:0};
