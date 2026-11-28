@@ -1916,7 +1916,7 @@ function duskBegin(){const l=diffLevel;for(const a of BOSS_RIG.arms)a.ent.hitsMa
   for(let i=0;i<2;i++)spawnIceTruck();   /* exactly 2 ice-cream trucks in town at a time on every level (user 2026-11-27); each one that dies respawns 25 s later */
   rival.alive=false;rival.lives=0;rival.respawn=Infinity;rival.rig.root.visible=false;
   for(let i=0,k=Math.round(thugCap()*.5);i<k;i++)spawnThug();}
-/* gang vans: drive the east-west streets, a gunman leans out of the open side door and shoots at blue units and mechs */
+/* gang vans: drive the east-west streets; 3 hidden gunmen fire out of the driver window and the open side door at blue units and mechs */
 const GV_CACHE=[];
 function gangVanMesh(){const ci=Math.floor(Math.random()*3);if(GV_CACHE[ci])return GV_CACHE[ci].clone();   /* detailed gang van (user 2026-11-26) */
   const col=[0x1a1a1d,0x3a1218,0x2a2d33][ci],acc=[0xc41e2a,0xd9a21b,0x2a8ad8][ci],L=4.9,W=1.98,hw=W/2;
@@ -1936,20 +1936,20 @@ function gangVanMesh(){const ci=Math.floor(Math.random()*3);if(GV_CACHE[ci])retu
       tBox('glow',acc,.02,.1,L-.6,sx*(hw+.01),1.12,0);tBox('glow',acc,.02,.04,L-.9,sx*(hw+.01),1.0,0);   /* racing stripe */
       tBox('matte',0x0e0e10,.04,.3,.18,sx*(hw-.05),.45,-L/2+.6);tBox('matte',0x0e0e10,.04,.3,.18,sx*(hw-.05),.45,L/2-.7);}   /* mud flaps */
     for(let i=0;i<4;i++)tBox('metal',0x9aa0a6,1.42,.05,.06,0,2.03,-1.8+i*1.0);tBox('matte',0x18191b,1.2,.3,.8,0,2.2,-1.2);   /* roof rack + cargo */
-    for(let i=0;i<6;i++)tBox('metal',0x9aa0a6,.04,.04,.4,.45,.6+i*.25,-L/2-.06,0,0,0);tBox('metal',0x9aa0a6,.04,1.5,.04,.28,1.25,-L/2-.06);tBox('metal',0x9aa0a6,.04,1.5,.04,.62,1.25,-L/2-.06);   /* rear ladder */
     tBox('matte',0xeeeeea,.6,.18,.03,-.4,.78,-L/2-.05);tCyl('metal',0x6a6f77,.06,.4,-.6,.3,-L/2-.1,Math.PI/2);tCyl('metal',0x2a2c30,.015,1.3,-.7,2.6,1.6);   /* plate, exhaust, antenna */
     for(const [y,z] of[[1.3,-1.4],[1.1,-1.1],[1.45,-.8],[.95,-1.8],[1.25,1.3],[1.0,.9]])tBox('matte',0x050505,.02,.08,.08,-hw-.01,y,z);   /* bullet holes on the far side */
     /* sliding door open on the right: dark interior, door slid back over the rear panel */
     tBox('matte',0x060607,.05,1.32,1.9,hw+.005,1.2,.3);tBox('matte',0x151517,.9,.06,1.9,hw-.45,.55,.3);tBox('matte',0x2a2224,.5,.5,.9,hw-.85,.85,-.2);
     tBox('metal',col,.06,1.3,1.9,hw+.1,1.2,-1.3);tBox('metal',0x9aa0a6,.03,.04,3.6,hw+.06,1.88,-.4);
     tBox('matte',0x060607,.05,.5,.9,hw+.005,1.55,1.45);});   /* passenger window rolled down */
-  /* gunmen: one kneeling in the doorway with a rifle, one leaning out of the passenger window with a pistol */
-  const add=(G,x,y,z,ry,rx,sc,kneel)=>{const grp=new THREE.Group();grp.position.set(x,y,z);grp.rotation.set(rx,ry,0,'YXZ');grp.scale.setScalar(sc);g.add(grp);
-    const b=new THREE.Mesh(G.body,THUG_MAT);b.castShadow=true;grp.add(b);
-    if(kneel)for(const sd of[-1,1]){const l=new THREE.Mesh(G.leg,THUG_MAT);l.position.set(sd*.1,.92,0);l.rotation.x=sd<0?-1.5:-.2;const sh=new THREE.Mesh(G.shin,THUG_MAT);sh.position.y=-.46;sh.rotation.x=sd<0?1.5:1.6;l.add(sh);grp.add(l);}};
-  add(thugGeos('guard',ci),1.25,.08,.35,Math.PI/2,0,.95,true);add(thugGeos('gun',(ci+2)%5),1.05,.45,1.35,Math.PI/2,.35,.92,false);
+  /* hidden gunmen (user 2026-11-28): the shooters stay out of sight inside the van; only their guns poke out, 1 from the driver window, 2 from the open side door */
+  for(const [y,z,L] of VAN_GUNS){const m=new THREE.Mesh(vanGunGeo(L),THUG_MAT);m.position.set(hw+.1,y,z);m.rotation.y=Math.PI/2;m.castShadow=true;g.add(m);}
   g.userData.col=col;return (GV_CACHE[ci]=g).clone();}
-const VAN_MUZ=[new THREE.Vector3(2.49,1.48,.35),new THREE.Vector3(2.4,1.39,1.35)];
+const VAN_GUNS=[[1.52,1.45,.42],[1.45,.75,.5],[1.02,-.2,.5]];   /* [y, z, receiver length]: driver window, side door high, side door low (kneeling) */
+const _VGG={};function vanGunGeo(L){if(_VGG[L])return _VGG[L];const K=0x3a3d42,D=0x24262a;   /* rifle pointing local +z: stock, receiver, barrel, magazine, grip, front sight */
+  return _VGG[L]=mergeColored([{geo:UBOX,col:D,m:_ps(0,-.02,-L/2-.14,.06,.12,.28)},{geo:UBOX,col:K,m:_ps(0,0,0,.075,.12,L)},{geo:UCYL,col:K,m:_pm(0,.02,L/2+.28,Math.PI/2).multiply(_ps(0,0,0,.045,.56,.045))},
+    {geo:UBOX,col:K,m:_pm(0,-.14,L*.15,.25).multiply(_ps(0,0,0,.05,.2,.09))},{geo:UBOX,col:D,m:_pm(0,-.12,-L*.3,-.3).multiply(_ps(0,0,0,.05,.15,.07))},{geo:UBOX,col:K,m:_ps(0,.08,L/2+.45,.02,.05,.02)}]);}
+const VAN_MUZ=VAN_GUNS.map(([y,z,L])=>new THREE.Vector3(.99+.1+L/2+.56,y+.02,z));   /* barrel tips in van space (hw=.99) */
 function spawnVan(i){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=i===undefined?-dir*186:rand(-170,170);
   const v={kind:'van',team:RED,pos:new THREE.Vector3(x,0,e.z+dir*3),vel:V(),hp:90,maxHp:90,r:2.8,hy:1.4,alive:true,mesh:gangVanMesh(),street:e,dir,cd:rand(.5,2),burst:0,bt:0,think:0,target:null};
   v.mesh.position.copy(v.pos);v.mesh.rotation.y=dir*Math.PI/2;scene.add(v.mesh);ents.push(v);DUSK_DYN.vans.push(v);}
@@ -1999,8 +1999,8 @@ function updateVans(dt){const D=DUSK_DYN;
     if(Math.abs(v.pos.x)>188){const sx=Math.sign(v.pos.x);v.pos.x=sx*188;v.dir=-sx;v.pos.z=v.street.z+v.dir*3;v.mesh.rotation.y=v.dir*Math.PI/2;}
     v.mesh.position.copy(v.pos);v.mesh.position.y=Math.abs(Math.sin(performance.now()/90))*.03;
     {const P=player;if(P.alive&&!P.onGround&&P.vy<=0&&P.pos.y>1.1&&P.pos.y<3.4&&Math.abs(P.pos.x-v.pos.x)<2.45+P.r*.5&&Math.abs(P.pos.z-v.pos.z)<1+P.r*.5){crushVan(v);continue;}}   /* crushed only when the mech lands on it from a jump (user 2026-11-27) */
-    if(v.target&&v.target.alive){v.cd-=dt;if(v.cd<=0&&v.burst<=0){v.burst=5;v.cd=rand(1.4,2.3);}
-      if(v.burst>0){v.bt-=dt;if(v.bt<=0){v.bt=.09;v.burst--;v.mesh.updateMatrixWorld(true);const mz=v.mesh.localToWorld(VAN_MUZ[v.burst%2].clone());center(v.target,_bt).sub(mz);
+    if(v.target&&v.target.alive){v.cd-=dt;if(v.cd<=0&&v.burst<=0){v.burst=6;v.cd=rand(1.4,2.3);}
+      if(v.burst>0){v.bt-=dt;if(v.bt<=0){v.bt=.09;v.burst--;v.mesh.updateMatrixWorld(true);const mz=v.mesh.localToWorld(VAN_MUZ[v.burst%3].clone());center(v.target,_bt).sub(mz);
         _bt.x+=rand(-1.2,1.2);_bt.y+=rand(-.8,.8);_bt.z+=rand(-1.2,1.2);_bt.normalize();fire('bullet',RED,mz,_bt,3,{tracer:true,small:true});muzzleFlash(mz,_bt);gunshotSound(mz);}}}
     else v.burst=0;}
   if(D.vanRespawn&&BOSS&&BOSS.alive){for(let j=D.vanRespawn.length-1;j>=0;j--){D.vanRespawn[j]-=dt;if(D.vanRespawn[j]<=0){D.vanRespawn.splice(j,1);spawnVan();}}}}
