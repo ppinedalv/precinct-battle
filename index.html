@@ -197,7 +197,7 @@ const DEMO=location.search.includes('demo');
 const V=()=>new THREE.Vector3();
 /* ---------------- 2-PLAYER (added 2026-11-23): the HOST's browser runs the whole match; the GUEST (opened ?join=ID) pilots the RED mech.
    Host renders a 2nd camera from the red mech and streams it over WebRTC (PeerJS); the guest sends its keys back. VS COMPUTER is unchanged. */
-const PUBLIC_URL='https://ppinedalv.github.io/precinct-battle/';
+const PUBLIC_URL='https://ppinedalv.github.io/PrecinctBattle/';
 const JOIN_ID=new URLSearchParams(location.search).get('join');
 const GUEST=!!JOIN_ID&&!DEMO;
 const NET={mode:'cpu',peer:null,conn:null,call:null,ready:false};
