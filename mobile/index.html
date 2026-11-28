@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-2146</div>
+<div id="buildTag">BUILD 1127-2152</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -2113,13 +2113,14 @@ function iceTruckProto(){if(ICT_PROTO)return ICT_PROTO;const WH=0xf4f4f0,RD=0xd8
     tBox('metal',0x9aa0a6,.03,1.9,.03,0,1.8,-2.86);tBox('metal',GL,.8,.5,.03,0,2.35,-2.86);for(const sx of[-1,1])tBox('glow',0xd81818,.16,.32,.04,sx*.9,1.25,-2.88);tBox('matte',0xf2f2ee,.5,.25,.03,0,.85,-3.1);   /* rear door, window, tail lights, plate */
     tBox('matte',0x2a2c30,.06,.05,.06,0,2.92,2.4);tCyl('metal',CH,.12,.35,0,3.0,2.2,Math.PI/2+.3);   /* roof speaker horn */
     /* giant waffle cone + scoops */
-    for(const z of[-2,-.2])tBox('metal',CH,.12,.35,.12,0,3.05,z);
-    {const ax=new THREE.Vector3(0,.2,-.98).normalize(),base=new THREE.Vector3(0,3.45,.55),H=3.3,rx=-Math.PI/2+.2;const c=base.clone().addScaledVector(ax,H/2);
-      tAdd('matte',ICT_CONE,0xd9a35a,c.x,c.y,c.z,rx,0,0,1.55,H,1.55);
-      for(let k=1;k<6;k++){const t=k/6,q=base.clone().addScaledVector(ax,H*t);tAdd('matte',torusG(1,.035,24),0xa8742f,q.x,q.y,q.z,.2,0,0,.78*(1-t),.78*(1-t),.78*(1-t));}   /* waffle ridges */
-      const S=[[0,.1,.25,1.6,0xf4b6c2],[.45,.55,.05,1.25,0xe8e49a],[-.42,.6,-.05,1.15,0x6b3a2a],[0,-.35,.55,.9,0xfff3d6]];
-      for(const [dx,dy,dz,r,col] of S){tAdd('matte',USPH,col,base.x+dx,base.y+dy,base.z+dz,0,0,0,r,r*.9,r);for(let k=0;k<5;k++){const a=k/5*6.283+dx;tAdd('matte',USPH,col,base.x+dx+Math.cos(a)*r*.45,base.y+dy-r*.35,base.z+dz+Math.sin(a)*r*.45,0,0,0,r*.32,r*.3,r*.32);}}   /* scoops with lumpy rims */
-      tAdd('matte',UCONE,0xffd6e0,base.x,base.y+1,base.z+.25,0,0,0,.4,.5,.4);}});
+    for(const z of[-2,-.2])tBox('metal',CH,.12,.35,.12,0,3.05,z);});
+  /* cone and scoops are separate parts so they can fall off when the truck is crushed */
+  const CB=new THREE.Vector3(0,3.45,.55),CAX=new THREE.Vector3(0,.2,-.98).normalize(),CH_=3.3;
+  const cone=withBins(()=>{const H=CH_,rx=-Math.PI/2+.2,c=CB.clone().addScaledVector(CAX,H/2);tAdd('matte',ICT_CONE,0xd9a35a,c.x,c.y,c.z,rx,0,0,1.55,H,1.55);
+      for(let k=1;k<6;k++){const t=k/6,q=CB.clone().addScaledVector(CAX,H*t);tAdd('matte',torusG(1,.035,24),0xa8742f,q.x,q.y,q.z,.2,0,0,.78*(1-t),.78*(1-t),.78*(1-t));}});   /* waffle cone + ridges */
+  const SC=[[0,.1,.25,1.6,0xf4b6c2],[.45,.55,.05,1.25,0xe8e49a],[-.42,.6,-.05,1.15,0x6b3a2a],[0,-.35,.55,.9,0xfff3d6]];
+  const scoops=withBins(()=>{const base=CB;for(const [dx,dy,dz,r,col] of SC){tAdd('matte',USPH,col,base.x+dx,base.y+dy,base.z+dz,0,0,0,r,r*.9,r);for(let k=0;k<5;k++){const a=k/5*6.283+dx;tAdd('matte',USPH,col,base.x+dx+Math.cos(a)*r*.45,base.y+dy-r*.35,base.z+dz+Math.sin(a)*r*.45,0,0,0,r*.32,r*.3,r*.32);}}   /* scoops with lumpy rims */
+      tAdd('matte',UCONE,0xffd6e0,base.x,base.y+1,base.z+.25,0,0,0,.4,.5,.4);});
   const driver=withBins(()=>{const SK=0xe0b088,SH=0xf6f6f2;   /* local: faces +x (out of the window) */
     tBox('matte',SH,.4,.55,.34,0,1.85,0);tBox('matte',0x2a2d33,.42,.06,.36,0,1.58,0);tBox('matte',0xdcdcd6,.03,.35,.02,.2,1.9,0);   /* white shirt, belt, placket */
     tAdd('matte',USPH,SK,0,2.3,0,0,0,0,.32,.36,.32);tAdd('matte',USPH,0x111111,.15,2.33,.07,0,0,0,.04,.04,.04);tAdd('matte',USPH,0x111111,.15,2.33,-.07,0,0,0,.04,.04,.04);tBox('matte',0x9a5a4a,.02,.025,.1,.16,2.2,0);
@@ -2129,9 +2130,47 @@ function iceTruckProto(){if(ICT_PROTO)return ICT_PROTO;const WH=0xf4f4f0,RD=0xd8
     tCyl('metal',OD,.11,1.55,0,0,.2,Math.PI/2);tCyl('metal',0x2f3414,.15,.18,0,0,.98,Math.PI/2);tCyl('metal',0x2f3414,.16,.22,0,0,-.62,Math.PI/2);
     tBox('matte',0xf2c418,.235,.235,.06,0,0,.55);tBox('metal',0x1a1a1a,.06,.18,.08,0,-.17,.15);tBox('metal',0x1a1a1a,.06,.16,.08,0,-.16,.45);tBox('metal',0x1a1a1a,.05,.1,.22,0,.15,.3);
     tAdd('matte',UCONE,0xd8261e,0,0,1.12,Math.PI/2,0,0,.16,.24,.16);});
-  ICT_PROTO={body,driver,baz};return ICT_PROTO;}
-function iceTruckMesh(){const P=iceTruckProto(),g=new THREE.Group();g.add(P.body.clone());const piv=new THREE.Group();piv.position.set(0,0,1.7);g.add(piv);
-  const d=P.driver.clone();d.position.set(.45,0,0);piv.add(d);const b=P.baz.clone();b.position.set(.95,2.1,0);piv.add(b);g.userData={piv,baz:b};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
+  ICT_PROTO={body,driver,baz,cone,scoops,SC};return ICT_PROTO;}
+function iceTruckMesh(){const P=iceTruckProto(),g=new THREE.Group();const bd=P.body.clone(),cn=P.cone.clone(),sc=P.scoops.clone();g.add(bd,cn,sc);const piv=new THREE.Group();piv.position.set(0,0,1.7);g.add(piv);
+  const d=P.driver.clone();d.position.set(.45,0,0);piv.add(d);const b=P.baz.clone();b.position.set(.95,2.1,0);piv.add(b);g.userData={piv,baz:b,body:bd,cone:cn,scoops:sc,driver:d};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
+/* jumped on (user 2026-11-27): body crumpled + flattened, doors torn off and lying around it, the giant cone on its side next to the truck,
+   scoops splattered and melting on the road, the bazooka dropped. The wreck stays 45 s. */
+function crushIceTruck(v){v.alive=false;v.hp=0;const m=v.mesh,U=m.userData,geos=[],mats=[];
+  const dents=[];for(let k=0;k<6;k++)dents.push([rand(-1,1),rand(1.2,2.9),rand(-2.6,2.6),rand(.6,1),rand(.3,.55)]);
+  U.body.traverse(o=>{if(!o.isMesh)return;const g=crumple(o.geometry.clone(),5.8,3),q=g.attributes.position;
+    for(let i=0;i<q.count;i++){let x=q.getX(i),y=q.getY(i),z=q.getZ(i);for(const [dx,dy,dz,r,dp] of dents){const d2=((x-dx)**2+(y-dy)**2+(z-dz)**2)/(r*r);if(d2<1){const f=dp*(1-d2)*(1-d2);y-=f*.9;x-=Math.sign(x)*f*.5;}}
+      y+=.07*Math.sin(z*6.3+x*4.1)*Math.sin(x*8.1)*(y>.9?1:.3);x+=.05*Math.sin(y*10+z*5)*(Math.abs(x)>.9?1:0);q.setXYZ(i,x,y,z);}
+    g.computeVertexNormals();o.geometry=g;geos.push(g);});
+  U.body.scale.set(1.07,.42,.96);U.body.rotation.z=rand(-.08,.08);U.body.rotation.x=rand(-.05,.05);m.position.y=.04;
+  U.driver.visible=false;U.piv.remove(U.baz);U.cone.visible=false;U.scoops.visible=false;
+  const W=new THREE.Group();W.position.set(v.pos.x,0,v.pos.z);W.rotation.y=m.rotation.y;scene.add(W);
+  const WH=new THREE.MeshStandardMaterial({color:0xf0f0ea,roughness:.4,metalness:.4}),GLM=new THREE.MeshStandardMaterial({color:0x0b0e14,roughness:.15,metalness:.5}),
+    RDm=new THREE.MeshStandardMaterial({color:0xd8261e,roughness:.5}),CHm=new THREE.MeshStandardMaterial({color:0xc8ccd2,roughness:.2,metalness:.9});mats.push(WH,GLM,RDm,CHm);
+  const bent=(w,h,t)=>{const g=new THREE.BoxGeometry(w,h,t,6,5,1),q=g.attributes.position;for(let i=0;i<q.count;i++){const x=q.getX(i),y=q.getY(i);q.setZ(i,q.getZ(i)+.09*Math.sin(x*4.3+y*2.1)+.06*Math.sin(y*6.7));}g.computeVertexNormals();geos.push(g);return g;};
+  /* door lying flat on the road: x,z local to the truck, a = spin, tilt = how much it leans on something */
+  const flat=(w,h,x,z,a,tilt,win,checker)=>{const d=new THREE.Group();d.position.set(x,.06+tilt*.4,z);d.rotation.set(-Math.PI/2+tilt,0,a);W.add(d);
+    const P=new THREE.Mesh(bent(w,h,.07),WH);P.castShadow=P.receiveShadow=true;d.add(P);
+    if(win){const gl=new THREE.Mesh(new THREE.BoxGeometry(w*.7,h*.38,.02),GLM);gl.position.set(0,h*.22,.045);d.add(gl);geos.push(gl.geometry);}
+    if(checker)for(let k=0;k<Math.floor(w/.2);k++)for(let r=0;r<2;r++)if((k+r)%2){const c=new THREE.Mesh(new THREE.BoxGeometry(.2,.19,.02),RDm);c.position.set(-w/2+.1+k*.2,-h/2+.2+r*.19,.045);d.add(c);geos.push(c.geometry);}
+    const hd=new THREE.Mesh(new THREE.BoxGeometry(.2,.05,.05),CHm);hd.position.set(w*.3,0,.06);d.add(hd);geos.push(hd.geometry);};
+  flat(1.15,1.6,-2.3,1.9,rand(-.4,.4),.15,true,false);   /* driver-side cab door */
+  flat(1.15,1.6,2.5+rand(0,.5),2.6,rand(1.2,1.9),0,true,false);   /* passenger cab door, far out on the road */
+  flat(1.9,2.0,rand(-.6,.6),-4.4,rand(-.3,.3),.25,true,false);   /* rear door, leaning on the back bumper */
+  flat(2.7,1.1,-2.6,-1.3,rand(-.2,.2),0,false,true);   /* serving-window shutter with the checker stripe */
+  /* the giant cone on its side next to the truck + the scoops splattered in front of it */
+  const side=Math.random()<.5?-1:1,cone=ICT_PROTO.cone.clone();cone.rotation.set(-.2,0,0);cone.position.set(0,-2.71,0);   /* axis level, waffle side resting on the road */
+  const cg=new THREE.Group();cg.position.set(side*3.4,0,1.8);cg.rotation.y=side*rand(.2,.6);cg.add(cone);W.add(cg);
+  const SC=ICT_PROTO.SC;for(const [k,[dx,dy,dz,r,col]] of SC.entries()){const sm=new THREE.MeshStandardMaterial({color:col,roughness:.35});mats.push(sm);
+    const sx=side*(3.2+k*.9+rand(-.3,.3)),sz=3.8+rand(-1.4,1.4),sp=new THREE.Mesh(new THREE.SphereGeometry(r*.5,14,10),sm);geos.push(sp.geometry);sp.scale.set(1.15,.42,1.05);sp.position.set(sx,r*.18,sz);sp.castShadow=true;W.add(sp);   /* squashed scoop */
+    const pd=new THREE.Mesh(new THREE.CircleGeometry(r*.85,20),sm);geos.push(pd.geometry);pd.rotation.x=-Math.PI/2;pd.scale.set(1.3,1,1);pd.position.set(sx+rand(-.2,.2),.03+k*.002,sz+rand(-.2,.2));W.add(pd);   /* melting puddle */
+    for(let i=0;i<4;i++){const dr=new THREE.Mesh(new THREE.CircleGeometry(rand(.08,.2),10),sm);geos.push(dr.geometry);dr.rotation.x=-Math.PI/2;dr.position.set(sx+rand(-1.2,1.2),.035,sz+rand(-1.2,1.2));W.add(dr);}}   /* drips */
+  const bz=ICT_PROTO.baz.clone();bz.position.set(-side*2.4,.15,-.5);bz.rotation.set(0,rand(0,6.28),Math.PI/2);W.add(bz);   /* bazooka dropped on the road */
+  W.traverse(o=>{if(o.isMesh)o.userData.noAir=true;});
+  for(const nx of[-1,1])scatterShards({px:v.pos.x,nx,z:v.pos.z,w:4,y:1,h:1});
+  for(let i=0;i<10;i++)dustP(v.pos.x+rand(-2,2),rand(.3,1),v.pos.z+rand(-2,2),{color:0x1c1a18,life:rand(1.2,2),a:rand(.8,1.4),b:rand(3,5),drag:.8,rot:rand(-.6,.6),alpha:.55,vx:rand(-1.5,1.5),vy:rand(1,2.5),vz:rand(-1.5,1.5)});
+  for(let i=0;i<22;i++)puff(_c.set(v.pos.x+rand(-2,2),rand(1,2.5),v.pos.z+rand(-1,1)),[0xf4b6c2,0xe8e49a,0x6b3a2a,0xfff3d6][i%4],rand(.15,.3),.1,rand(.5,.9),rand(-7,7),rand(3,7),rand(-7,7));   /* ice cream flying */
+  dustBurst(v.pos.x,0,v.pos.z,.9);sfx('hit',_c.set(v.pos.x,1,v.pos.z),2);playBoom(_c,3)||sfx('boom',_c,.4);camShake=Math.max(camShake,.45);feed('Ice-cream truck crushed!','b');
+  setTimeout(()=>{scene.remove(m);scene.remove(W);for(const g of geos)g.dispose();for(const t of mats)t.dispose();},45000);}
 function spawnIceTruck(){const e=DUSK_EW[Math.floor(Math.random()*DUSK_EW.length)],dir=Math.random()<.5?1:-1,x=rand(-150,150);
   const v={kind:'icetruck',team:RED,pos:new THREE.Vector3(x,0,e.z+dir*3),vel:V(),hp:160,maxHp:160,r:3,hy:1.6,alive:true,mesh:iceTruckMesh(),street:e,dir,cd:rand(2,4),think:0,target:null};
   v.mesh.position.copy(v.pos);v.mesh.rotation.y=dir*Math.PI/2;scene.add(v.mesh);ents.push(v);(DUSK_DYN.trucks=DUSK_DYN.trucks||[]).push(v);}
@@ -2146,7 +2185,7 @@ function updateIceTrucks(dt){const D=DUSK_DYN;if(!D.trucks)return;const lvl=DIFF
     if(v.stopT>0)v.stopT-=dt;else v.pos.x+=v.dir*sp*dt;
     if(Math.abs(v.pos.x)>188){const sx=Math.sign(v.pos.x);v.pos.x=sx*188;v.dir=-sx;v.pos.z=v.street.z+v.dir*3;v.mesh.rotation.y=v.dir*Math.PI/2;}
     v.mesh.position.copy(v.pos);v.mesh.position.y=Math.abs(Math.sin(performance.now()/110))*.03;
-    {const P=player;if(P.alive&&!P.onGround&&P.vy<=0&&P.pos.y>1.4&&P.pos.y<4.6&&Math.abs(P.pos.x-v.pos.x)<2.95+P.r*.5&&Math.abs(P.pos.z-v.pos.z)<1.1+P.r*.5){kill(v,BLUE,true);continue;}}   /* landing on it crushes it */
+    {const P=player;if(P.alive&&!P.onGround&&P.vy<=0&&P.pos.y>1.4&&P.pos.y<4.6&&Math.abs(P.pos.x-v.pos.x)<2.95+P.r*.5&&Math.abs(P.pos.z-v.pos.z)<1.1+P.r*.5){crushIceTruck(v);continue;}}   /* landing on it crushes it */
     const U=v.mesh.userData,tg=v.target&&v.target.alive?v.target:null;
     if(tg){center(tg,_bt);v.mesh.updateMatrixWorld(true);const lx=v.mesh.worldToLocal(_bt2.copy(_bt)).x;U.piv.rotation.y=lx>=0?0:Math.PI;U.piv.updateMatrixWorld(true);U.baz.lookAt(_bt);
       v.cd-=dt;if(v.cd<=0){v.cd=lerp(4.6,2,(lvl-1)/9)*rand(.85,1.2);U.baz.updateMatrixWorld(true);const mz=U.baz.localToWorld(new THREE.Vector3(0,0,1.2)),dir=_bt.clone().sub(mz).normalize();
@@ -4824,7 +4863,7 @@ function scanAirSolids(){scene.updateMatrixWorld(true);const skip=new Set([playe
   AIR_SOLIDS=buildings.concat(extra);return extra;}
 const AIR_EXTRA=scanAirSolids();
 if(DUSK&&/[?&]bossdie=/.test(location.search)){const sec=+(location.search.match(/bossdie=(\d+)/)||[0,20])[1];setTimeout(()=>{window.__game.bossDie();console.log('BOSSDIE');for(const w of[3,6,10,18])setTimeout(()=>console.log('MELT '+w+' '+JSON.stringify(window.__game.meltInfo())),w*1000);},sec*1000);}   /* test hook: ?bossdie=N kills the boss after N s */
-window.__game={bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
+window.__game={crushTruck:()=>{const t=DUSK_DYN.trucks&&DUSK_DYN.trucks.find(v=>v.alive);if(t)crushIceTruck(t);return t?{x:t.pos.x,z:t.pos.z}:null;},bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 
 // ---------------- headlight pool on the ground ahead of the player's mech (iPhone build)
@@ -4887,7 +4926,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2146'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2152'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
