@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1128-0105</div>
+<div id="buildTag">BUILD 1128-0137</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -1300,7 +1300,7 @@ const _sv=pos=>clamp(1.1-pos.distanceTo(player.pos)/90,0,1);
    a muffled underwater filter with a watery echo. Fades out when the mech leaves the compound or the boss dies. */
 let SEAMON=null,DC_LEDS=null;
 function seaBus(){const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.8;const dl=actx.createDelay(1),fb=actx.createGain(),wet=actx.createGain(),out=actx.createGain();
-  dl.delayTime.value=.23;fb.gain.value=.38;wet.gain.value=.45;out.gain.value=1;lp.connect(out);lp.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);out.connect(actx.destination);return {in:lp,out};}
+  dl.delayTime.value=.23;fb.gain.value=.38;wet.gain.value=.45;out.gain.value=1;lp.connect(out);lp.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);out.connect(actx.destination);return {in:scrubIn(actx,lp),out};}   /* NaN scrubber in front (user 2026-11-28) */
 function seaRoar(B,v={}){const t=actx.currentTime+.05+(v.delay||0),D=v.D||3.3,f0=v.f0||165,fm=v.fm||90,f1=v.f1||38,vol=v.vol||1,rise=!!v.rise;   /* variants: long fall, short bark, rising bellow (user 2026-11-27) */
   const OG=actx.createGain(),PN=actx.createStereoPanner();OG.gain.value=vol;PN.pan.value=v.pan||0;OG.connect(PN).connect(B.in);
   const n=actx.createBufferSource();n.buffer=noise;n.loop=true;const nl=actx.createBiquadFilter();nl.type='lowpass';nl.frequency.setValueAtTime(650,t);nl.frequency.exponentialRampToValueAtTime(80,t+D);const ng=actx.createGain();
@@ -3636,8 +3636,8 @@ try{const sv=JSON.parse(localStorage.getItem('ss_music')||'{}');if(typeof sv.on=
 function saveMusic(){try{localStorage.setItem('ss_music',JSON.stringify({on:music.on,vol:music.vol}));}catch(e){}}
 function musicOut(){
   if(!music.gain){music.gain=actx.createGain();music.gain.gain.value=0;music.gain.connect(actx.destination);
-    music.delay=actx.createDelay(1);music.delay.delayTime.value=60/92*.75;const fb=actx.createGain();fb.gain.value=.42;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;   /* darker echo (villain mix, user 2026-11-24) */
-    music.delay.connect(lp).connect(fb).connect(music.delay);lp.connect(music.gain);}
+    const dl=actx.createDelay(1);dl.delayTime.value=60/92*.75;music.delay=scrubIn(actx,dl);const fb=actx.createGain();fb.gain.value=.42;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1300;   /* darker echo (villain mix, user 2026-11-24) */
+    dl.connect(lp).connect(fb).connect(dl);lp.connect(music.gain);}   /* echo loop is fed only through the NaN scrubber (user 2026-11-28) */
   return music.gain;}
 function applyMusic(){
   updateMusicUI();if(!actx)return;musicOut();
@@ -3721,8 +3721,27 @@ $('mFile').onchange=e=>{const f=e.target.files[0];if(f)loadUserTrack(f);};
 /* audio safety (user 2026-11-27: audio cut out during the boss fight): every sound goes through a master limiter (the mix peaked near 2x full scale),
    at most AUD_VMAX one-shot voices play at once (extra ones are skipped, loops never are), and a watchdog resumes the context if the browser stops it. */
 const AUD_VMAX=90;let audVoices=0;
+/* NaN guard (user 2026-11-28: all audio went silent in the boss fight until a new game). One bad sample (NaN) makes a biquad filter
+   output NaN forever, and NaN in the mix silences everything. A tiny AudioWorklet swaps bad samples for silence: one on the master
+   bus (a broken sound can't mute the rest) and one in front of each long-lived shared effect (music echo, sea bus) so they never get poisoned. */
+const SCRUB_SRC="class S extends AudioWorkletProcessor{constructor(){super();this.n=0;this.t=0;}process(I,O){const i=I[0],o=O[0];let n=0;for(let c=0;c<o.length;c++){const a=i&&i[c],b=o[c];if(!a){b.fill(0);continue;}for(let k=0;k<b.length;k++){const v=a[k];if(v===v&&v<1e4&&v>-1e4)b[k]=v;else{b[k]=0;n++;}}}this.n+=n;if(this.n&&currentTime-this.t>.1){this.t=currentTime;this.port.postMessage(this.n);this.n=0;}return true;}}registerProcessor('pb-scrub',S);";
+let SCRUB_OK=false,audBad=0,audCut=0,audCutLog=[],audHealing=false;const SCRUB_Q=[],AUD_TRK=[];
+/* Mixing adds NaN to everything, so the master scrubber alone gives silence. When it reports bad samples, probe every filter/delay the game
+   made and disconnect the ones stuck on NaN: only that one sound is lost, the rest of the mix comes back within ~0.1 s. */
+function audTrack(ctx){for(const m of['createBiquadFilter','createIIRFilter','createDelay']){const f=ctx[m];if(!f)continue;
+    ctx[m]=function(...a){const n=f.apply(ctx,a);AUD_TRK.push({n,t:performance.now(),w:null});return n;};}
+  if(typeof WeakRef!=='undefined')setInterval(()=>{const now=performance.now();let j=0;for(const e of AUD_TRK){if(e.n&&now-e.t>10000){e.w=new WeakRef(e.n);e.n=null;}if(e.n||e.w.deref())AUD_TRK[j++]=e;}AUD_TRK.length=j;},3000);}   /* strong ref for 10 s, then weak (long-lived loops are still held by the game) */
+function audHeal(ctx){if(audHealing)return;audHealing=true;const list=[],buf=new Float32Array(256);
+  for(const e of AUD_TRK){const n=e.n||(e.w&&e.w.deref());if(n)list.push(n);}
+  const probes=list.map(n=>{try{const a=ctx.createAnalyser();a.fftSize=256;n.connect(a);return a;}catch(x){return null;}});
+  setTimeout(()=>{probes.forEach((a,i)=>{if(!a)return;a.getFloatTimeDomainData(buf);let bad=false;for(let k=0;k<buf.length;k++){const v=buf[k];if(!(v===v&&v<1e4&&v>-1e4)){bad=true;break;}}
+      try{list[i].disconnect(a);}catch(x){}if(bad){const n=list[i];try{n.disconnect();}catch(x){}audCut++;if(audCutLog.length<20)audCutLog.push(n.constructor.name+(n.type?':'+n.type:'')+(n.frequency?'@'+Math.round(n.frequency.value):''));}});audHealing=false;},120);}
+function scrubWire(ctx,g,target,master){try{const w=new AudioWorkletNode(ctx,'pb-scrub');w.port.onmessage=e=>{audBad+=e.data;if(master)audHeal(ctx);};g.disconnect();g.connect(w);w.connect(target);}catch(e){}}
+function scrubIn(ctx,target,master){const g=ctx.createGain();g.connect(target);if(SCRUB_OK)scrubWire(ctx,g,target,master);else SCRUB_Q.push([g,target,master]);return g;}   /* returns the node to connect into */
+function scrubLoad(ctx){if(!ctx.audioWorklet)return;const go=u=>ctx.audioWorklet.addModule(u);const blob=URL.createObjectURL(new Blob([SCRUB_SRC],{type:'application/javascript'}));
+  go(blob).catch(()=>go('data:application/javascript,'+encodeURIComponent(SCRUB_SRC))).then(()=>{SCRUB_OK=true;for(const [g,t,m] of SCRUB_Q.splice(0))scrubWire(ctx,g,t,m);}).catch(()=>{});}
 function audGuard(ctx){const real=ctx.destination,mg=ctx.createGain(),lim=ctx.createDynamicsCompressor();mg.gain.value=.85;lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=14;lim.attack.value=.002;lim.release.value=.18;
-  mg.connect(lim);lim.connect(real);Object.defineProperty(ctx,'destination',{value:mg,configurable:true});
+  lim.connect(real);const mgIn=scrubIn(ctx,lim,true);mg.connect(mgIn);Object.defineProperty(ctx,'destination',{value:mg,configurable:true});scrubLoad(ctx);audTrack(ctx);
   for(const C of[AudioBufferSourceNode,OscillatorNode]){const st=C.prototype.start,sp=C.prototype.stop;if(st.__g)continue;
     C.prototype.start=function(...a){if(!this.loop&&audVoices>=AUD_VMAX){this.__skip=true;return;}this.__on=true;audVoices++;this.addEventListener('ended',()=>{audVoices=Math.max(0,audVoices-1);},{once:true});return st.apply(this,a);};C.prototype.start.__g=1;
     C.prototype.stop=function(...a){if(this.__skip||!this.__on)return;try{return sp.apply(this,a);}catch(e){}};}
@@ -4916,7 +4935,7 @@ function scanAirSolids(){scene.updateMatrixWorld(true);const skip=new Set([playe
   AIR_SOLIDS=buildings.concat(extra);return extra;}
 const AIR_EXTRA=scanAirSolids();
 if(DUSK&&/[?&]bossdie=/.test(location.search)){const sec=+(location.search.match(/bossdie=(\d+)/)||[0,20])[1];setTimeout(()=>{window.__game.bossDie();console.log('BOSSDIE');for(const w of[3,6,10,18])setTimeout(()=>console.log('MELT '+w+' '+JSON.stringify(window.__game.meltInfo())),w*1000);},sec*1000);}   /* test hook: ?bossdie=N kills the boss after N s */
-window.__game={icm:()=>({i:ICM.i,lvl:+ICM.lvl.toFixed(2),ctx:!!actx}),crushTruck:()=>{const t=DUSK_DYN.trucks&&DUSK_DYN.trucks.find(v=>v.alive);if(t)crushIceTruck(t);return t?{x:t.pos.x,z:t.pos.z}:null;},bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
+window.__game={audBad:()=>({bad:audBad,ok:SCRUB_OK,cut:audCut,log:audCutLog,trk:AUD_TRK.length}),icm:()=>({i:ICM.i,lvl:+ICM.lvl.toFixed(2),ctx:!!actx}),crushTruck:()=>{const t=DUSK_DYN.trucks&&DUSK_DYN.trucks.find(v=>v.alive);if(t)crushIceTruck(t);return t?{x:t.pos.x,z:t.pos.z}:null;},bossDie:()=>{if(BOSS&&!BOSS_RIG.dead)bossDeath(BOSS);return !!BOSS_RIG.melt;},meltInfo:()=>{const M=BOSS_RIG.melt;return M?{t:+M.t.toFixed(2),glass:!!GLASS_FLY,eyesClosed:!!(BOSS_RIG.pupils&&!BOSS_RIG.pupils[0].g.visible)}:null;},scene,fscreams:()=>FEMALE_BUFS.filter(Boolean).length,screams:()=>SCREAM_BUFS.filter(Boolean).length,women:()=>DUSK_DYN.pedGroups&&DUSK_DYN.pedGroups[1].peds,lab:()=>DUSK_DYN.lab&&DUSK_DYN.lab.crew,shoot:(f,t)=>fire('bullet',BLUE,f,t.clone().sub(f),5,{byPlayer:true,gatling:true}),dmg:(e,a,h=true)=>damage(e,a,BLUE,true,h),info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles}),portals,hoverLeg:HOVER_LEG,studio:()=>{for(const o of outposts)if(o.tag)o.tag.sp.removeFromParent();for(const b of bases)if(b.tag)b.tag.sp.removeFromParent();scene.fog=null;scene.background=new THREE.Color(0xffffff);for(const c of scene.children)if(c!==player.rig.root&&!c.isLight)c.visible=false;scene.add(new THREE.HemisphereLight(0xffffff,0x8a90a0,1.6));const k=new THREE.DirectionalLight(0xffffff,1.6);k.position.set(player.pos.x-20,player.pos.y+30,player.pos.z-25);k.target=player.rig.root;scene.add(k);},   // debug: white studio render of the player mech
   gt:()=>gt,spawnT:baseSpawn,diff:()=>({level:diffLevel,...DIFF}),rival,lock:()=>lockTarget,emp:()=>({charges:empCharges,cd:empCD}),dropCrate,crates,buildings,projs,hqButtons,hoverBots,deployHoverBot,laserBeams,camera,setCamHold:v=>{camHold=v;},setCamDist:d=>{camDistBase=d;},setFace:a=>{faceOff=a;},player,ents,outposts,bases,keys,setAim:(y,p)=>{yaw=y;pitch=p;},press:(k,v)=>{keys[k]=v;},mouse:(l,r)=>{mouseL=l;mouseR=r;}};
 
 // ---------------- headlight pool on the ground ahead of the player's mech (iPhone build)
@@ -4979,7 +4998,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0105'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1128-0137'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
