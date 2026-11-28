@@ -174,7 +174,7 @@ body.playing #buildTag{display:none}
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
-<div id="buildTag">BUILD 1127-2127</div>
+<div id="buildTag">BUILD 1127-2138</div>
 <div id="rotate"><img src="icons/icon-180.png" alt=""><div>TURN YOUR PHONE SIDEWAYS</div></div>
 
 <div id="hud">
@@ -594,6 +594,21 @@ function duskLayout(){if(DL)return DL;DL={houses:[],trees:[],fences:[],dumpsters
   for(const side of[-1,1])DL.pedPaths.push({ax:side*11.6,az:-112,bx:side*11.6,bz:140});
   for(const e of DUSK_EW)for(const side of[-1,1]){DL.pedPaths.push({ax:-188,az:e.z+side*(e.w/2+1.5),bx:-12,bz:e.z+side*(e.w/2+1.5)},{ax:12,az:e.z+side*(e.w/2+1.5),bx:188,bz:e.z+side*(e.w/2+1.5)});}
   for(const s of DUSK_NS)if(s.x)for(const side of[-1,1])DL.pedPaths.push({ax:s.x+side*(s.w/2+1.5),az:-118,bx:s.x+side*(s.w/2+1.5),bz:190});
+  /* blocks outside the shrunken compound (user 2026-11-27): between Patrick St / Xena St and Mission Ave / Willow St, north of the wall line.
+     Two rows of houses back to back: one row faces Patrick/Xena, the other faces Mission/Willow. Own RNG, so the rest of the town keeps its layout. */
+  {let hs=4242;const hr=()=>(hs=(hs*16807)%2147483647)/2147483647,hd=(a,b)=>a+hr()*(b-a);DL.hdrives=[];DL.hwalks=[];
+    const PAL=[0xc9b89a,0xa9b8c4,0x9fae8f,0xc7a39a,0xd8d2c4,0xb8a07c,0x8f9eb0,0xc4b38c],ROOF=[0x3b3733,0x4a2f2a,0x2f3438,0x5a4a3a];
+    const LW=13,Z0=-131,Z1=-203,n=Math.floor((Z0-Z1)/LW),zoff=Z0-((Z0-Z1)-n*LW)/2;
+    for(const s of[-1,1]){const mid=s*126.5;
+      for(const [edge,dir] of[[s*103,s],[s*150,-s]]){   /* dir: from the street edge into the lot */
+        for(let k=0;k<n;k++){const lz0=zoff-k*LW,lz1=lz0-LW,w=hd(8.5,10.6),d=hd(7.6,9.4),fs=hd(4.8,6.2),two=hr()<.3,h1=two?6.2:3.4,rh=hd(2.2,3.1),cz=(lz0+lz1)/2+hd(-.6,.6),cx=edge+dir*(fs+d/2);
+          DL.houses.push({x:cx,z:cz,w,d,h1,rh,face:dir*Math.PI/2,row:0,wall:PAL[Math.floor(hr()*PAL.length)],roof:ROOF[Math.floor(hr()*ROOF.length)],garage:hr()<.45,chim:hr()<.4,lit:hr(),porch:hr()<.5,frontZ:edge+dir*fs});
+          const gs=hr()<.5?-1:1,xa=Math.min(edge,edge+dir*fs),xb=Math.max(edge,edge+dir*fs);DL.hdrives.push({z:cz+gs*(w/2-1.8),x0:xa,x1:xb});DL.hwalks.push({z:cz-gs*1.2,x0:xa,x1:xb});
+          if(hr()<.85)DL.trees.push({x:edge+dir*hd(1.8,2.8),z:cz-gs*(w/2+.2),s:hd(.85,1.25),kind:hr()<.3?1:0});
+          if(hr()<.6)DL.trees.push({x:mid-dir*hd(2.2,4),z:cz+hd(-3,3),s:hd(.8,1.2),kind:hr()<.4?1:0});
+          DL.fences.push({x0:Math.min(cx+dir*d/2,mid),x1:Math.max(cx+dir*d/2,mid),z:lz1+.1});}   /* lot divider */
+      }
+      DL.fences.push({side:1,x:mid,z0:Z1+.5,z1:Z0});}}   /* back fence between the two rows */
   return DL;}
 function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=Math.max(HALF_X,HALF_Z)+40,H=W,S=N/(2*W);   /* square paint area: the texture must stay square or the painted streets drift off the buildings (bug 2026-11-27 after HALF_Z 200 -> 206) */
   const c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');
@@ -609,8 +624,8 @@ function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=Math.max(HALF
   for(let z=-H;z<TOWN_Z0;z+=6){g.beginPath();g.moveTo(X(-W),Z(z));g.lineTo(X(W),Z(z));g.stroke();}
   g.strokeStyle='#d9a21b';g.lineWidth=S*.5;g.beginPath();g.arc(X(0),Z(BOSS_Z),15*S,0,7);g.stroke();g.beginPath();g.arc(X(0),Z(BOSS_Z),16.2*S,0,7);g.stroke();
   for(let x=-12;x<=12;x+=2.4){g.fillStyle=(Math.round(x/2.4)%2)?'#d9a21b':'#17181b';g.fillRect(X(x),Z(TOWN_Z0-3.2),2.4*S,1.2*S);}
-  for(const sd of[-1,1])R(sd>0?150:-W,-H,sd>0?W:-150,TOWN_Z0,'#33482c');   /* outside the compound walls: grass (user 2026-11-27) */
-  const nz0=s=>Math.abs(s.x)===160?-H:TOWN_Z0;   /* Mission Ave + Willow St run past the compound to the north edge */
+  for(const sd of[-1,1])R(sd>0?83:-W,-H,sd>0?W:-83,TOWN_Z0,'#33482c');   /* outside the compound walls: grass (user 2026-11-27; compound now ends at Patrick St / Xena St) */
+  const nz0=s=>Math.abs(s.x)>=93?-H:TOWN_Z0;   /* Mission Ave + Willow St run past the compound to the north edge */
   const walk=(x0,z0,x1,z1)=>{R(x0,z0,x1,z1,'#77746d');};
   for(const s of DUSK_NS){walk(s.x-s.w/2-DSW,nz0(s),s.x+s.w/2+DSW,H);}
   for(const s of DUSK_EW){walk(-W,s.z-s.w/2-DSW,W,s.z+s.w/2+DSW);}
@@ -619,6 +634,7 @@ function duskGroundTex(){const L=duskLayout(),N=BIGTEX?4096:2048,W=Math.max(HALF
   for(const s of DUSK_EW)for(const sd of[-1,1]){const z0=s.z+sd*(s.w/2),z1=z0+sd*DSW;for(let x=-W;x<W;x+=2.2){g.beginPath();g.moveTo(X(x),Z(Math.min(z0,z1)));g.lineTo(X(x),Z(Math.max(z0,z1)));g.stroke();}}
   for(const d of L.drives)R(d.x-1.5,d.z0,d.x+1.5,d.z1,'#6c6963');
   for(const d of L.walks)R(d.x-.6,d.z0,d.x+.6,d.z1,'#6f6b64');
+  for(const d of L.hdrives||[])R(d.x0,d.z-1.5,d.x1,d.z+1.5,'#6c6963');for(const d of L.hwalks||[])R(d.x0,d.z-.6,d.x1,d.z+.6,'#6f6b64');
   for(const a of L.alleys)R(a.x0,a.z-a.w/2,a.x1,a.z+a.w/2,'#34332f');
   paintSpots(R,g,X,Z,S);
   R(LIQUOR.x0-1,LIQUOR.z0-1,LIQUOR.x1+1,LIQUOR.z1+1,'#3d3c3a');R(SMOKE.x0-1,SMOKE.z0-1,SMOKE.x1+1,SMOKE.z1+1,'#3d3c3a');
@@ -1305,7 +1321,7 @@ function seaMoan(B){const t=actx.currentTime+.05,D=rand(1.4,2.9),f0=rand(295,345
   env.connect(B.in);for(const x of[o,o2,vib]){x.start(t);x.stop(t+D+.1);}}
 function seaBubble(B){const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain(),f=rand(280,800);o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*rand(1.6,2.6),t+.06);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(rand(.03,.08),t+.008);g.gain.exponentialRampToValueAtTime(.0003,t+.09);o.connect(g).connect(B.in);o.start(t);o.stop(t+.1);}
-function updateSeaMonster(dt){if(!DUSK||!actx||!noise)return;const P=player,inside=P.alive&&P.pos.z<WALL_Z-1&&Math.abs(P.pos.x)<146&&GATE&&!GATE.alive&&!(BOSS_RIG.dead>0);
+function updateSeaMonster(dt){if(!DUSK||!actx||!noise)return;const P=player,inside=P.alive&&P.pos.z<WALL_Z-1&&Math.abs(P.pos.x)<79&&GATE&&!GATE.alive&&!(BOSS_RIG.dead>0);
   if(!SEAMON){if(!inside)return;const B=seaBus(),amb=actx.createGain();amb.gain.value=0;amb.connect(B.out);
     const n=actx.createBufferSource();n.buffer=noise;n.loop=true;n.playbackRate.value=.5;const lp=actx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=170;lp.Q.value=.9;const ng=actx.createGain();ng.gain.value=.9;n.connect(lp).connect(ng).connect(amb);n.start();   /* churning water */
     const s1=actx.createOscillator(),s2=actx.createOscillator(),sg=actx.createGain();s1.frequency.value=36;s2.frequency.value=47;sg.gain.value=.35;s1.connect(sg);s2.connect(sg);sg.connect(amb);s1.start();s2.start();   /* deep rumble */
@@ -1730,11 +1746,11 @@ function buildBossCompound(){const root=new THREE.Group();root.userData.noAir=tr
     for(let d=6;d<L-1;d+=12){const x=x0+dx*d,z=z0+dz*d;tBox('matte',0x4a4e56,ax?1.6:4.8,WH,ax?4.8:1.6,x,WH/2,z);tBox('glow',0xff3a2a,ax?.5:.2,.35,ax?.2:.5,x+(ax?0:out*2.45),WH-1.2,z+(ax?out*2.45:0));}
     for(let d=.5;d<L;d+=1.1)tBox('metal',0x6f747b,.08,1.1,.08,x0+dx*d,WH+1.2,z0+dz*d,0,ax?0:.5,ax?.5:0);
     for(const y of[WH+1.55,WH+.9])tBox('metal',0x6f747b,ax?L:.06,.06,ax?.06:L,cx,y,cz);};
-  const CW_X=150,CW_BZ=-203;   /* compound edge (inner sidewalk edge of Mission Ave / Willow St) and back wall line */
+  const CW_X=83,CW_BZ=-203;   /* compound edge = inner sidewalk edge of Patrick St / Xena St (user 2026-11-27, was 150 at Mission Ave / Willow St) */   /* compound edge (inner sidewalk edge of Mission Ave / Willow St) and back wall line */
   for(const s of[-1,1]){wallRun(s*16,WALL_Z,s*CW_X,WALL_Z,1);   /* front wall, gate to the corner */
     wallRun(s*(CW_X-2),WALL_Z-2,s*(CW_X-2),CW_BZ+2,s);   /* side wall */
     /* dead end where the street stops at the north edge: striped barricade on posts with reflectors */
-    {const bx=s*160,bz=-HALF_Z+2.5;for(const px of[-9,-3,3,9])tBox('metal',0x3a3d42,.2,1.6,.2,bx+px,.8,bz);
+    for(const bx of[s*93,s*160]){const bz=-HALF_Z+2.5;for(const px of[-9,-3,3,9])tBox('metal',0x3a3d42,.2,1.6,.2,bx+px,.8,bz);
       for(const y of[.7,1.3])for(let k=0;k<10;k++)tBox('matte',k%2?0xf2f2ee:0xd8261e,2,.4,.12,bx-9+k*2,y,bz+.12);
       for(const px of[-8,0,8])tBox('glow',0xffa020,.3,.3,.06,bx+px,1.72,bz+.2);addBlock(bx,bz,20,1,1.6);}
     for(let i=0;i<8;i++)tBox('matte',i%2?0x17181b:0xf2b51d,1.5,1.1,.1,s*(16.8+i*1.5),1.6,WALL_Z+2.06);
@@ -4791,7 +4807,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll
 document.addEventListener('gesturestart',e=>e.preventDefault());
 window.__pb={get player(){return player},get yaw(){return yaw},get pitch(){return pitch},get keys(){return keys},get started(){return started},get over(){return over},hit:a=>damage(player,a,RED,false,true),get paused(){return paused},get scene(){return scene},get pool(){return HEAD_POOL}};   // read-only test hook
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
-function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2127'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
+function checkUpdate(){if(started&&!over)return;fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(x=>x.ok?x.text():'').then(v=>{v=v.trim();if(v&&v!=='1127-2138'){const k='pbReload',t=+sessionStorage.getItem(k)||0;if(Date.now()-t>60000){sessionStorage.setItem(k,Date.now());location.reload();}}}).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});checkUpdate();
 }
 </script>
