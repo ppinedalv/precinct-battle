@@ -108,7 +108,7 @@ TOUCH_HTML = '''<div id="touch">
   <div class="tb" id="tMode" data-key="KeyF" data-tap="1">⇅<span>HOVER</span></div>
   <div class="tb" id="tAim" data-aim="1"><i></i><span>AIM · TAP = JUMP</span></div>
   <div class="tb" id="tEmp" data-key="KeyH" data-tap="1">ϟ<span>EMP</span><b>5</b></div>
-  <div class="tb" id="tRun" data-key="ShiftLeft">»<span>RUN</span></div>
+  <div class="tb" id="tRun" data-key="ShiftLeft" data-toggle="1">»<span>RUN</span></div>
   <div class="tb" id="tMute" data-key="KeyM" data-tap="1">🔊</div>
   <div class="tb" id="tPause" data-key="KeyP" data-tap="1">II</div>
 </div>
@@ -126,7 +126,7 @@ HELP = '''<div class="keys" style="margin-top:14px">
       <b>HOVER / WALK</b><span>Transform: Walker (armored) / Hover (fast)</span>
       <b>EMP</b><span>EMP shockwave: freezes nearby enemy tanks, rollers and hover robots and shields you for 7 s (5 per game)</span>
       <b></b><span>Yellow diamond = target locked; all weapons auto-aim at it</span>
-      <b>RUN / BOOST</b><span>Hold: run in Walker, turbo boost in Hover (uses System Energy).</span>
+      <b>RUN / BOOST</b><span>Tap once to run in Walker / turbo boost in Hover (uses System Energy), tap again to stop.</span>
       <b>🔊</b><span>Mute / unmute all sound</span>
       <b>II</b><span>Pause. The pause screen has music on/off, music volume and load your own track</span>
     </div>
