@@ -1193,7 +1193,7 @@ function makeThug(role,x,z,y=0){const vi=Math.floor(Math.random()*5),G=thugGeos(
   const u={kind:'thug',role,team:RED,pos:new THREE.Vector3(x,y,z),vel:V(),hp:role==='guard'?45:28,maxHp:role==='guard'?45:28,r:.9,moveR:.55,hy:1.15,alive:true,mesh:grp,legs,arm,fore,flame,G,
     cd:rand(.8,2.5),burst:0,bt:0,think:0,los:false,ph:Math.random()*6,side:Math.random()<.5?1:-1,throwT:0,heading:Math.random()*6};
   grp.position.copy(u.pos);scene.add(grp);ents.push(u);THUGS.push(u);return u;}
-function thugCap(){return Math.round(5+DIFF.level*1.6);}
+function thugCap(){return [7,9,11,13,15,18,21,24,27,30][DIFF.level-1];}   /* armed people on the street rise every level (user 2026-11-27; was 7..21) */
 function spawnThug(){const L=duskLayout(),P=player;
   for(let i=0;i<30;i++){let x,z;if(Math.random()<.75){const p=L.pedPaths[Math.floor(Math.random()*L.pedPaths.length)],t=Math.random();x=p.ax+(p.bx-p.ax)*t;z=p.az+(p.bz-p.az)*t;}
     else{const a=L.alleys[Math.floor(Math.random()*L.alleys.length)];x=rand(a.x0+3,a.x1-3);z=a.z;}
@@ -1911,7 +1911,8 @@ function gateBreach(e){const T=GATE_BLOCK;let i=buildings.indexOf(T);if(i>=0)bui
   setTimeout(()=>{explosion(_bt.set(0,7,WALL_Z+2),12);camShake=Math.max(camShake,1.2);},1000);
   feed('GATE BREACHED! Get in there and destroy the boss!','b');}
 function duskBegin(){const l=diffLevel;for(const a of BOSS_RIG.arms)a.ent.hitsMax=10+l;   /* stronger arms (user 2026-11-26): 15 hits at level 5 */GATE.hitsMax=12+l;   /* stronger gate (user 2026-11-26): 17 missile / cannon hits at level 5, 22 at level 10 */BOSS.hitsMax=Math.round(60+l*6);   /* boss takes more hits (user 2026-11-27): 66 at level 1, 90 at 5, 120 at 10 (was 44 / 60 / 80) */
-  const n=2+Math.floor(l/3);for(let i=0;i<n;i++)spawnVan(i);DUSK_DYN.vanN=n;spawnIceTruck();   /* ice-cream truck (user 2026-11-27) */
+  const n=[2,2,3,3,4,4,5,6,7,8][l-1];for(let i=0;i<n;i++)spawnVan(i);DUSK_DYN.vanN=n;   /* gang vans rise every level (user 2026-11-27; was 2..5) */
+  for(let i=0;i<2;i++)spawnIceTruck();   /* exactly 2 ice-cream trucks in town at a time on every level (user 2026-11-27); each one that dies respawns 25 s later */
   rival.alive=false;rival.lives=0;rival.respawn=Infinity;rival.rig.root.visible=false;
   for(let i=0,k=Math.round(thugCap()*.5);i<k;i++)spawnThug();}
 /* gang vans: drive the east-west streets, a gunman leans out of the open side door and shoots at blue units and mechs */
